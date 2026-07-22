@@ -1,1 +1,137 @@
-# LPL-Scriptable
+# LPL Schedule 2026 · Scriptable
+
+一个为 **2026 LPL 第三赛段**设计的 Scriptable 赛程小组件，视觉参考深蓝色倒计时卡片：深蓝渐变背景、彩色竖线、右侧突出显示比赛时间或比分。
+
+## 主要功能
+
+- 支持 Scriptable 小号、中号和大号组件
+- 自动寻找今天或未来最近一个比赛日
+- 未开始显示时间，进行中显示 `LIVE`，结束后显示比分
+- 中号最多显示 2 场，大号最多显示 5 场
+- 可高亮关注队伍
+- 三层数据回退：
+  1. 仓库中的 `data/schedule.json`
+  2. LPL 官方赛事页面
+  3. Scriptable 本地缓存
+- 点击组件打开官方赛程页面
+- 点击比赛区域打开哔哩哔哩赛事直播
+
+## 项目结构
+
+```text
+LPL-Scriptable/
+├── LPL-Schedule.js          主组件
+├── Installer.js             一键安装器
+├── data/
+│   └── schedule.json        可手动维护的赛程数据
+├── docs/
+│   └── style-reference.jpeg 风格参考图
+├── CHANGELOG.md
+├── LICENSE
+└── README.md
+```
+
+## 上传到 GitHub
+
+请将项目文件上传到仓库根目录：
+
+```text
+braziliany/LPL-Scriptable
+```
+
+上传完成后，主脚本和安装器中预设的 Raw 地址即可生效。
+
+## 安装方法一：使用安装器
+
+1. 在 GitHub 打开 `Installer.js`
+2. 点击 **Raw**
+3. 全选复制
+4. 在 Scriptable 新建脚本并粘贴
+5. 运行安装器
+6. 安装器会自动创建 `LPL Schedule 2026`
+
+## 安装方法二：直接复制主脚本
+
+1. 打开 `LPL-Schedule.js`
+2. 点击 **Raw**
+3. 全选复制
+4. 在 Scriptable 新建脚本并粘贴
+5. 保存后运行一次
+6. 在桌面添加 Scriptable 中号组件，并选择该脚本
+
+## 手动维护赛程
+
+`data/schedule.json` 的格式：
+
+```json
+{
+  "matches": [
+    {
+      "startTime": "2026-07-22 17:00:00",
+      "left": "LGD",
+      "right": "EDG",
+      "status": "upcoming",
+      "matchType": "BO3",
+      "stage": "常规赛",
+      "leftScore": 0,
+      "rightScore": 0
+    }
+  ]
+}
+```
+
+`status` 支持：
+
+- `upcoming`：未开始
+- `live`：进行中
+- `finished`：已结束
+
+更新 `schedule.json` 后，Scriptable 会在下一次刷新时获取最新数据。GitHub Raw 内容可能存在几分钟缓存。
+
+## 修改关注队伍
+
+编辑 `LPL-Schedule.js`：
+
+```javascript
+highlightedTeams: ["BLG", "AL", "TES", "WBG"],
+```
+
+## 数据模式
+
+```javascript
+dataMode: "auto",
+```
+
+可选值：
+
+- `auto`：远程 JSON → 官方页面 → 本地缓存
+- `remote`：只读取远程 JSON
+- `official`：只解析官方页面
+
+推荐保留 `auto`。
+
+## 组件预览
+
+在 Scriptable 内运行主脚本时：
+
+- 默认预览中号
+- 将脚本参数设置为 `large` 可预览大号
+- 设置为 `small` 可预览小号
+
+## 故障排查
+
+### 显示“未来 90 天没有找到比赛”
+
+说明成功获得了数据，但数据中没有今天之后的比赛。请更新 `data/schedule.json`，或检查官方页面解析是否仍然有效。
+
+### 显示“远程 schedule.json 中没有有效赛程”
+
+这是正常回退提示之一。当 JSON 为空时，`auto` 模式会继续尝试官方页面。
+
+### 官网改版后无法解析
+
+直接维护 `data/schedule.json` 即可，不需要修改组件布局代码。
+
+## 免责声明
+
+本项目与 Riot Games、腾讯游戏、英雄联盟职业联赛及哔哩哔哩无隶属关系。赛事名称和相关商标归各自权利人所有。
