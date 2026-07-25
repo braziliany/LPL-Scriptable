@@ -199,7 +199,7 @@ function normalizeStatus(value) {
 
   if (
     ["live", "playing", "1"].includes(text) ||
-    /进行中|比赛中|直播中/.test(text)
+    /进行中|比赛中|直播中|正在直播|比赛直播|赛事直播/.test(text)
   ) {
     return "live";
   }
@@ -395,8 +395,23 @@ function findStatus(lines, index) {
 
 function validScoreValues(matchType) {
   return matchType === "BO5"
-    ? new Set(["3-0", "3-1", "3-2", "0-3", "1-3", "2-3"])
-    : new Set(["2-0", "2-1", "0-2", "1-2"]);
+    ? new Set([
+        "1-0",
+        "0-1",
+        "1-1",
+        "2-0",
+        "0-2",
+        "2-1",
+        "1-2",
+        "2-2",
+        "3-0",
+        "3-1",
+        "3-2",
+        "0-3",
+        "1-3",
+        "2-3",
+      ])
+    : new Set(["1-0", "0-1", "1-1", "2-0", "2-1", "0-2", "1-2"]);
 }
 
 function isValidScore(matchType, leftScore, rightScore) {
@@ -414,7 +429,7 @@ function findScore(lines, index, matchType) {
   );
 
   // 常见格式：2-1、2 : 0、比分 2-1。
-  // 只接受对应赛制的完赛比分，日期和 0-0、1-1 等组合都会被排除。
+  // 只接受对应赛制可达的比分，日期和 0-0 等无效组合会被排除。
   for (const line of area) {
     const match = line.match(/(?:^|\s|比分\s*)([0-3])\s*[:：-]\s*([0-3])(?:\s|$)/);
     if (match && isValidScore(matchType, match[1], match[2])) {
@@ -623,7 +638,7 @@ function matchRightValue(match) {
   if (match.status === "live") {
     return hasValidScore(match)
       ? `${match.leftScore}-${match.rightScore}`
-      : "LIVE";
+      : "进行中";
   }
   if (match.status === "finished") {
     return hasValidScore(match)
