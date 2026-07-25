@@ -647,13 +647,9 @@ function addMatchRow(widget, match, index, compact = false) {
   info.layoutVertically();
 
   const teams = info.addText(`${match.left}  vs  ${match.right}`);
-  teams.font =
-    isHighlighted(match.left) || isHighlighted(match.right)
-      ? Font.boldSystemFont(compact ? 15 : 17)
-      : Font.semiboldSystemFont(compact ? 15 : 17);
+  teams.font = Font.semiboldSystemFont(compact ? 15 : 17);
   teams.textColor = new Color(CONFIG.theme.white);
   teams.lineLimit = 1;
-  teams.minimumScaleFactor = 0.65;
 
   info.addSpacer(3);
 
@@ -665,13 +661,11 @@ function addMatchRow(widget, match, index, compact = false) {
   row.addSpacer();
 
   const value = row.addText(matchRightValue(match));
-  value.font = Font.boldSystemFont(
-    compact ? 20 : match.status === "live" ? 20 : 26
-  );
+  value.font = Font.boldSystemFont(compact ? 20 : 26);
   value.textColor = new Color(
     match.status === "live" ? CONFIG.theme.red : accent
   );
-  value.minimumScaleFactor = 0.7;
+  value.lineLimit = 1;
 }
 
 function addDivider(widget) {
