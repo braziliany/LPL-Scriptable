@@ -244,8 +244,8 @@ function normalizeMatch(raw) {
     time: `${pad2(date.getHours())}:${pad2(date.getMinutes())}`,
     left,
     right,
-    leftScore: String(raw.leftScore ?? raw.scoreA ?? raw.homeScore ?? "0"),
-    rightScore: String(raw.rightScore ?? raw.scoreB ?? raw.awayScore ?? "0"),
+    leftScore: raw.leftScore ?? raw.scoreA ?? raw.homeScore ?? null,
+    rightScore: raw.rightScore ?? raw.scoreB ?? raw.awayScore ?? null,
     status: normalizeStatus(raw.status || raw.statusText),
     matchType: String(raw.matchType || raw.bo || "BO3").toUpperCase(),
     stage: String(raw.stage || "常规赛"),
@@ -399,8 +399,10 @@ function findScore(lines, index) {
     Math.min(lines.length, index + 9)
   );
 
+  // 常见格式：2-1、2 : 0、比分 2-1。
+  // LPL 单局大比分只可能是 0–3；限制数字范围可避免把 2026-07 之类日期误判为比分。
   for (const line of area) {
-    const match = line.match(/^(\d+)\s*[:：-]\s*(\d+)$/);
+    const match = line.match(/(?:^|\s|比分\s*)([0-3])\s*[:：-]\s*([0-3])(?:\s|$)/);
     if (match) {
       return {
         leftScore: match[1],
@@ -409,9 +411,20 @@ function findScore(lines, index) {
     }
   }
 
+  // 部分页面会将双方比分拆成相邻的两行。
+  for (let i = 0; i < area.length - 1; i++) {
+    if (/^[0-3]$/.test(area[i]) && /^[0-3]$/.test(area[i + 1])) {
+      return {
+        leftScore: area[i],
+        rightScore: area[i + 1],
+      };
+    }
+  }
+
+  // 没识别到真实比分时保持为空，避免把缺失数据误显示为 0-0。
   return {
-    leftScore: "0",
-    rightScore: "0",
+    leftScore: null,
+    rightScore: null,
   };
 }
 
@@ -579,10 +592,29 @@ function matchSubtitle(match) {
   return `${match.stage || "常规赛"} · ${match.matchType}`;
 }
 
+function hasValidScore(match) {
+  const left = Number(match.leftScore);
+  const right = Number(match.rightScore);
+
+  if (!Number.isInteger(left) || !Number.isInteger(right)) return false;
+  if (left < 0 || left > 3 || right < 0 || right > 3) return false;
+
+  // 已结束的 BO3/BO5 不可能是 0-0；这通常代表缺失值或误解析。
+  if (match.status === "finished" && left === 0 && right === 0) return false;
+
+  return true;
+}
+
 function matchRightValue(match) {
-  if (match.status === "live") return "LIVE";
+  if (match.status === "live") {
+    return hasValidScore(match)
+      ? `${match.leftScore}-${match.rightScore}`
+      : "LIVE";
+  }
   if (match.status === "finished") {
-    return `${match.leftScore}-${match.rightScore}`;
+    return hasValidScore(match)
+      ? `${match.leftScore}-${match.rightScore}`
+      : "已结束";
   }
   return match.time;
 }
