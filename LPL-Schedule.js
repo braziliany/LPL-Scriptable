@@ -393,17 +393,31 @@ function findStatus(lines, index) {
   return normalizeStatus(nearbyText(lines, index));
 }
 
-function findScore(lines, index) {
+function validScoreValues(matchType) {
+  return matchType === "BO5"
+    ? new Set(["3-0", "3-1", "3-2", "0-3", "1-3", "2-3"])
+    : new Set(["2-0", "2-1", "0-2", "1-2"]);
+}
+
+function isValidScore(matchType, leftScore, rightScore) {
+  const left = Number(leftScore);
+  const right = Number(rightScore);
+
+  if (!Number.isInteger(left) || !Number.isInteger(right)) return false;
+  return validScoreValues(matchType).has(`${left}-${right}`);
+}
+
+function findScore(lines, index, matchType) {
   const area = lines.slice(
     Math.max(0, index - 10),
     Math.min(lines.length, index + 9)
   );
 
   // 常见格式：2-1、2 : 0、比分 2-1。
-  // LPL 单局大比分只可能是 0–3；限制数字范围可避免把 2026-07 之类日期误判为比分。
+  // 只接受对应赛制的完赛比分，日期和 0-0、1-1 等组合都会被排除。
   for (const line of area) {
     const match = line.match(/(?:^|\s|比分\s*)([0-3])\s*[:：-]\s*([0-3])(?:\s|$)/);
-    if (match) {
+    if (match && isValidScore(matchType, match[1], match[2])) {
       return {
         leftScore: match[1],
         rightScore: match[2],
@@ -413,7 +427,11 @@ function findScore(lines, index) {
 
   // 部分页面会将双方比分拆成相邻的两行。
   for (let i = 0; i < area.length - 1; i++) {
-    if (/^[0-3]$/.test(area[i]) && /^[0-3]$/.test(area[i + 1])) {
+    if (
+      /^[0-3]$/.test(area[i]) &&
+      /^[0-3]$/.test(area[i + 1]) &&
+      isValidScore(matchType, area[i], area[i + 1])
+    ) {
       return {
         leftScore: area[i],
         rightScore: area[i + 1],
@@ -448,7 +466,8 @@ function parseOfficialSchedule(text) {
 
     if (!left || !right || left === right) continue;
 
-    const score = findScore(lines, index);
+    const matchType = findMatchType(lines, index);
+    const score = findScore(lines, index, matchType);
 
     matches.push({
       startTime: `${formatDate(date)} ${pad2(date.getHours())}:${pad2(
@@ -461,7 +480,7 @@ function parseOfficialSchedule(text) {
       right,
       ...score,
       status: findStatus(lines, index),
-      matchType: findMatchType(lines, index),
+      matchType,
       stage: "常规赛",
       liveUrl: CONFIG.liveUrl,
     });
@@ -593,16 +612,7 @@ function matchSubtitle(match) {
 }
 
 function hasValidScore(match) {
-  const left = Number(match.leftScore);
-  const right = Number(match.rightScore);
-
-  if (!Number.isInteger(left) || !Number.isInteger(right)) return false;
-  if (left < 0 || left > 3 || right < 0 || right > 3) return false;
-
-  // 已结束的 BO3/BO5 不可能是 0-0；这通常代表缺失值或误解析。
-  if (match.status === "finished" && left === 0 && right === 0) return false;
-
-  return true;
+  return isValidScore(match.matchType, match.leftScore, match.rightScore);
 }
 
 function matchRightValue(match) {
