@@ -425,16 +425,20 @@ function findScore(lines, index, matchType) {
     }
   }
 
-  // 部分页面会将双方比分拆成相邻的两行。
+  // 官方页面会将比分拆成三行（2、:、1），部分页面则拆成相邻两行。
   for (let i = 0; i < area.length - 1; i++) {
+    const separatorOffset = /^[:：-]$/.test(area[i + 1]) ? 1 : 0;
+    const rightIndex = i + 1 + separatorOffset;
+    if (rightIndex >= area.length) continue;
+
     if (
       /^[0-3]$/.test(area[i]) &&
-      /^[0-3]$/.test(area[i + 1]) &&
-      isValidScore(matchType, area[i], area[i + 1])
+      /^[0-3]$/.test(area[rightIndex]) &&
+      isValidScore(matchType, area[i], area[rightIndex])
     ) {
       return {
         leftScore: area[i],
-        rightScore: area[i + 1],
+        rightScore: area[rightIndex],
       };
     }
   }
