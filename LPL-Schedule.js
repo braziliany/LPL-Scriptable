@@ -658,29 +658,33 @@ function addMatchRow(widget, match, index, compact = false) {
   addAccentBar(row, accent);
   row.addSpacer(compact ? 10 : 12);
 
-  const info = row.addStack();
-  info.layoutVertically();
+  const content = row.addStack();
+  content.layoutVertically();
 
-  const teams = info.addText(`${match.left}  vs  ${match.right}`);
+  const top = content.addStack();
+  top.layoutHorizontally();
+  top.centerAlignContent();
+
+  const teams = top.addText(`${match.left}  vs  ${match.right}`);
   teams.font = Font.semiboldSystemFont(compact ? 15 : 17);
   teams.textColor = new Color(CONFIG.theme.white);
   teams.lineLimit = 1;
 
-  info.addSpacer(3);
+  top.addSpacer();
 
-  const subtitle = info.addText(matchSubtitle(match));
-  subtitle.font = Font.mediumSystemFont(compact ? 10 : 12);
-  subtitle.textColor = new Color(CONFIG.theme.secondary);
-  subtitle.lineLimit = 1;
-
-  row.addSpacer();
-
-  const value = row.addText(matchRightValue(match));
+  const value = top.addText(matchRightValue(match));
   value.font = Font.boldSystemFont(compact ? 20 : 26);
   value.textColor = new Color(
     match.status === "live" ? CONFIG.theme.red : accent
   );
   value.lineLimit = 1;
+
+  content.addSpacer(3);
+
+  const subtitle = content.addText(matchSubtitle(match));
+  subtitle.font = Font.mediumSystemFont(compact ? 10 : 12);
+  subtitle.textColor = new Color(CONFIG.theme.secondary);
+  subtitle.lineLimit = 1;
 }
 
 function addDivider(widget) {
