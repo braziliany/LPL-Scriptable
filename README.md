@@ -95,7 +95,14 @@ braziliany/LPL-Scriptable
 
 ## 自动更新赛程
 
-仓库中的 GitHub Actions 默认每 15 分钟读取 LPL 官方公开赛程数据，并在内容变化时更新 `data/schedule.json`。也可以在仓库的 **Actions → Update LPL schedule → Run workflow** 中手动执行。
+仓库中的 GitHub Actions 默认每 5 分钟读取 LPL 官方公开赛程数据，并在内容变化时更新 `data/schedule.json`。也可以在仓库的 **Actions → Update LPL schedule → Run workflow** 中手动执行。
+
+组件会根据比赛状态动态安排刷新：
+
+- 直播中：建议 3 分钟后刷新。
+- 开赛前 60 分钟内：显示分钟倒计时，建议 5 分钟后刷新。
+- 其他时间：最多 15 分钟后刷新。
+- 当天比赛全部结束后：自动展示下一个比赛日；赛季最后一个比赛日则保留最终赛果。
 
 本地更新需要 Node.js 18 或更高版本：
 

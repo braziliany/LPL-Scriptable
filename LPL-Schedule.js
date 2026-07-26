@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.1.0",
+  version: "1.2.0",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -46,6 +46,12 @@ const CONFIG = {
 
   // 缓存有效期（小时）
   cacheHours: 12,
+
+  // 实时状态：开赛前 60 分钟显示倒计时；直播时建议 3 分钟后刷新
+  countdownMinutes: 60,
+  liveRefreshMinutes: 3,
+  nearMatchRefreshMinutes: 5,
+  normalRefreshMinutes: 15,
 
   // 中号显示 2 场，大号显示 5 场
   mediumMatches: 2,
@@ -557,8 +563,28 @@ async function loadSchedule() {
   throw new Error(errors.join("\n") || "没有可用的赛程数据");
 }
 
-function findNextMatchDay(matches) {
-  const today = startOfDay(new Date());
+function prioritizeMatches(matches) {
+  const statusPriority = {
+    live: 0,
+    upcoming: 1,
+    finished: 2,
+  };
+
+  return [...matches].sort((a, b) => {
+    const priority =
+      (statusPriority[a.status] ?? 1) - (statusPriority[b.status] ?? 1);
+    if (priority !== 0) return priority;
+
+    // 已结束比赛优先显示最近一场，其余状态按开赛时间排序。
+    return a.status === "finished"
+      ? b.timestamp - a.timestamp
+      : a.timestamp - b.timestamp;
+  });
+}
+
+function findNextMatchDay(matches, now = new Date()) {
+  const today = startOfDay(now);
+  let finishedToday = null;
 
   for (let offset = 0; offset <= CONFIG.maxSearchDays; offset++) {
     const dateString = formatDate(addDays(today, offset));
@@ -566,14 +592,31 @@ function findNextMatchDay(matches) {
       (match) => match.dateString === dateString
     );
 
-    if (dayMatches.length) {
+    // 当天全部结束后自动展示下一个比赛日；未来比赛日不受此规则影响。
+    const allFinished =
+      dayMatches.length > 0 &&
+      dayMatches.every((match) => match.status === "finished");
+
+    if (offset === 0 && allFinished) {
+      finishedToday = {
+        dateString,
+        matches: prioritizeMatches(dayMatches),
+        offset,
+      };
+      continue;
+    }
+
+    if (dayMatches.length && !(offset === 0 && allFinished)) {
       return {
         dateString,
-        matches: dayMatches,
+        matches: prioritizeMatches(dayMatches),
         offset,
       };
     }
   }
+
+  // 赛季最后一个比赛日结束后保留当天最终赛果。
+  if (finishedToday) return finishedToday;
 
   throw new Error(`未来 ${CONFIG.maxSearchDays} 天没有找到比赛`);
 }
@@ -625,17 +668,40 @@ function addAccentBar(row, color) {
   bar.backgroundColor = new Color(color);
 }
 
-function matchSubtitle(match) {
-  if (match.status === "live") return `进行中 · ${match.matchType}`;
-  if (match.status === "finished") return `已结束 · ${match.matchType}`;
-  return `${match.stage || "常规赛"} · ${match.matchType}`;
-}
-
 function hasValidScore(match) {
   return isValidScore(match.matchType, match.leftScore, match.rightScore);
 }
 
-function matchRightValue(match) {
+function countdownText(match, now = new Date()) {
+  if (match.status !== "upcoming") return null;
+
+  const remainingMs = match.timestamp - now.getTime();
+  if (remainingMs <= 0) return "即将开始";
+
+  const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
+  if (remainingMinutes > CONFIG.countdownMinutes) return null;
+  return `还有${remainingMinutes}分钟`;
+}
+
+function matchSubtitle(match, now = new Date()) {
+  if (match.status === "live") {
+    return hasValidScore(match)
+      ? `进行中 · ${match.matchType}`
+      : `直播中 · 比分待更新 · ${match.matchType}`;
+  }
+  if (match.status === "finished") {
+    return hasValidScore(match)
+      ? `已结束 · ${match.matchType}`
+      : `已结束 · 比分待确认 · ${match.matchType}`;
+  }
+
+  const countdown = countdownText(match, now);
+  return countdown
+    ? `${countdown} · ${match.matchType}`
+    : `${match.stage || "常规赛"} · ${match.matchType}`;
+}
+
+function matchRightValue(match, now = new Date()) {
   if (match.status === "live") {
     return hasValidScore(match)
       ? `${match.leftScore}-${match.rightScore}`
@@ -646,10 +712,45 @@ function matchRightValue(match) {
       ? `${match.leftScore}-${match.rightScore}`
       : "已结束";
   }
-  return match.time;
+  return countdownText(match, now) || match.time;
 }
 
-function addMatchRow(widget, match, index, compact = false) {
+function nextRefreshDate(matches, now = new Date()) {
+  let refreshMinutes = CONFIG.normalRefreshMinutes;
+
+  if (matches.some((match) => match.status === "live")) {
+    refreshMinutes = CONFIG.liveRefreshMinutes;
+  } else {
+    const nextMatch = matches
+      .filter(
+        (match) =>
+          match.status === "upcoming" && match.timestamp > now.getTime()
+      )
+      .sort((a, b) => a.timestamp - b.timestamp)[0];
+
+    if (nextMatch) {
+      const remainingMinutes =
+        (nextMatch.timestamp - now.getTime()) / (60 * 1000);
+      if (remainingMinutes <= CONFIG.countdownMinutes) {
+        refreshMinutes = CONFIG.nearMatchRefreshMinutes;
+      } else {
+        // 尽量在进入倒计时窗口时唤醒，同时不超过常规刷新间隔。
+        refreshMinutes = Math.min(
+          CONFIG.normalRefreshMinutes,
+          Math.max(1, remainingMinutes - CONFIG.countdownMinutes)
+        );
+      }
+    }
+  }
+
+  return new Date(now.getTime() + refreshMinutes * 60 * 1000);
+}
+
+function configureRefresh(widget, result, now = new Date()) {
+  widget.refreshAfterDate = nextRefreshDate(result.matches, now);
+}
+
+function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   const row = widget.addStack();
   row.layoutHorizontally();
   row.centerAlignContent();
@@ -673,16 +774,17 @@ function addMatchRow(widget, match, index, compact = false) {
 
   top.addSpacer();
 
-  const value = top.addText(matchRightValue(match));
+  const value = top.addText(matchRightValue(match, now));
   value.font = Font.boldSystemFont(compact ? 20 : 26);
   value.textColor = new Color(
     match.status === "live" ? CONFIG.theme.red : accent
   );
   value.lineLimit = 1;
+  value.minimumScaleFactor = 0.65;
 
   content.addSpacer(3);
 
-  const subtitle = content.addText(matchSubtitle(match));
+  const subtitle = content.addText(matchSubtitle(match, now));
   subtitle.font = Font.mediumSystemFont(compact ? 10 : 12);
   subtitle.textColor = new Color(CONFIG.theme.secondary);
   subtitle.lineLimit = 1;
@@ -729,8 +831,10 @@ function addFooter(widget, source, result) {
 
 function renderMedium(result, source) {
   const widget = new ListWidget();
+  const now = new Date();
   widget.setPadding(14, 16, 12, 16);
   widget.url = CONFIG.schedulePageUrl;
+  configureRefresh(widget, result, now);
   applyBackground(widget);
 
   addHeader(widget, result);
@@ -738,7 +842,7 @@ function renderMedium(result, source) {
 
   const visible = result.matches.slice(0, CONFIG.mediumMatches);
   visible.forEach((match, index) => {
-    addMatchRow(widget, match, index);
+    addMatchRow(widget, match, index, false, now);
     if (index < visible.length - 1) widget.addSpacer(16);
   });
 
@@ -753,8 +857,10 @@ function renderMedium(result, source) {
 
 function renderLarge(result, source) {
   const widget = new ListWidget();
+  const now = new Date();
   widget.setPadding(16, 17, 14, 17);
   widget.url = CONFIG.schedulePageUrl;
+  configureRefresh(widget, result, now);
   applyBackground(widget);
 
   addHeader(widget, result);
@@ -762,7 +868,7 @@ function renderLarge(result, source) {
 
   const visible = result.matches.slice(0, CONFIG.largeMatches);
   visible.forEach((match, index) => {
-    addMatchRow(widget, match, index, true);
+    addMatchRow(widget, match, index, true, now);
 
     if (index < visible.length - 1) {
       widget.addSpacer(8);
@@ -777,8 +883,10 @@ function renderLarge(result, source) {
 
 function renderSmall(result) {
   const widget = new ListWidget();
+  const now = new Date();
   widget.setPadding(14, 14, 13, 14);
   widget.url = CONFIG.schedulePageUrl;
+  configureRefresh(widget, result, now);
   applyBackground(widget);
 
   const square = widget.addStack();
@@ -803,11 +911,13 @@ function renderSmall(result) {
 
   widget.addSpacer();
 
-  const value = widget.addText(matchRightValue(first));
+  const value = widget.addText(matchRightValue(first, now));
   value.font = Font.boldSystemFont(26);
   value.textColor = new Color(
     first.status === "live" ? CONFIG.theme.red : CONFIG.theme.yellow
   );
+  value.lineLimit = 1;
+  value.minimumScaleFactor = 0.65;
 
   return widget;
 }

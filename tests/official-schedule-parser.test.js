@@ -8,7 +8,15 @@ const source = fs
   .readFileSync(scriptPath, "utf8")
   .replace(
     "await main();",
-    "globalThis.__testApi = { parseOfficialSchedule };"
+    `globalThis.__testApi = {
+      countdownText,
+      findNextMatchDay,
+      matchRightValue,
+      matchSubtitle,
+      nextRefreshDate,
+      parseOfficialSchedule,
+      prioritizeMatches,
+    };`
   );
 const context = {
   console,
@@ -40,6 +48,92 @@ assert.deepEqual(
     { time: "17:00", left: "TT", right: "EDG" },
     { time: "19:00", left: "AL", right: "BLG" },
   ]
+);
+
+const now = new Date(2026, 6, 26, 16, 30);
+const upcoming = {
+  dateString: "2026-07-26",
+  timestamp: new Date(2026, 6, 26, 17, 0).getTime(),
+  time: "17:00",
+  left: "TT",
+  right: "EDG",
+  status: "upcoming",
+  matchType: "BO3",
+};
+const live = {
+  ...upcoming,
+  status: "live",
+  leftScore: 1,
+  rightScore: 0,
+};
+const finished = {
+  ...upcoming,
+  timestamp: new Date(2026, 6, 26, 15, 0).getTime(),
+  time: "15:00",
+  status: "finished",
+  leftScore: 0,
+  rightScore: 2,
+};
+
+assert.equal(context.__testApi.countdownText(upcoming, now), "还有30分钟");
+assert.equal(
+  context.__testApi.countdownText(
+    { ...upcoming, timestamp: now.getTime() },
+    now
+  ),
+  "即将开始"
+);
+assert.equal(context.__testApi.matchRightValue(upcoming, now), "还有30分钟");
+assert.equal(
+  context.__testApi.matchSubtitle(upcoming, now),
+  "还有30分钟 · BO3"
+);
+assert.equal(context.__testApi.matchRightValue(live, now), "1-0");
+assert.equal(
+  context.__testApi.matchSubtitle(
+    { ...live, leftScore: 0, rightScore: 0 },
+    now
+  ),
+  "直播中 · 比分待更新 · BO3"
+);
+
+assert.deepEqual(
+  JSON.parse(
+    JSON.stringify(
+      context.__testApi
+        .prioritizeMatches([finished, upcoming, live])
+        .map(({ status }) => status)
+    )
+  ),
+  ["live", "upcoming", "finished"]
+);
+
+const tomorrow = {
+  ...upcoming,
+  dateString: "2026-07-27",
+  timestamp: new Date(2026, 6, 27, 17, 0).getTime(),
+};
+const nextDay = JSON.parse(
+  JSON.stringify(
+    context.__testApi.findNextMatchDay([finished, tomorrow], now)
+  )
+);
+assert.equal(nextDay.dateString, "2026-07-27");
+assert.equal(nextDay.offset, 1);
+
+const finalDay = JSON.parse(
+  JSON.stringify(context.__testApi.findNextMatchDay([finished], now))
+);
+assert.equal(finalDay.dateString, "2026-07-26");
+assert.equal(finalDay.matches[0].status, "finished");
+
+assert.equal(
+  context.__testApi.nextRefreshDate([live], now).getTime() - now.getTime(),
+  3 * 60 * 1000
+);
+assert.equal(
+  context.__testApi.nextRefreshDate([upcoming], now).getTime() - now.getTime(),
+  5 * 60 * 1000
 );
 
 console.log("official schedule parser: ok");
