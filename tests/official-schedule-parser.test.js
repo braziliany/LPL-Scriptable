@@ -14,6 +14,7 @@ const source = fs
       applyUserSettings,
       matchRightValue,
       matchSubtitle,
+      matchValueMetrics,
       nextRefreshDate,
       normalizeUserSettings,
       parseOfficialSchedule,
@@ -149,6 +150,24 @@ assert.equal(
 assert.equal(
   context.__testApi.nextRefreshDate([upcoming], now).getTime() - now.getTime(),
   5 * 60 * 1000
+);
+assert.deepEqual(
+  JSON.parse(
+    JSON.stringify(context.__testApi.matchValueMetrics("medium"))
+  ),
+  { fontSize: 26, minimumScaleFactor: 0.6 }
+);
+assert.deepEqual(
+  JSON.parse(
+    JSON.stringify(context.__testApi.matchValueMetrics("large"))
+  ),
+  { fontSize: 20, minimumScaleFactor: 0.65 }
+);
+assert.deepEqual(
+  JSON.parse(
+    JSON.stringify(context.__testApi.matchValueMetrics("small"))
+  ),
+  { fontSize: 26, minimumScaleFactor: 0.6 }
 );
 
 assert.deepEqual(

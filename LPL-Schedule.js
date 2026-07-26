@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.5.0",
+  version: "1.5.1",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -131,6 +131,11 @@ const DEFAULT_SETTINGS = {
   livePlatform: CONFIG.livePlatform,
   cacheHours: CONFIG.cacheHours,
   refreshProfile: "balanced",
+};
+const MATCH_VALUE_METRICS = {
+  medium: { fontSize: 26, minimumScaleFactor: 0.6 },
+  large: { fontSize: 20, minimumScaleFactor: 0.65 },
+  small: { fontSize: 26, minimumScaleFactor: 0.6 },
 };
 
 // MARK: - 基础工具
@@ -999,6 +1004,19 @@ function matchRightValue(match, now = new Date()) {
   return countdownText(match, now) || match.time;
 }
 
+function matchValueMetrics(layout) {
+  return (
+    MATCH_VALUE_METRICS[layout] || MATCH_VALUE_METRICS.medium
+  );
+}
+
+function matchValueFont(size) {
+  // 旧版 Scriptable 不支持等宽粗体时回退到系统粗体。
+  return typeof Font.boldMonospacedSystemFont === "function"
+    ? Font.boldMonospacedSystemFont(size)
+    : Font.boldSystemFont(size);
+}
+
 function nextRefreshDate(matches, now = new Date()) {
   let refreshMinutes = CONFIG.normalRefreshMinutes;
 
@@ -1065,13 +1083,14 @@ function addMatchRow(widget, match, index, compact = false, now = new Date()) {
 
   top.addSpacer();
 
+  const metrics = matchValueMetrics(compact ? "large" : "medium");
   const value = top.addText(matchRightValue(match, now));
-  value.font = Font.boldSystemFont(compact ? 20 : 26);
+  value.font = matchValueFont(metrics.fontSize);
   value.textColor = new Color(
     match.status === "live" ? CONFIG.theme.red : accent
   );
   value.lineLimit = 1;
-  value.minimumScaleFactor = 0.65;
+  value.minimumScaleFactor = metrics.minimumScaleFactor;
 
   content.addSpacer(3);
 
@@ -1204,13 +1223,14 @@ function renderSmall(result) {
 
   widget.addSpacer();
 
+  const metrics = matchValueMetrics("small");
   const value = widget.addText(matchRightValue(first, now));
-  value.font = Font.boldSystemFont(26);
+  value.font = matchValueFont(metrics.fontSize);
   value.textColor = new Color(
     first.status === "live" ? CONFIG.theme.red : CONFIG.theme.yellow
   );
   value.lineLimit = 1;
-  value.minimumScaleFactor = 0.65;
+  value.minimumScaleFactor = metrics.minimumScaleFactor;
 
   return widget;
 }
