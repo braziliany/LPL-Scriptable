@@ -90,6 +90,7 @@ const KNOWN_TEAMS = [
   "LGD",
   "OMG",
   "UP",
+  "TT",
 ];
 
 const CACHE_FILE = "lpl-schedule-cache.json";
