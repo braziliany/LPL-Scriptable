@@ -24,6 +24,11 @@ LPL-Scriptable/
 ├── Installer.js             一键安装器
 ├── data/
 │   └── schedule.json        可手动维护的赛程数据
+├── scripts/
+│   └── update-schedule.js   官方赛程同步脚本
+├── tests/                   数据转换与解析回归测试
+├── .github/workflows/
+│   └── update-schedule.yml  定时更新赛程
 ├── docs/
 │   └── style-reference.jpeg 风格参考图
 ├── CHANGELOG.md
@@ -87,6 +92,26 @@ braziliany/LPL-Scriptable
 - `finished`：已结束
 
 更新 `schedule.json` 后，Scriptable 会在下一次刷新时获取最新数据。GitHub Raw 内容可能存在几分钟缓存。
+
+## 自动更新赛程
+
+仓库中的 GitHub Actions 默认每 15 分钟读取 LPL 官方公开赛程数据，并在内容变化时更新 `data/schedule.json`。也可以在仓库的 **Actions → Update LPL schedule → Run workflow** 中手动执行。
+
+本地更新需要 Node.js 18 或更高版本：
+
+```bash
+node scripts/update-schedule.js
+```
+
+更新脚本只保留 `2026 LPL 第三赛段`，并校验比赛编号、时间和对阵双方。官方数据异常或筛选结果为空时，脚本会失败且不会覆盖现有文件。
+
+运行回归测试：
+
+```bash
+node tests/official-schedule-parser.test.js
+node tests/update-schedule.test.js
+node --check LPL-Schedule.js
+```
 
 ## 修改关注队伍
 

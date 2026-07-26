@@ -1,0 +1,48 @@
+name: Update LPL schedule
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-lpl-schedule
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Update schedule
+        run: node scripts/update-schedule.js
+
+      - name: Run tests
+        run: |
+          node tests/official-schedule-parser.test.js
+          node tests/update-schedule.test.js
+          node --check LPL-Schedule.js
+
+      - name: Commit updated schedule
+        run: |
+          if git diff --quiet -- data/schedule.json; then
+            echo "Schedule is already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/schedule.json
+          git commit -m "Update LPL schedule"
+          git push
