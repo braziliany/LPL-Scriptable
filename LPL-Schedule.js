@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.2.0",
+  version: "1.2.1",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -563,23 +563,9 @@ async function loadSchedule() {
   throw new Error(errors.join("\n") || "没有可用的赛程数据");
 }
 
-function prioritizeMatches(matches) {
-  const statusPriority = {
-    live: 0,
-    upcoming: 1,
-    finished: 2,
-  };
-
-  return [...matches].sort((a, b) => {
-    const priority =
-      (statusPriority[a.status] ?? 1) - (statusPriority[b.status] ?? 1);
-    if (priority !== 0) return priority;
-
-    // 已结束比赛优先显示最近一场，其余状态按开赛时间排序。
-    return a.status === "finished"
-      ? b.timestamp - a.timestamp
-      : a.timestamp - b.timestamp;
-  });
+function sortMatchesByTime(matches) {
+  // 实时状态只影响文案和刷新频率，不改变赛程的时间顺序。
+  return [...matches].sort((a, b) => a.timestamp - b.timestamp);
 }
 
 function findNextMatchDay(matches, now = new Date()) {
@@ -600,7 +586,7 @@ function findNextMatchDay(matches, now = new Date()) {
     if (offset === 0 && allFinished) {
       finishedToday = {
         dateString,
-        matches: prioritizeMatches(dayMatches),
+        matches: sortMatchesByTime(dayMatches),
         offset,
       };
       continue;
@@ -609,7 +595,7 @@ function findNextMatchDay(matches, now = new Date()) {
     if (dayMatches.length && !(offset === 0 && allFinished)) {
       return {
         dateString,
-        matches: prioritizeMatches(dayMatches),
+        matches: sortMatchesByTime(dayMatches),
         offset,
       };
     }

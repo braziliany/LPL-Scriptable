@@ -15,7 +15,7 @@ const source = fs
       matchSubtitle,
       nextRefreshDate,
       parseOfficialSchedule,
-      prioritizeMatches,
+      sortMatchesByTime,
     };`
   );
 const context = {
@@ -101,11 +101,23 @@ assert.deepEqual(
   JSON.parse(
     JSON.stringify(
       context.__testApi
-        .prioritizeMatches([finished, upcoming, live])
-        .map(({ status }) => status)
+        .sortMatchesByTime([
+          {
+            ...upcoming,
+            timestamp: new Date(2026, 6, 26, 19, 0).getTime(),
+            time: "19:00",
+          },
+          finished,
+          live,
+        ])
+        .map(({ time, status }) => ({ time, status }))
     )
   ),
-  ["live", "upcoming", "finished"]
+  [
+    { time: "15:00", status: "finished" },
+    { time: "17:00", status: "live" },
+    { time: "19:00", status: "upcoming" },
+  ]
 );
 
 const tomorrow = {
