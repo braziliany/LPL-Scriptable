@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.4.1",
+  version: "1.5.0",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -37,6 +37,8 @@ const CONFIG = {
   schedulePageUrl:
     "https://lpl.qq.com/web202301/schedule.html",
   liveUrl: "https://lpl.qq.com/web202301/schedule.html",
+  bilibiliLiveUrl: "https://live.bilibili.com/6",
+  livePlatform: "official",
 
   // 官方页面动态加载等待时间
   officialPageWaitSeconds: 4,
@@ -101,11 +103,34 @@ const KNOWN_TEAMS = [
 
 const CACHE_FILE = "lpl-schedule-cache.json";
 const SETTINGS_FILE = "lpl-schedule-settings.json";
+const REFRESH_PROFILES = {
+  realtime: {
+    label: "实时",
+    liveMinutes: 2,
+    nearMatchMinutes: 3,
+    normalMinutes: 10,
+  },
+  balanced: {
+    label: "均衡",
+    liveMinutes: 3,
+    nearMatchMinutes: 5,
+    normalMinutes: 15,
+  },
+  battery: {
+    label: "省电",
+    liveMinutes: 5,
+    nearMatchMinutes: 10,
+    normalMinutes: 30,
+  },
+};
 const DEFAULT_SETTINGS = {
   dataMode: CONFIG.dataMode,
   mediumMatches: CONFIG.mediumMatches,
   largeMatches: CONFIG.largeMatches,
   highlightedTeams: [...CONFIG.highlightedTeams],
+  livePlatform: CONFIG.livePlatform,
+  cacheHours: CONFIG.cacheHours,
+  refreshProfile: "balanced",
 };
 
 // MARK: - 基础工具
@@ -215,6 +240,20 @@ function normalizeUserSettings(value) {
         ),
       ]
     : [...DEFAULT_SETTINGS.highlightedTeams];
+  const livePlatform = ["official", "bilibili"].includes(
+    String(raw.livePlatform || "").toLowerCase()
+  )
+    ? String(raw.livePlatform).toLowerCase()
+    : DEFAULT_SETTINGS.livePlatform;
+  const cacheHours = [1, 3, 6, 12, 24].includes(Number(raw.cacheHours))
+    ? Number(raw.cacheHours)
+    : DEFAULT_SETTINGS.cacheHours;
+  const refreshProfile = Object.prototype.hasOwnProperty.call(
+    REFRESH_PROFILES,
+    String(raw.refreshProfile || "").toLowerCase()
+  )
+    ? String(raw.refreshProfile).toLowerCase()
+    : DEFAULT_SETTINGS.refreshProfile;
 
   return {
     dataMode,
@@ -231,6 +270,9 @@ function normalizeUserSettings(value) {
       5
     ),
     highlightedTeams,
+    livePlatform,
+    cacheHours,
+    refreshProfile,
   };
 }
 
@@ -266,6 +308,13 @@ function applyUserSettings(settings) {
   CONFIG.mediumMatches = normalized.mediumMatches;
   CONFIG.largeMatches = normalized.largeMatches;
   CONFIG.highlightedTeams = [...normalized.highlightedTeams];
+  CONFIG.livePlatform = normalized.livePlatform;
+  CONFIG.cacheHours = normalized.cacheHours;
+
+  const refresh = REFRESH_PROFILES[normalized.refreshProfile];
+  CONFIG.liveRefreshMinutes = refresh.liveMinutes;
+  CONFIG.nearMatchRefreshMinutes = refresh.nearMatchMinutes;
+  CONFIG.normalRefreshMinutes = refresh.normalMinutes;
   return normalized;
 }
 
@@ -317,6 +366,49 @@ async function chooseDataMode(current) {
   return choice === -1 ? current : modes[choice][0];
 }
 
+async function chooseLivePlatform(current) {
+  const platforms = [
+    ["official", "LPL 官方"],
+    ["bilibili", "哔哩哔哩"],
+  ];
+  const alert = new Alert();
+  alert.title = "直播平台";
+  alert.message = `当前：${current}`;
+  platforms.forEach(([, label]) => alert.addAction(label));
+  alert.addCancelAction("取消");
+
+  const choice = await alert.present();
+  return choice === -1 ? current : platforms[choice][0];
+}
+
+async function chooseCacheHours(current) {
+  const values = [1, 3, 6, 12, 24];
+  const alert = new Alert();
+  alert.title = "缓存有效期";
+  alert.message = `当前：${current} 小时`;
+  values.forEach((value) => alert.addAction(`${value} 小时`));
+  alert.addCancelAction("取消");
+
+  const choice = await alert.present();
+  return choice === -1 ? current : values[choice];
+}
+
+async function chooseRefreshProfile(current) {
+  const entries = Object.entries(REFRESH_PROFILES);
+  const alert = new Alert();
+  alert.title = "刷新频率";
+  alert.message = "实时更新更快，省电模式刷新更少。";
+  entries.forEach(([, profile]) =>
+    alert.addAction(
+      `${profile.label}（直播 ${profile.liveMinutes} 分钟）`
+    )
+  );
+  alert.addCancelAction("取消");
+
+  const choice = await alert.present();
+  return choice === -1 ? current : entries[choice][0];
+}
+
 async function presentSettings() {
   let settings = readUserSettings();
 
@@ -328,11 +420,17 @@ async function presentSettings() {
       `中号：${settings.mediumMatches} 场`,
       `大号：${settings.largeMatches} 场`,
       `数据：${settings.dataMode}`,
+      `直播：${settings.livePlatform}`,
+      `缓存：${settings.cacheHours} 小时`,
+      `刷新：${REFRESH_PROFILES[settings.refreshProfile].label}`,
     ].join("\n");
     alert.addAction("关注队伍");
     alert.addAction("中号显示场数");
     alert.addAction("大号显示场数");
     alert.addAction("数据来源");
+    alert.addAction("直播平台");
+    alert.addAction("缓存有效期");
+    alert.addAction("刷新频率");
     alert.addDestructiveAction("恢复默认设置");
     alert.addCancelAction("完成");
 
@@ -360,6 +458,16 @@ async function presentSettings() {
     } else if (choice === 3) {
       settings.dataMode = await chooseDataMode(settings.dataMode);
     } else if (choice === 4) {
+      settings.livePlatform = await chooseLivePlatform(
+        settings.livePlatform
+      );
+    } else if (choice === 5) {
+      settings.cacheHours = await chooseCacheHours(settings.cacheHours);
+    } else if (choice === 6) {
+      settings.refreshProfile = await chooseRefreshProfile(
+        settings.refreshProfile
+      );
+    } else if (choice === 7) {
       settings = normalizeUserSettings(DEFAULT_SETTINGS);
     }
 
@@ -926,11 +1034,18 @@ function configureRefresh(widget, result, now = new Date()) {
   widget.refreshAfterDate = nextRefreshDate(result.matches, now);
 }
 
+function resolveMatchUrl(match, livePlatform = CONFIG.livePlatform) {
+  if (match.status === "live" && livePlatform === "bilibili") {
+    return CONFIG.bilibiliLiveUrl;
+  }
+  return match.liveUrl || CONFIG.liveUrl;
+}
+
 function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   const row = widget.addStack();
   row.layoutHorizontally();
   row.centerAlignContent();
-  row.url = match.liveUrl || CONFIG.liveUrl;
+  row.url = resolveMatchUrl(match);
 
   const accent = accentColor(index);
   addAccentBar(row, accent);

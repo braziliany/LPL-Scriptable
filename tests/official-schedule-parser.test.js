@@ -11,11 +11,13 @@ const source = fs
     `globalThis.__testApi = {
       countdownText,
       findNextMatchDay,
+      applyUserSettings,
       matchRightValue,
       matchSubtitle,
       nextRefreshDate,
       normalizeUserSettings,
       parseOfficialSchedule,
+      resolveMatchUrl,
       sortMatchesByTime,
     };`
   );
@@ -157,6 +159,9 @@ assert.deepEqual(
         mediumMatches: 99,
         largeMatches: 0,
         highlightedTeams: ["tt", "未知队伍", "TT", "blg"],
+        livePlatform: "BILIBILI",
+        cacheHours: 24,
+        refreshProfile: "battery",
         ignored: true,
       })
     )
@@ -166,6 +171,9 @@ assert.deepEqual(
     mediumMatches: 3,
     largeMatches: 1,
     highlightedTeams: ["TT", "BLG"],
+    livePlatform: "bilibili",
+    cacheHours: 24,
+    refreshProfile: "battery",
   }
 );
 assert.deepEqual(
@@ -177,7 +185,34 @@ assert.deepEqual(
     mediumMatches: 2,
     largeMatches: 5,
     highlightedTeams: ["BLG", "AL", "TES", "WBG"],
+    livePlatform: "official",
+    cacheHours: 12,
+    refreshProfile: "balanced",
   }
+);
+
+assert.equal(
+  context.__testApi.resolveMatchUrl(
+    { status: "live", liveUrl: "https://lpl.qq.com/match/1" },
+    "bilibili"
+  ),
+  "https://live.bilibili.com/6"
+);
+assert.equal(
+  context.__testApi.resolveMatchUrl(
+    { status: "finished", liveUrl: "https://lpl.qq.com/replay/1" },
+    "bilibili"
+  ),
+  "https://lpl.qq.com/replay/1"
+);
+
+context.__testApi.applyUserSettings({
+  refreshProfile: "battery",
+  cacheHours: 24,
+});
+assert.equal(
+  context.__testApi.nextRefreshDate([live], now).getTime() - now.getTime(),
+  5 * 60 * 1000
 );
 
 console.log("official schedule parser: ok");
