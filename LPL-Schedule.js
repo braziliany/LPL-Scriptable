@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.2.1",
+  version: "1.3.0",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -36,7 +36,7 @@ const CONFIG = {
     "https://lpl.qq.com/act/a20200518app/html/schedule.html",
   schedulePageUrl:
     "https://lpl.qq.com/web202301/schedule.html",
-  liveUrl: "https://live.bilibili.com/6",
+  liveUrl: "https://lpl.qq.com/web202301/schedule.html",
 
   // 官方页面动态加载等待时间
   officialPageWaitSeconds: 4,

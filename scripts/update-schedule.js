@@ -6,7 +6,27 @@ const SOURCE_URL =
 const OUTPUT_PATH = path.join(__dirname, "..", "data", "schedule.json");
 const TARGET_YEAR = 2026;
 const TARGET_STAGE = "第三赛段";
-const LIVE_URL = "https://live.bilibili.com/6";
+const OFFICIAL_BASE_URL = "https://lpl.qq.com/web202301";
+
+function buildMatchUrl(match) {
+  const matchId = encodeURIComponent(String(match.bMatchId || ""));
+  const gameId = encodeURIComponent(String(match.GameId || ""));
+  const newsId = encodeURIComponent(String(match.NewsId || ""));
+
+  if (String(match.MatchStatus) === "2" && matchId && gameId) {
+    return `${OFFICIAL_BASE_URL}/live.html?bgid=${gameId}&bmid=${matchId}`;
+  }
+
+  if (String(match.MatchStatus) === "3" && newsId && newsId !== "0") {
+    return `${OFFICIAL_BASE_URL}/video_detail.shtml?nid=${newsId}`;
+  }
+
+  if (String(match.MatchStatus) === "3" && matchId) {
+    return `${OFFICIAL_BASE_URL}/stats.shtml?bmid=${matchId}`;
+  }
+
+  return `${OFFICIAL_BASE_URL}/schedule.html`;
+}
 
 function normalizeStatus(value) {
   if (String(value) === "2") return "live";
@@ -37,6 +57,7 @@ function transformSchedule(payload) {
     )
     .map((match) => ({
       id: String(match.bMatchId || ""),
+      gameId: String(match.GameId || ""),
       startTime: String(match.MatchDate),
       left: String(match.TeamShortNameA || "").trim().toUpperCase(),
       right: String(match.TeamShortNameB || "").trim().toUpperCase(),
@@ -47,7 +68,7 @@ function transformSchedule(payload) {
         String(match.MatchStatus) === "1" ? null : Number(match.ScoreA),
       rightScore:
         String(match.MatchStatus) === "1" ? null : Number(match.ScoreB),
-      liveUrl: LIVE_URL,
+      liveUrl: buildMatchUrl(match),
     }))
     .filter(
       (match) =>
@@ -102,6 +123,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  buildMatchUrl,
   normalizeStatus,
   normalizeUpdatedAt,
   transformSchedule,

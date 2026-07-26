@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const {
+  buildMatchUrl,
   normalizeStatus,
   normalizeUpdatedAt,
   transformSchedule,
@@ -12,6 +13,26 @@ assert.equal(
   normalizeUpdatedAt("2026-07-26 16:45:05"),
   "2026-07-26T16:45:05+08:00"
 );
+assert.equal(
+  buildMatchUrl({
+    MatchStatus: "2",
+    GameId: "237",
+    bMatchId: "13370",
+  }),
+  "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13370"
+);
+assert.equal(
+  buildMatchUrl({ MatchStatus: "3", NewsId: "74016", bMatchId: "13087" }),
+  "https://lpl.qq.com/web202301/video_detail.shtml?nid=74016"
+);
+assert.equal(
+  buildMatchUrl({ MatchStatus: "3", NewsId: "0", bMatchId: "13087" }),
+  "https://lpl.qq.com/web202301/stats.shtml?bmid=13087"
+);
+assert.equal(
+  buildMatchUrl({ MatchStatus: "1", GameId: "237", bMatchId: "13370" }),
+  "https://lpl.qq.com/web202301/schedule.html"
+);
 
 const fixture = {
   status: "0",
@@ -19,6 +40,7 @@ const fixture = {
   msg: [
     {
       bMatchId: "1",
+      GameId: "237",
       MatchDate: "2026-07-26 17:00:00",
       GameName: "2026职业联赛",
       GameTypeName: "第三赛段组内赛",
@@ -48,6 +70,7 @@ const schedule = transformSchedule(fixture);
 assert.equal(schedule.matches.length, 1);
 assert.deepEqual(schedule.matches[0], {
   id: "1",
+  gameId: "237",
   startTime: "2026-07-26 17:00:00",
   left: "TT",
   right: "EDG",
@@ -56,7 +79,7 @@ assert.deepEqual(schedule.matches[0], {
   stage: "第三赛段组内赛",
   leftScore: 1,
   rightScore: 0,
-  liveUrl: "https://live.bilibili.com/6",
+  liveUrl: "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=1",
 });
 
 assert.throws(
