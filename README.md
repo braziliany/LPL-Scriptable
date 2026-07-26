@@ -130,7 +130,7 @@ node --check LPL-Schedule.js
 
 ## 用户设置
 
-点击组件左上角黄色方块，即可在 Scriptable 中打开设置菜单。当前支持：
+点击中号或大号组件的整个顶部标题栏，即可在 Scriptable 中打开设置菜单；小号组件可点击黄色方块或日期。当前支持：
 
 - 关注队伍
 - 中号组件显示 1–3 场
@@ -139,6 +139,8 @@ node --check LPL-Schedule.js
 - 恢复默认设置
 
 设置保存在 Scriptable 本地文档目录的 `lpl-schedule-settings.json`，重新安装或升级主脚本不会覆盖。
+
+> GitHub 上的主脚本更新不会自动替换手机中已经安装的 Scriptable 脚本。首次使用设置功能时，需要重新运行一次 `Installer.js`，覆盖安装到 `1.4.1` 或更高版本。
 
 也可以通过 URL Scheme 直接打开设置：
 

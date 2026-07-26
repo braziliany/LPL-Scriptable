@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.4.0",
+  version: "1.4.1",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -810,6 +810,8 @@ function addHeader(widget, result) {
   const row = widget.addStack();
   row.layoutHorizontally();
   row.centerAlignContent();
+  // 使用整个标题栏作为设置入口，避免 18×18 的方块难以点中。
+  row.url = settingsUrl();
 
   const square = row.addStack();
   square.size = new Size(18, 18);
@@ -1074,6 +1076,7 @@ function renderSmall(result) {
   const date = widget.addText(displayMonthDay(result.dateString));
   date.font = Font.boldSystemFont(18);
   date.textColor = new Color(CONFIG.theme.white);
+  date.url = settingsUrl();
 
   widget.addSpacer(5);
 
@@ -1159,7 +1162,12 @@ async function main() {
 
   if (
     !config.runsInWidget &&
-    String(args.queryParameters?.action || "").toLowerCase() === "settings"
+    String(
+      args.queryParameters?.action ||
+        args.shortcutParameter ||
+        args.widgetParameter ||
+        ""
+    ).toLowerCase() === "settings"
   ) {
     await presentSettings();
     Script.complete();
