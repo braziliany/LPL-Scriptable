@@ -14,6 +14,7 @@ const source = fs
       matchRightValue,
       matchSubtitle,
       nextRefreshDate,
+      normalizeUserSettings,
       parseOfficialSchedule,
       sortMatchesByTime,
     };`
@@ -146,6 +147,37 @@ assert.equal(
 assert.equal(
   context.__testApi.nextRefreshDate([upcoming], now).getTime() - now.getTime(),
   5 * 60 * 1000
+);
+
+assert.deepEqual(
+  JSON.parse(
+    JSON.stringify(
+      context.__testApi.normalizeUserSettings({
+        dataMode: "REMOTE",
+        mediumMatches: 99,
+        largeMatches: 0,
+        highlightedTeams: ["tt", "未知队伍", "TT", "blg"],
+        ignored: true,
+      })
+    )
+  ),
+  {
+    dataMode: "remote",
+    mediumMatches: 3,
+    largeMatches: 1,
+    highlightedTeams: ["TT", "BLG"],
+  }
+);
+assert.deepEqual(
+  JSON.parse(
+    JSON.stringify(context.__testApi.normalizeUserSettings(null))
+  ),
+  {
+    dataMode: "auto",
+    mediumMatches: 2,
+    largeMatches: 5,
+    highlightedTeams: ["BLG", "AL", "TES", "WBG"],
+  }
 );
 
 console.log("official schedule parser: ok");

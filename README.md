@@ -128,21 +128,25 @@ node tests/update-schedule.test.js
 node --check LPL-Schedule.js
 ```
 
-## 修改关注队伍
+## 用户设置
 
-编辑 `LPL-Schedule.js`：
+点击组件左上角黄色方块，即可在 Scriptable 中打开设置菜单。当前支持：
 
-```javascript
-highlightedTeams: ["BLG", "AL", "TES", "WBG"],
+- 关注队伍
+- 中号组件显示 1–3 场
+- 大号组件显示 1–5 场
+- 数据来源
+- 恢复默认设置
+
+设置保存在 Scriptable 本地文档目录的 `lpl-schedule-settings.json`，重新安装或升级主脚本不会覆盖。
+
+也可以通过 URL Scheme 直接打开设置：
+
+```text
+scriptable:///run?scriptName=LPL%20Schedule%202026&action=settings
 ```
 
-## 数据模式
-
-```javascript
-dataMode: "auto",
-```
-
-可选值：
+数据来源支持：
 
 - `auto`：远程 JSON → 官方页面 → 本地缓存
 - `remote`：只读取远程 JSON

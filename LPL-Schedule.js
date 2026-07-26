@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.3.0",
+  version: "1.4.0",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -100,6 +100,13 @@ const KNOWN_TEAMS = [
 ];
 
 const CACHE_FILE = "lpl-schedule-cache.json";
+const SETTINGS_FILE = "lpl-schedule-settings.json";
+const DEFAULT_SETTINGS = {
+  dataMode: CONFIG.dataMode,
+  mediumMatches: CONFIG.mediumMatches,
+  largeMatches: CONFIG.largeMatches,
+  highlightedTeams: [...CONFIG.highlightedTeams],
+};
 
 // MARK: - 基础工具
 
@@ -180,6 +187,186 @@ function isKnownTeam(value) {
 
 function isHighlighted(name) {
   return CONFIG.highlightedTeams.includes(normalizeTeamName(name));
+}
+
+// MARK: - 用户设置
+
+function normalizeUserSettings(value) {
+  const raw = value && typeof value === "object" ? value : {};
+  const dataMode = ["auto", "remote", "official"].includes(
+    String(raw.dataMode || "").toLowerCase()
+  )
+    ? String(raw.dataMode).toLowerCase()
+    : DEFAULT_SETTINGS.dataMode;
+
+  const clampInteger = (input, fallback, minimum, maximum) => {
+    const number = Number(input);
+    return Number.isInteger(number)
+      ? Math.min(maximum, Math.max(minimum, number))
+      : fallback;
+  };
+
+  const highlightedTeams = Array.isArray(raw.highlightedTeams)
+    ? [
+        ...new Set(
+          raw.highlightedTeams
+            .map(normalizeTeamName)
+            .filter((team) => KNOWN_TEAMS.includes(team))
+        ),
+      ]
+    : [...DEFAULT_SETTINGS.highlightedTeams];
+
+  return {
+    dataMode,
+    mediumMatches: clampInteger(
+      raw.mediumMatches,
+      DEFAULT_SETTINGS.mediumMatches,
+      1,
+      3
+    ),
+    largeMatches: clampInteger(
+      raw.largeMatches,
+      DEFAULT_SETTINGS.largeMatches,
+      1,
+      5
+    ),
+    highlightedTeams,
+  };
+}
+
+function settingsPath() {
+  const fm = FileManager.local();
+  return fm.joinPath(fm.documentsDirectory(), SETTINGS_FILE);
+}
+
+function readUserSettings() {
+  try {
+    const fm = FileManager.local();
+    const path = settingsPath();
+    if (!fm.fileExists(path)) return normalizeUserSettings(DEFAULT_SETTINGS);
+    return normalizeUserSettings(JSON.parse(fm.readString(path)));
+  } catch (error) {
+    console.warn(`读取设置失败，使用默认值：${error}`);
+    return normalizeUserSettings(DEFAULT_SETTINGS);
+  }
+}
+
+function writeUserSettings(settings) {
+  const normalized = normalizeUserSettings(settings);
+  FileManager.local().writeString(
+    settingsPath(),
+    JSON.stringify(normalized, null, 2)
+  );
+  return normalized;
+}
+
+function applyUserSettings(settings) {
+  const normalized = normalizeUserSettings(settings);
+  CONFIG.dataMode = normalized.dataMode;
+  CONFIG.mediumMatches = normalized.mediumMatches;
+  CONFIG.largeMatches = normalized.largeMatches;
+  CONFIG.highlightedTeams = [...normalized.highlightedTeams];
+  return normalized;
+}
+
+function settingsUrl() {
+  const url = URLScheme.forRunningScript();
+  return `${url}${url.includes("?") ? "&" : "?"}action=settings`;
+}
+
+async function chooseNumber(title, current, minimum, maximum) {
+  const alert = new Alert();
+  alert.title = title;
+  alert.message = `当前：${current}`;
+  for (let value = minimum; value <= maximum; value++) {
+    alert.addAction(`${value} 场`);
+  }
+  alert.addCancelAction("取消");
+
+  const choice = await alert.present();
+  return choice === -1 ? current : minimum + choice;
+}
+
+async function editHighlightedTeams(current) {
+  const alert = new Alert();
+  alert.title = "关注队伍";
+  alert.message = `可选：${KNOWN_TEAMS.join(", ")}\n使用逗号或空格分隔。`;
+  alert.addTextField("例如：BLG, AL, TES", current.join(", "));
+  alert.addAction("保存");
+  alert.addCancelAction("取消");
+
+  if ((await alert.present()) === -1) return current;
+  return String(alert.textFieldValue(0) || "")
+    .split(/[\s,，、]+/)
+    .filter(Boolean);
+}
+
+async function chooseDataMode(current) {
+  const modes = [
+    ["auto", "自动回退"],
+    ["remote", "只用 GitHub"],
+    ["official", "只用官方页面"],
+  ];
+  const alert = new Alert();
+  alert.title = "数据来源";
+  alert.message = `当前：${current}`;
+  modes.forEach(([, label]) => alert.addAction(label));
+  alert.addCancelAction("取消");
+
+  const choice = await alert.present();
+  return choice === -1 ? current : modes[choice][0];
+}
+
+async function presentSettings() {
+  let settings = readUserSettings();
+
+  while (true) {
+    const alert = new Alert();
+    alert.title = "LPL Schedule 设置";
+    alert.message = [
+      `关注：${settings.highlightedTeams.join(", ") || "无"}`,
+      `中号：${settings.mediumMatches} 场`,
+      `大号：${settings.largeMatches} 场`,
+      `数据：${settings.dataMode}`,
+    ].join("\n");
+    alert.addAction("关注队伍");
+    alert.addAction("中号显示场数");
+    alert.addAction("大号显示场数");
+    alert.addAction("数据来源");
+    alert.addDestructiveAction("恢复默认设置");
+    alert.addCancelAction("完成");
+
+    const choice = await alert.present();
+    if (choice === -1) break;
+
+    if (choice === 0) {
+      settings.highlightedTeams = await editHighlightedTeams(
+        settings.highlightedTeams
+      );
+    } else if (choice === 1) {
+      settings.mediumMatches = await chooseNumber(
+        "中号显示场数",
+        settings.mediumMatches,
+        1,
+        3
+      );
+    } else if (choice === 2) {
+      settings.largeMatches = await chooseNumber(
+        "大号显示场数",
+        settings.largeMatches,
+        1,
+        5
+      );
+    } else if (choice === 3) {
+      settings.dataMode = await chooseDataMode(settings.dataMode);
+    } else if (choice === 4) {
+      settings = normalizeUserSettings(DEFAULT_SETTINGS);
+    }
+
+    settings = writeUserSettings(settings);
+  }
+
+  applyUserSettings(settings);
 }
 
 function uniqueMatches(matches) {
@@ -628,6 +815,7 @@ function addHeader(widget, result) {
   square.size = new Size(18, 18);
   square.cornerRadius = 4;
   square.backgroundColor = new Color(CONFIG.theme.yellow);
+  square.url = settingsUrl();
 
   row.addSpacer(12);
 
@@ -879,6 +1067,7 @@ function renderSmall(result) {
   square.size = new Size(17, 17);
   square.cornerRadius = 4;
   square.backgroundColor = new Color(CONFIG.theme.yellow);
+  square.url = settingsUrl();
 
   widget.addSpacer(10);
 
@@ -966,6 +1155,17 @@ async function buildWidget() {
 }
 
 async function main() {
+  applyUserSettings(readUserSettings());
+
+  if (
+    !config.runsInWidget &&
+    String(args.queryParameters?.action || "").toLowerCase() === "settings"
+  ) {
+    await presentSettings();
+    Script.complete();
+    return;
+  }
+
   let widget;
 
   try {
