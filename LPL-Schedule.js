@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.6.0",
+  version: "1.7.0",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -493,6 +493,8 @@ function normalizeMatch(raw) {
     time: `${pad2(date.getHours())}:${pad2(date.getMinutes())}`,
     left,
     right,
+    leftLogo: String(raw.leftLogo || ""),
+    rightLogo: String(raw.rightLogo || ""),
     leftScore: raw.leftScore ?? raw.scoreA ?? raw.homeScore ?? null,
     rightScore: raw.rightScore ?? raw.scoreB ?? raw.awayScore ?? null,
     status: normalizeStatus(raw.status || raw.statusText),
@@ -503,6 +505,49 @@ function normalizeMatch(raw) {
 }
 
 // MARK: - 缓存
+
+function logoCacheFileName(team) {
+  const safeName =
+    normalizeTeamName(team).replace(/[^A-Z0-9_-]/g, "") || "UNKNOWN";
+  return `lpl-team-logo-${safeName}.png`;
+}
+
+function placeholderTeamLogo() {
+  return SFSymbol.named("shield.fill").image;
+}
+
+async function loadTeamLogo(url, team) {
+  const fm = FileManager.local();
+  const path = fm.joinPath(fm.documentsDirectory(), logoCacheFileName(team));
+
+  try {
+    if (fm.fileExists(path)) return fm.readImage(path);
+    if (!/^https?:\/\//i.test(String(url || ""))) {
+      return placeholderTeamLogo();
+    }
+
+    const request = new Request(url);
+    request.timeoutInterval = 10;
+    const image = await request.loadImage();
+    fm.writeImage(path, image);
+    return image;
+  } catch (error) {
+    console.warn(`队伍 Logo 加载失败（${team}）：${error}`);
+    return placeholderTeamLogo();
+  }
+}
+
+async function prepareMatchLogos(matches) {
+  await Promise.all(
+    matches.map(async (match) => {
+      [match.leftLogoImage, match.rightLogoImage] = await Promise.all([
+        loadTeamLogo(match.leftLogo, match.left),
+        loadTeamLogo(match.rightLogo, match.right),
+      ]);
+    })
+  );
+  return matches;
+}
 
 function cachePath() {
   const fm = FileManager.local();
@@ -1005,6 +1050,13 @@ function resolveMatchUrl(match, livePlatform = CONFIG.livePlatform) {
   return match.liveUrl || CONFIG.liveUrl;
 }
 
+function addTeamLogo(stack, image, size) {
+  const logo = stack.addImage(image || placeholderTeamLogo());
+  logo.imageSize = new Size(size, size);
+  logo.cornerRadius = Math.round(size * 0.2);
+  logo.resizable = true;
+}
+
 function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   const row = widget.addStack();
   row.layoutHorizontally();
@@ -1022,11 +1074,17 @@ function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   top.layoutHorizontally();
   top.centerAlignContent();
 
+  const logoSize = compact ? 14 : 16;
+  addTeamLogo(top, match.leftLogoImage, logoSize);
+  top.addSpacer(5);
+
   const teams = top.addText(`${match.left}  vs  ${match.right}`);
   teams.font = Font.semiboldSystemFont(compact ? 15 : 17);
   teams.textColor = new Color(CONFIG.theme.white);
   teams.lineLimit = 1;
 
+  top.addSpacer(5);
+  addTeamLogo(top, match.rightLogoImage, logoSize);
   top.addSpacer();
 
   const metrics = matchValueMetrics(compact ? "large" : "medium");
@@ -1164,11 +1222,20 @@ function renderSmall(result) {
   widget.addSpacer(5);
 
   const first = result.matches[0];
-  const teams = widget.addText(`${first.left} vs ${first.right}`);
+  const teamRow = widget.addStack();
+  teamRow.layoutHorizontally();
+  teamRow.centerAlignContent();
+  addTeamLogo(teamRow, first.leftLogoImage, 15);
+  teamRow.addSpacer(5);
+
+  const teams = teamRow.addText(`${first.left} vs ${first.right}`);
   teams.font = Font.semiboldSystemFont(15);
   teams.textColor = new Color(CONFIG.theme.white);
   teams.lineLimit = 2;
   teams.minimumScaleFactor = 0.7;
+
+  teamRow.addSpacer(5);
+  addTeamLogo(teamRow, first.rightLogoImage, 15);
 
   widget.addSpacer();
 
@@ -1229,6 +1296,7 @@ function renderError(error) {
 async function buildWidget() {
   const data = await loadSchedule();
   const result = findNextMatchDay(data.matches);
+  await prepareMatchLogos(result.matches);
 
   if (config.widgetFamily === "small") {
     return renderSmall(result);

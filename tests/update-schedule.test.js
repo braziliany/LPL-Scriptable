@@ -1,8 +1,10 @@
 const assert = require("node:assert/strict");
 const {
   buildMatchUrl,
+  normalizeLogoUrl,
   normalizeStatus,
   normalizeUpdatedAt,
+  parseTeamListScript,
   transformSchedule,
 } = require("../scripts/update-schedule");
 
@@ -12,6 +14,12 @@ assert.equal(normalizeStatus("3"), "finished");
 assert.equal(
   normalizeUpdatedAt("2026-07-26 16:45:05"),
   "2026-07-26T16:45:05+08:00"
+);
+assert.equal(normalizeLogoUrl("//img.example.com/tt.png"), "https://img.example.com/tt.png");
+assert.equal(normalizeLogoUrl("javascript:alert(1)"), "");
+
+const teamFixture = parseTeamListScript(
+  'var TeamList={"status":"0","msg":{"11":{"TeamLogo":"//img.example.com/tt.png"},"12":{"TeamLogo":"https://img.example.com/edg.png"}}};'
 );
 assert.equal(
   buildMatchUrl({
@@ -46,6 +54,8 @@ const fixture = {
       GameTypeName: "第三赛段组内赛",
       TeamShortNameA: "TT",
       TeamShortNameB: "EDG",
+      TeamA: "11",
+      TeamB: "12",
       MatchStatus: "2",
       GameModeName: "BO3",
       ScoreA: "1",
@@ -66,7 +76,7 @@ const fixture = {
   ],
 };
 
-const schedule = transformSchedule(fixture);
+const schedule = transformSchedule(fixture, teamFixture);
 assert.equal(schedule.matches.length, 1);
 assert.deepEqual(schedule.matches[0], {
   id: "1",
@@ -74,6 +84,8 @@ assert.deepEqual(schedule.matches[0], {
   startTime: "2026-07-26 17:00:00",
   left: "TT",
   right: "EDG",
+  leftLogo: "https://img.example.com/tt.png",
+  rightLogo: "https://img.example.com/edg.png",
   status: "live",
   matchType: "BO3",
   stage: "第三赛段组内赛",

@@ -5,6 +5,8 @@
 ## 主要功能
 
 - 支持 Scriptable 小号、中号和大号组件
+- 显示官方队伍 Logo，并在 Scriptable 本地缓存图片
+- Logo 缺失或加载失败时自动使用占位图
 - 时间、比分和倒计时使用统一的等宽数字字体规范
 - 自动寻找今天或未来最近一个比赛日
 - 未开始显示时间，进行中显示 `LIVE`，结束后显示比分
@@ -142,7 +144,7 @@ node --check LPL-Schedule.js
 
 设置保存在 Scriptable 本地文档目录的 `lpl-schedule-settings.json`，重新安装或升级主脚本不会覆盖。
 
-> GitHub 上的主脚本更新不会自动替换手机中已经安装的 Scriptable 脚本。首次使用设置功能时，需要重新运行一次 `Installer.js`，覆盖安装到 `1.4.1` 或更高版本。
+> GitHub 上的主脚本更新不会自动替换手机中已经安装的 Scriptable 脚本。要使用队伍 Logo，需要重新运行一次 `Installer.js`，覆盖安装到 `1.7.0` 或更高版本。
 
 也可以通过 URL Scheme 直接打开设置：
 

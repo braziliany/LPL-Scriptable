@@ -3,6 +3,8 @@ const path = require("node:path");
 
 const SOURCE_URL =
   "https://lpl.qq.com/web201612/data/LOL_MATCH2_MATCH_HOMEPAGE_BMATCH_LIST.js";
+const TEAM_SOURCE_URL =
+  "https://lpl.qq.com/web201612/data/LOL_MATCH2_TEAM_LIST.js";
 const OUTPUT_PATH = path.join(__dirname, "..", "data", "schedule.json");
 const TARGET_YEAR = 2026;
 const TARGET_STAGE = "第三赛段";
@@ -42,7 +44,31 @@ function normalizeUpdatedAt(value) {
   return `${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6]}+08:00`;
 }
 
-function transformSchedule(payload) {
+function parseTeamListScript(text) {
+  const match = String(text || "")
+    .trim()
+    .match(/^var\s+TeamList\s*=\s*([\s\S]+?);?\s*$/);
+  if (!match) throw new Error("官方队伍接口返回格式无效");
+
+  const payload = JSON.parse(match[1]);
+  if (
+    String(payload?.status) !== "0" ||
+    !payload?.msg ||
+    typeof payload.msg !== "object"
+  ) {
+    throw new Error("官方队伍接口返回格式无效");
+  }
+  return payload;
+}
+
+function normalizeLogoUrl(value) {
+  const url = String(value || "").trim();
+  if (url.startsWith("//")) return `https:${url}`;
+  if (/^https?:\/\//i.test(url)) return url;
+  return "";
+}
+
+function transformSchedule(payload, teamPayload = null) {
   if (String(payload?.status) !== "0" || !Array.isArray(payload?.msg)) {
     throw new Error("官方赛程接口返回格式无效");
   }
@@ -55,21 +81,27 @@ function transformSchedule(payload) {
         String(match.GameName || "").includes(`${TARGET_YEAR}职业联赛`) &&
         String(match.GameTypeName || "").includes(TARGET_STAGE)
     )
-    .map((match) => ({
-      id: String(match.bMatchId || ""),
-      gameId: String(match.GameId || ""),
-      startTime: String(match.MatchDate),
-      left: String(match.TeamShortNameA || "").trim().toUpperCase(),
-      right: String(match.TeamShortNameB || "").trim().toUpperCase(),
-      status: normalizeStatus(match.MatchStatus),
-      matchType: String(match.GameModeName || "BO3").toUpperCase(),
-      stage: String(match.GameTypeName || TARGET_STAGE),
-      leftScore:
-        String(match.MatchStatus) === "1" ? null : Number(match.ScoreA),
-      rightScore:
-        String(match.MatchStatus) === "1" ? null : Number(match.ScoreB),
-      liveUrl: buildMatchUrl(match),
-    }))
+    .map((match) => {
+      const leftTeam = teamPayload?.msg?.[String(match.TeamA)] || {};
+      const rightTeam = teamPayload?.msg?.[String(match.TeamB)] || {};
+      return {
+        id: String(match.bMatchId || ""),
+        gameId: String(match.GameId || ""),
+        startTime: String(match.MatchDate),
+        left: String(match.TeamShortNameA || "").trim().toUpperCase(),
+        right: String(match.TeamShortNameB || "").trim().toUpperCase(),
+        leftLogo: normalizeLogoUrl(leftTeam.TeamLogo),
+        rightLogo: normalizeLogoUrl(rightTeam.TeamLogo),
+        status: normalizeStatus(match.MatchStatus),
+        matchType: String(match.GameModeName || "BO3").toUpperCase(),
+        stage: String(match.GameTypeName || TARGET_STAGE),
+        leftScore:
+          String(match.MatchStatus) === "1" ? null : Number(match.ScoreA),
+        rightScore:
+          String(match.MatchStatus) === "1" ? null : Number(match.ScoreB),
+        liveUrl: buildMatchUrl(match),
+      };
+    })
     .filter(
       (match) =>
         match.id &&
@@ -97,18 +129,26 @@ function transformSchedule(payload) {
 }
 
 async function updateSchedule() {
-  const response = await fetch(SOURCE_URL, {
+  const requestOptions = {
     headers: {
       Accept: "application/json",
       "User-Agent": "LPL-Scriptable-Schedule-Updater/1.0",
     },
-  });
+  };
+  const [response, teamResponse] = await Promise.all([
+    fetch(SOURCE_URL, requestOptions),
+    fetch(TEAM_SOURCE_URL, requestOptions),
+  ]);
 
   if (!response.ok) {
     throw new Error(`官方赛程请求失败：HTTP ${response.status}`);
   }
+  if (!teamResponse.ok) {
+    throw new Error(`官方队伍请求失败：HTTP ${teamResponse.status}`);
+  }
 
-  const schedule = transformSchedule(await response.json());
+  const teamPayload = parseTeamListScript(await teamResponse.text());
+  const schedule = transformSchedule(await response.json(), teamPayload);
   fs.writeFileSync(OUTPUT_PATH, `${JSON.stringify(schedule, null, 2)}\n`);
   console.log(
     `已更新 ${schedule.matches.length} 场比赛，官方数据时间：${schedule.updatedAt}`
@@ -124,7 +164,9 @@ if (require.main === module) {
 
 module.exports = {
   buildMatchUrl,
+  normalizeLogoUrl,
   normalizeStatus,
   normalizeUpdatedAt,
+  parseTeamListScript,
   transformSchedule,
 };

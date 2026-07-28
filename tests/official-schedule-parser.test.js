@@ -17,6 +17,7 @@ const source = fs
       matchValueMetrics,
       nextRefreshDate,
       normalizeUserSettings,
+      logoCacheFileName,
       parseOfficialSchedule,
       resolveMatchUrl,
       shouldUseCompactMedium,
@@ -29,6 +30,8 @@ const context = {
 };
 
 vm.runInNewContext(source, context, { filename: scriptPath });
+
+assert.equal(context.__testApi.logoCacheFileName("BLG"), "lpl-team-logo-BLG.png");
 
 const pageText = [
   "LNG",
