@@ -19,6 +19,7 @@ const source = fs
       normalizeUserSettings,
       parseOfficialSchedule,
       resolveMatchUrl,
+      shouldUseCompactMedium,
       sortMatchesByTime,
     };`
   );
@@ -175,8 +176,8 @@ assert.deepEqual(
     JSON.stringify(
       context.__testApi.normalizeUserSettings({
         dataMode: "REMOTE",
-        mediumMatches: 99,
-        largeMatches: 0,
+        mediumMatches: 1,
+        largeMatches: 1,
         highlightedTeams: ["tt", "未知队伍", "TT", "blg"],
         livePlatform: "BILIBILI",
         cacheHours: 24,
@@ -187,8 +188,6 @@ assert.deepEqual(
   ),
   {
     dataMode: "remote",
-    mediumMatches: 3,
-    largeMatches: 1,
     highlightedTeams: ["TT", "BLG"],
     livePlatform: "bilibili",
     cacheHours: 24,
@@ -201,13 +200,17 @@ assert.deepEqual(
   ),
   {
     dataMode: "auto",
-    mediumMatches: 2,
-    largeMatches: 5,
     highlightedTeams: ["BLG", "AL", "TES", "WBG"],
     livePlatform: "official",
     cacheHours: 12,
     refreshProfile: "balanced",
   }
+);
+
+assert.equal(context.__testApi.shouldUseCompactMedium([upcoming, live]), false);
+assert.equal(
+  context.__testApi.shouldUseCompactMedium([finished, live, upcoming]),
+  true
 );
 
 assert.equal(

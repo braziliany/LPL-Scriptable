@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.5.1",
+  version: "1.6.0",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -54,10 +54,6 @@ const CONFIG = {
   liveRefreshMinutes: 3,
   nearMatchRefreshMinutes: 5,
   normalRefreshMinutes: 15,
-
-  // 中号显示 2 场，大号显示 5 场
-  mediumMatches: 2,
-  largeMatches: 5,
 
   highlightedTeams: ["BLG", "AL", "TES", "WBG"],
 
@@ -125,8 +121,6 @@ const REFRESH_PROFILES = {
 };
 const DEFAULT_SETTINGS = {
   dataMode: CONFIG.dataMode,
-  mediumMatches: CONFIG.mediumMatches,
-  largeMatches: CONFIG.largeMatches,
   highlightedTeams: [...CONFIG.highlightedTeams],
   livePlatform: CONFIG.livePlatform,
   cacheHours: CONFIG.cacheHours,
@@ -229,13 +223,6 @@ function normalizeUserSettings(value) {
     ? String(raw.dataMode).toLowerCase()
     : DEFAULT_SETTINGS.dataMode;
 
-  const clampInteger = (input, fallback, minimum, maximum) => {
-    const number = Number(input);
-    return Number.isInteger(number)
-      ? Math.min(maximum, Math.max(minimum, number))
-      : fallback;
-  };
-
   const highlightedTeams = Array.isArray(raw.highlightedTeams)
     ? [
         ...new Set(
@@ -262,18 +249,6 @@ function normalizeUserSettings(value) {
 
   return {
     dataMode,
-    mediumMatches: clampInteger(
-      raw.mediumMatches,
-      DEFAULT_SETTINGS.mediumMatches,
-      1,
-      3
-    ),
-    largeMatches: clampInteger(
-      raw.largeMatches,
-      DEFAULT_SETTINGS.largeMatches,
-      1,
-      5
-    ),
     highlightedTeams,
     livePlatform,
     cacheHours,
@@ -310,8 +285,6 @@ function writeUserSettings(settings) {
 function applyUserSettings(settings) {
   const normalized = normalizeUserSettings(settings);
   CONFIG.dataMode = normalized.dataMode;
-  CONFIG.mediumMatches = normalized.mediumMatches;
-  CONFIG.largeMatches = normalized.largeMatches;
   CONFIG.highlightedTeams = [...normalized.highlightedTeams];
   CONFIG.livePlatform = normalized.livePlatform;
   CONFIG.cacheHours = normalized.cacheHours;
@@ -326,19 +299,6 @@ function applyUserSettings(settings) {
 function settingsUrl() {
   const url = URLScheme.forRunningScript();
   return `${url}${url.includes("?") ? "&" : "?"}action=settings`;
-}
-
-async function chooseNumber(title, current, minimum, maximum) {
-  const alert = new Alert();
-  alert.title = title;
-  alert.message = `当前：${current}`;
-  for (let value = minimum; value <= maximum; value++) {
-    alert.addAction(`${value} 场`);
-  }
-  alert.addCancelAction("取消");
-
-  const choice = await alert.present();
-  return choice === -1 ? current : minimum + choice;
 }
 
 async function editHighlightedTeams(current) {
@@ -422,16 +382,12 @@ async function presentSettings() {
     alert.title = "LPL Schedule 设置";
     alert.message = [
       `关注：${settings.highlightedTeams.join(", ") || "无"}`,
-      `中号：${settings.mediumMatches} 场`,
-      `大号：${settings.largeMatches} 场`,
       `数据：${settings.dataMode}`,
       `直播：${settings.livePlatform}`,
       `缓存：${settings.cacheHours} 小时`,
       `刷新：${REFRESH_PROFILES[settings.refreshProfile].label}`,
     ].join("\n");
     alert.addAction("关注队伍");
-    alert.addAction("中号显示场数");
-    alert.addAction("大号显示场数");
     alert.addAction("数据来源");
     alert.addAction("直播平台");
     alert.addAction("缓存有效期");
@@ -447,32 +403,18 @@ async function presentSettings() {
         settings.highlightedTeams
       );
     } else if (choice === 1) {
-      settings.mediumMatches = await chooseNumber(
-        "中号显示场数",
-        settings.mediumMatches,
-        1,
-        3
-      );
-    } else if (choice === 2) {
-      settings.largeMatches = await chooseNumber(
-        "大号显示场数",
-        settings.largeMatches,
-        1,
-        5
-      );
-    } else if (choice === 3) {
       settings.dataMode = await chooseDataMode(settings.dataMode);
-    } else if (choice === 4) {
+    } else if (choice === 2) {
       settings.livePlatform = await chooseLivePlatform(
         settings.livePlatform
       );
-    } else if (choice === 5) {
+    } else if (choice === 3) {
       settings.cacheHours = await chooseCacheHours(settings.cacheHours);
-    } else if (choice === 6) {
+    } else if (choice === 4) {
       settings.refreshProfile = await chooseRefreshProfile(
         settings.refreshProfile
       );
-    } else if (choice === 7) {
+    } else if (choice === 5) {
       settings = normalizeUserSettings(DEFAULT_SETTINGS);
     }
 
@@ -950,9 +892,9 @@ function accentColor(index) {
   return index % 2 === 0 ? CONFIG.theme.yellow : CONFIG.theme.orange;
 }
 
-function addAccentBar(row, color) {
+function addAccentBar(row, color, compact = false) {
   const bar = row.addStack();
-  bar.size = new Size(6, 37);
+  bar.size = new Size(6, compact ? 29 : 37);
   bar.cornerRadius = 3;
   bar.backgroundColor = new Color(color);
 }
@@ -1017,6 +959,10 @@ function matchValueFont(size) {
     : Font.boldSystemFont(size);
 }
 
+function shouldUseCompactMedium(matches) {
+  return Array.isArray(matches) && matches.length >= 3;
+}
+
 function nextRefreshDate(matches, now = new Date()) {
   let refreshMinutes = CONFIG.normalRefreshMinutes;
 
@@ -1066,7 +1012,7 @@ function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   row.url = resolveMatchUrl(match);
 
   const accent = accentColor(index);
-  addAccentBar(row, accent);
+  addAccentBar(row, accent, compact);
   row.addSpacer(compact ? 10 : 12);
 
   const content = row.addStack();
@@ -1148,16 +1094,19 @@ function renderMedium(result, source) {
   applyBackground(widget);
 
   addHeader(widget, result);
-  widget.addSpacer(12);
+  const visible = result.matches;
+  const compact = shouldUseCompactMedium(visible);
+  widget.addSpacer(compact ? 8 : 12);
 
-  const visible = result.matches.slice(0, CONFIG.mediumMatches);
   visible.forEach((match, index) => {
-    addMatchRow(widget, match, index, false, now);
-    if (index < visible.length - 1) widget.addSpacer(16);
+    addMatchRow(widget, match, index, compact, now);
+    if (index < visible.length - 1) {
+      widget.addSpacer(compact ? 7 : 16);
+    }
   });
 
   if (visible.length === 1) {
-    widget.addSpacer(16);
+    widget.addSpacer(compact ? 7 : 16);
     addEmptyRow(widget);
   }
 
@@ -1176,7 +1125,7 @@ function renderLarge(result, source) {
   addHeader(widget, result);
   widget.addSpacer(13);
 
-  const visible = result.matches.slice(0, CONFIG.largeMatches);
+  const visible = result.matches;
   visible.forEach((match, index) => {
     addMatchRow(widget, match, index, true, now);
 
