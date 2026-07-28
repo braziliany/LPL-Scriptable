@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.7.0",
+  version: "1.7.1",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -1074,16 +1074,16 @@ function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   top.layoutHorizontally();
   top.centerAlignContent();
 
-  const logoSize = compact ? 14 : 16;
+  const logoSize = compact ? 20 : 22;
   addTeamLogo(top, match.leftLogoImage, logoSize);
-  top.addSpacer(5);
+  top.addSpacer(6);
 
   const teams = top.addText(`${match.left}  vs  ${match.right}`);
   teams.font = Font.semiboldSystemFont(compact ? 15 : 17);
   teams.textColor = new Color(CONFIG.theme.white);
   teams.lineLimit = 1;
 
-  top.addSpacer(5);
+  top.addSpacer(6);
   addTeamLogo(top, match.rightLogoImage, logoSize);
   top.addSpacer();
 
@@ -1225,8 +1225,8 @@ function renderSmall(result) {
   const teamRow = widget.addStack();
   teamRow.layoutHorizontally();
   teamRow.centerAlignContent();
-  addTeamLogo(teamRow, first.leftLogoImage, 15);
-  teamRow.addSpacer(5);
+  addTeamLogo(teamRow, first.leftLogoImage, 22);
+  teamRow.addSpacer(6);
 
   const teams = teamRow.addText(`${first.left} vs ${first.right}`);
   teams.font = Font.semiboldSystemFont(15);
@@ -1234,8 +1234,8 @@ function renderSmall(result) {
   teams.lineLimit = 2;
   teams.minimumScaleFactor = 0.7;
 
-  teamRow.addSpacer(5);
-  addTeamLogo(teamRow, first.rightLogoImage, 15);
+  teamRow.addSpacer(6);
+  addTeamLogo(teamRow, first.rightLogoImage, 22);
 
   widget.addSpacer();
 
