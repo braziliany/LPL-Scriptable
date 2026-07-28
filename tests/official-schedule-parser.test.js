@@ -178,19 +178,19 @@ assert.deepEqual(
   JSON.parse(
     JSON.stringify(context.__testApi.matchValueMetrics("medium"))
   ),
-  { fontSize: 26, minimumScaleFactor: 0.6 }
+  { fontSize: 26, minimumScaleFactor: 0.6, width: 112 }
 );
 assert.deepEqual(
   JSON.parse(
     JSON.stringify(context.__testApi.matchValueMetrics("large"))
   ),
-  { fontSize: 20, minimumScaleFactor: 0.65 }
+  { fontSize: 20, minimumScaleFactor: 0.65, width: 96 }
 );
 assert.deepEqual(
   JSON.parse(
     JSON.stringify(context.__testApi.matchValueMetrics("small"))
   ),
-  { fontSize: 26, minimumScaleFactor: 0.6 }
+  { fontSize: 26, minimumScaleFactor: 0.6, width: 0 }
 );
 
 assert.deepEqual(

@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.8.0",
+  version: "1.8.1",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -127,9 +127,9 @@ const DEFAULT_SETTINGS = {
   refreshProfile: "balanced",
 };
 const MATCH_VALUE_METRICS = {
-  medium: { fontSize: 26, minimumScaleFactor: 0.6 },
-  large: { fontSize: 20, minimumScaleFactor: 0.65 },
-  small: { fontSize: 26, minimumScaleFactor: 0.6 },
+  medium: { fontSize: 26, minimumScaleFactor: 0.6, width: 112 },
+  large: { fontSize: 20, minimumScaleFactor: 0.65, width: 96 },
+  small: { fontSize: 26, minimumScaleFactor: 0.6, width: 0 },
 };
 
 // MARK: - 基础工具
@@ -1133,23 +1133,31 @@ function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   leftTeam.font = Font.semiboldSystemFont(compact ? 15 : 17);
   leftTeam.textColor = new Color(visual.leftColor);
   leftTeam.lineLimit = 1;
+  leftTeam.minimumScaleFactor = 0.68;
 
   const versus = top.addText("  vs  ");
   versus.font = Font.mediumSystemFont(compact ? 13 : 15);
   versus.textColor = new Color(CONFIG.theme.secondary);
   versus.lineLimit = 1;
+  versus.minimumScaleFactor = 0.8;
 
   const rightTeam = top.addText(match.right);
   rightTeam.font = Font.semiboldSystemFont(compact ? 15 : 17);
   rightTeam.textColor = new Color(visual.rightColor);
   rightTeam.lineLimit = 1;
+  rightTeam.minimumScaleFactor = 0.68;
 
   top.addSpacer(6);
   addTeamLogo(top, match.rightLogoImage, logoSize, visual.rightOpacity);
   top.addSpacer();
 
   const metrics = matchValueMetrics(compact ? "large" : "medium");
-  const value = top.addText(matchRightValue(match, now));
+  const valueBox = top.addStack();
+  valueBox.size = new Size(metrics.width, 0);
+  valueBox.layoutHorizontally();
+  valueBox.addSpacer();
+
+  const value = valueBox.addText(matchRightValue(match, now));
   value.font = matchValueFont(metrics.fontSize);
   value.textColor = new Color(visual.valueColor);
   value.lineLimit = 1;
