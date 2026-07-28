@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.8.3",
+  version: "1.8.4",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -1062,7 +1062,7 @@ function matchSubtitle(match, now = new Date()) {
   const countdown = countdownText(match, now);
   return countdown
     ? `${countdown} · ${match.matchType}`
-    : `${match.stage || "常规赛"} · ${match.matchType}`;
+    : `未开始 · ${match.matchType}`;
 }
 
 function matchRightValue(match, now = new Date()) {

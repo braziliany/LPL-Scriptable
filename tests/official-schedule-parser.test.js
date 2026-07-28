@@ -101,6 +101,16 @@ assert.equal(
   context.__testApi.matchSubtitle(upcoming, now),
   "还有30分钟 · BO3"
 );
+assert.equal(
+  context.__testApi.matchSubtitle(
+    {
+      ...upcoming,
+      timestamp: new Date(2026, 6, 26, 19, 0).getTime(),
+    },
+    now
+  ),
+  "未开始 · BO3"
+);
 assert.equal(context.__testApi.matchRightValue(live, now), "1-0");
 assert.equal(
   context.__testApi.matchSubtitle(
