@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.7.1",
+  version: "1.8.0",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -937,6 +937,56 @@ function accentColor(index) {
   return index % 2 === 0 ? CONFIG.theme.yellow : CONFIG.theme.orange;
 }
 
+function matchWinner(match) {
+  if (match.status !== "finished" || !hasValidScore(match)) return null;
+  const left = Number(match.leftScore);
+  const right = Number(match.rightScore);
+  if (left === right) return null;
+  return left > right ? "left" : "right";
+}
+
+function matchVisualStyle(match, index, now = new Date()) {
+  const winner = matchWinner(match);
+  const highlighted =
+    isHighlighted(match.left) || isHighlighted(match.right);
+  const countdown = countdownText(match, now);
+
+  return {
+    accent:
+      match.status === "live"
+        ? CONFIG.theme.red
+        : match.status === "finished"
+          ? CONFIG.theme.yellow
+          : highlighted
+            ? CONFIG.theme.yellow
+            : accentColor(index),
+    leftColor:
+      winner && winner !== "left"
+        ? CONFIG.theme.muted
+        : CONFIG.theme.white,
+    rightColor:
+      winner && winner !== "right"
+        ? CONFIG.theme.muted
+        : CONFIG.theme.white,
+    leftOpacity: winner && winner !== "left" ? 0.5 : 1,
+    rightOpacity: winner && winner !== "right" ? 0.5 : 1,
+    valueColor:
+      match.status === "live"
+        ? CONFIG.theme.red
+        : countdown
+          ? CONFIG.theme.orange
+          : match.status === "finished"
+            ? CONFIG.theme.yellow
+            : highlighted
+              ? CONFIG.theme.yellow
+              : accentColor(index),
+    subtitleColor:
+      match.status === "live"
+        ? CONFIG.theme.red
+        : CONFIG.theme.secondary,
+  };
+}
+
 function addAccentBar(row, color, compact = false) {
   const bar = row.addStack();
   bar.size = new Size(6, compact ? 29 : 37);
@@ -1050,10 +1100,11 @@ function resolveMatchUrl(match, livePlatform = CONFIG.livePlatform) {
   return match.liveUrl || CONFIG.liveUrl;
 }
 
-function addTeamLogo(stack, image, size) {
+function addTeamLogo(stack, image, size, opacity = 1) {
   const logo = stack.addImage(image || placeholderTeamLogo());
   logo.imageSize = new Size(size, size);
   logo.cornerRadius = Math.round(size * 0.2);
+  logo.imageOpacity = opacity;
   logo.resizable = true;
 }
 
@@ -1063,8 +1114,8 @@ function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   row.centerAlignContent();
   row.url = resolveMatchUrl(match);
 
-  const accent = accentColor(index);
-  addAccentBar(row, accent, compact);
+  const visual = matchVisualStyle(match, index, now);
+  addAccentBar(row, visual.accent, compact);
   row.addSpacer(compact ? 10 : 12);
 
   const content = row.addStack();
@@ -1075,24 +1126,32 @@ function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   top.centerAlignContent();
 
   const logoSize = compact ? 20 : 22;
-  addTeamLogo(top, match.leftLogoImage, logoSize);
+  addTeamLogo(top, match.leftLogoImage, logoSize, visual.leftOpacity);
   top.addSpacer(6);
 
-  const teams = top.addText(`${match.left}  vs  ${match.right}`);
-  teams.font = Font.semiboldSystemFont(compact ? 15 : 17);
-  teams.textColor = new Color(CONFIG.theme.white);
-  teams.lineLimit = 1;
+  const leftTeam = top.addText(match.left);
+  leftTeam.font = Font.semiboldSystemFont(compact ? 15 : 17);
+  leftTeam.textColor = new Color(visual.leftColor);
+  leftTeam.lineLimit = 1;
+
+  const versus = top.addText("  vs  ");
+  versus.font = Font.mediumSystemFont(compact ? 13 : 15);
+  versus.textColor = new Color(CONFIG.theme.secondary);
+  versus.lineLimit = 1;
+
+  const rightTeam = top.addText(match.right);
+  rightTeam.font = Font.semiboldSystemFont(compact ? 15 : 17);
+  rightTeam.textColor = new Color(visual.rightColor);
+  rightTeam.lineLimit = 1;
 
   top.addSpacer(6);
-  addTeamLogo(top, match.rightLogoImage, logoSize);
+  addTeamLogo(top, match.rightLogoImage, logoSize, visual.rightOpacity);
   top.addSpacer();
 
   const metrics = matchValueMetrics(compact ? "large" : "medium");
   const value = top.addText(matchRightValue(match, now));
   value.font = matchValueFont(metrics.fontSize);
-  value.textColor = new Color(
-    match.status === "live" ? CONFIG.theme.red : accent
-  );
+  value.textColor = new Color(visual.valueColor);
   value.lineLimit = 1;
   value.minimumScaleFactor = metrics.minimumScaleFactor;
 
@@ -1100,7 +1159,7 @@ function addMatchRow(widget, match, index, compact = false, now = new Date()) {
 
   const subtitle = content.addText(matchSubtitle(match, now));
   subtitle.font = Font.mediumSystemFont(compact ? 10 : 12);
-  subtitle.textColor = new Color(CONFIG.theme.secondary);
+  subtitle.textColor = new Color(visual.subtitleColor);
   subtitle.lineLimit = 1;
 }
 
@@ -1201,6 +1260,8 @@ function renderLarge(result, source) {
 function renderSmall(result) {
   const widget = new ListWidget();
   const now = new Date();
+  const first = result.matches[0];
+  const visual = matchVisualStyle(first, 0, now);
   widget.setPadding(14, 14, 13, 14);
   widget.url = CONFIG.schedulePageUrl;
   configureRefresh(widget, result, now);
@@ -1209,7 +1270,7 @@ function renderSmall(result) {
   const square = widget.addStack();
   square.size = new Size(17, 17);
   square.cornerRadius = 4;
-  square.backgroundColor = new Color(CONFIG.theme.yellow);
+  square.backgroundColor = new Color(visual.accent);
   square.url = settingsUrl();
 
   widget.addSpacer(10);
@@ -1221,30 +1282,38 @@ function renderSmall(result) {
 
   widget.addSpacer(5);
 
-  const first = result.matches[0];
   const teamRow = widget.addStack();
   teamRow.layoutHorizontally();
   teamRow.centerAlignContent();
-  addTeamLogo(teamRow, first.leftLogoImage, 22);
+  addTeamLogo(teamRow, first.leftLogoImage, 22, visual.leftOpacity);
   teamRow.addSpacer(6);
 
-  const teams = teamRow.addText(`${first.left} vs ${first.right}`);
-  teams.font = Font.semiboldSystemFont(15);
-  teams.textColor = new Color(CONFIG.theme.white);
-  teams.lineLimit = 2;
-  teams.minimumScaleFactor = 0.7;
+  const leftTeam = teamRow.addText(first.left);
+  leftTeam.font = Font.semiboldSystemFont(15);
+  leftTeam.textColor = new Color(visual.leftColor);
+  leftTeam.lineLimit = 1;
+  leftTeam.minimumScaleFactor = 0.7;
+
+  const versus = teamRow.addText(" vs ");
+  versus.font = Font.mediumSystemFont(13);
+  versus.textColor = new Color(CONFIG.theme.secondary);
+  versus.lineLimit = 1;
+
+  const rightTeam = teamRow.addText(first.right);
+  rightTeam.font = Font.semiboldSystemFont(15);
+  rightTeam.textColor = new Color(visual.rightColor);
+  rightTeam.lineLimit = 1;
+  rightTeam.minimumScaleFactor = 0.7;
 
   teamRow.addSpacer(6);
-  addTeamLogo(teamRow, first.rightLogoImage, 22);
+  addTeamLogo(teamRow, first.rightLogoImage, 22, visual.rightOpacity);
 
   widget.addSpacer();
 
   const metrics = matchValueMetrics("small");
   const value = widget.addText(matchRightValue(first, now));
   value.font = matchValueFont(metrics.fontSize);
-  value.textColor = new Color(
-    first.status === "live" ? CONFIG.theme.red : CONFIG.theme.yellow
-  );
+  value.textColor = new Color(visual.valueColor);
   value.lineLimit = 1;
   value.minimumScaleFactor = metrics.minimumScaleFactor;
 

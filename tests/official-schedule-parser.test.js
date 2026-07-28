@@ -14,6 +14,8 @@ const source = fs
       applyUserSettings,
       matchRightValue,
       matchSubtitle,
+      matchVisualStyle,
+      matchWinner,
       matchValueMetrics,
       nextRefreshDate,
       normalizeUserSettings,
@@ -103,6 +105,23 @@ assert.equal(
     now
   ),
   "直播中 · 比分待更新 · BO3"
+);
+assert.equal(context.__testApi.matchWinner(finished), "right");
+assert.equal(
+  context.__testApi.matchVisualStyle(finished, 0, now).leftOpacity,
+  0.5
+);
+assert.equal(
+  context.__testApi.matchVisualStyle(finished, 0, now).rightOpacity,
+  1
+);
+assert.equal(
+  context.__testApi.matchVisualStyle(live, 1, now).accent,
+  "#FF4D67"
+);
+assert.equal(
+  context.__testApi.matchVisualStyle(upcoming, 1, now).valueColor,
+  "#FF7043"
 );
 
 assert.deepEqual(
