@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.8.1",
+  version: "1.8.3",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -96,6 +96,22 @@ const KNOWN_TEAMS = [
   "UP",
   "TT",
 ];
+// 官方 Logo 均为 200×200 透明画布，但图案占比不同。
+// 以下系数根据非透明像素边界计算，使队标在相同容器中视觉大小接近。
+const TEAM_LOGO_SCALES = {
+  AL: 1.31,
+  BLG: 1.34,
+  EDG: 1.38,
+  IG: 1.38,
+  JDG: 1.25,
+  LGD: 1.43,
+  LNG: 1.35,
+  NIP: 1.25,
+  TES: 1.51,
+  TT: 1.34,
+  WE: 1.27,
+  WBG: 1.43,
+};
 
 const CACHE_FILE = "lpl-schedule-cache.json";
 const SETTINGS_FILE = "lpl-schedule-settings.json";
@@ -127,9 +143,9 @@ const DEFAULT_SETTINGS = {
   refreshProfile: "balanced",
 };
 const MATCH_VALUE_METRICS = {
-  medium: { fontSize: 26, minimumScaleFactor: 0.6, width: 112 },
-  large: { fontSize: 20, minimumScaleFactor: 0.65, width: 96 },
-  small: { fontSize: 26, minimumScaleFactor: 0.6, width: 0 },
+  medium: { fontSize: 28, minimumScaleFactor: 0.6, width: 112 },
+  large: { fontSize: 22, minimumScaleFactor: 0.65, width: 96 },
+  small: { fontSize: 28, minimumScaleFactor: 0.6, width: 0 },
 };
 
 // MARK: - 基础工具
@@ -512,6 +528,26 @@ function logoCacheFileName(team) {
   return `lpl-team-logo-${safeName}.png`;
 }
 
+function teamLogoScale(team) {
+  return TEAM_LOGO_SCALES[normalizeTeamName(team)] || 1.35;
+}
+
+function normalizeTeamLogoImage(image, team) {
+  const canvasSize = 64;
+  const scale = teamLogoScale(team);
+  const drawSize = canvasSize * scale;
+  const offset = (canvasSize - drawSize) / 2;
+  const context = new DrawContext();
+  context.size = new Size(canvasSize, canvasSize);
+  context.opaque = false;
+  context.respectScreenScale = true;
+  context.drawImageInRect(
+    image,
+    new Rect(offset, offset, drawSize, drawSize)
+  );
+  return context.getImage();
+}
+
 function placeholderTeamLogo() {
   return SFSymbol.named("shield.fill").image;
 }
@@ -521,7 +557,9 @@ async function loadTeamLogo(url, team) {
   const path = fm.joinPath(fm.documentsDirectory(), logoCacheFileName(team));
 
   try {
-    if (fm.fileExists(path)) return fm.readImage(path);
+    if (fm.fileExists(path)) {
+      return normalizeTeamLogoImage(fm.readImage(path), team);
+    }
     if (!/^https?:\/\//i.test(String(url || ""))) {
       return placeholderTeamLogo();
     }
@@ -530,7 +568,7 @@ async function loadTeamLogo(url, team) {
     request.timeoutInterval = 10;
     const image = await request.loadImage();
     fm.writeImage(path, image);
-    return image;
+    return normalizeTeamLogoImage(image, team);
   } catch (error) {
     console.warn(`队伍 Logo 加载失败（${team}）：${error}`);
     return placeholderTeamLogo();
@@ -914,15 +952,15 @@ function addHeader(widget, result) {
   row.url = settingsUrl();
 
   const square = row.addStack();
-  square.size = new Size(18, 18);
+  square.size = new Size(16, 16);
   square.cornerRadius = 4;
   square.backgroundColor = new Color(CONFIG.theme.yellow);
   square.url = settingsUrl();
 
-  row.addSpacer(12);
+  row.addSpacer(10);
 
   const title = row.addText(CONFIG.title);
-  title.font = Font.mediumSystemFont(18);
+  title.font = Font.mediumSystemFont(16);
   title.textColor = new Color(CONFIG.theme.white);
   title.minimumScaleFactor = 0.72;
 
@@ -1130,19 +1168,19 @@ function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   top.addSpacer(6);
 
   const leftTeam = top.addText(match.left);
-  leftTeam.font = Font.semiboldSystemFont(compact ? 15 : 17);
+  leftTeam.font = Font.semiboldSystemFont(compact ? 17 : 19);
   leftTeam.textColor = new Color(visual.leftColor);
   leftTeam.lineLimit = 1;
   leftTeam.minimumScaleFactor = 0.68;
 
   const versus = top.addText("  vs  ");
-  versus.font = Font.mediumSystemFont(compact ? 13 : 15);
+  versus.font = Font.mediumSystemFont(compact ? 14 : 16);
   versus.textColor = new Color(CONFIG.theme.secondary);
   versus.lineLimit = 1;
   versus.minimumScaleFactor = 0.8;
 
   const rightTeam = top.addText(match.right);
-  rightTeam.font = Font.semiboldSystemFont(compact ? 15 : 17);
+  rightTeam.font = Font.semiboldSystemFont(compact ? 17 : 19);
   rightTeam.textColor = new Color(visual.rightColor);
   rightTeam.lineLimit = 1;
   rightTeam.minimumScaleFactor = 0.68;
@@ -1166,7 +1204,7 @@ function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   content.addSpacer(3);
 
   const subtitle = content.addText(matchSubtitle(match, now));
-  subtitle.font = Font.mediumSystemFont(compact ? 10 : 12);
+  subtitle.font = Font.mediumSystemFont(compact ? 11 : 13);
   subtitle.textColor = new Color(visual.subtitleColor);
   subtitle.lineLimit = 1;
 }
@@ -1297,18 +1335,18 @@ function renderSmall(result) {
   teamRow.addSpacer(6);
 
   const leftTeam = teamRow.addText(first.left);
-  leftTeam.font = Font.semiboldSystemFont(15);
+  leftTeam.font = Font.semiboldSystemFont(16);
   leftTeam.textColor = new Color(visual.leftColor);
   leftTeam.lineLimit = 1;
   leftTeam.minimumScaleFactor = 0.7;
 
   const versus = teamRow.addText(" vs ");
-  versus.font = Font.mediumSystemFont(13);
+  versus.font = Font.mediumSystemFont(14);
   versus.textColor = new Color(CONFIG.theme.secondary);
   versus.lineLimit = 1;
 
   const rightTeam = teamRow.addText(first.right);
-  rightTeam.font = Font.semiboldSystemFont(15);
+  rightTeam.font = Font.semiboldSystemFont(16);
   rightTeam.textColor = new Color(visual.rightColor);
   rightTeam.lineLimit = 1;
   rightTeam.minimumScaleFactor = 0.7;

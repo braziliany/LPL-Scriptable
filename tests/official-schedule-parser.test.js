@@ -20,6 +20,7 @@ const source = fs
       nextRefreshDate,
       normalizeUserSettings,
       logoCacheFileName,
+      teamLogoScale,
       parseOfficialSchedule,
       resolveMatchUrl,
       shouldUseCompactMedium,
@@ -34,6 +35,8 @@ const context = {
 vm.runInNewContext(source, context, { filename: scriptPath });
 
 assert.equal(context.__testApi.logoCacheFileName("BLG"), "lpl-team-logo-BLG.png");
+assert.equal(context.__testApi.teamLogoScale("TES"), 1.51);
+assert.equal(context.__testApi.teamLogoScale("unknown"), 1.35);
 
 const pageText = [
   "LNG",
@@ -178,19 +181,19 @@ assert.deepEqual(
   JSON.parse(
     JSON.stringify(context.__testApi.matchValueMetrics("medium"))
   ),
-  { fontSize: 26, minimumScaleFactor: 0.6, width: 112 }
+  { fontSize: 28, minimumScaleFactor: 0.6, width: 112 }
 );
 assert.deepEqual(
   JSON.parse(
     JSON.stringify(context.__testApi.matchValueMetrics("large"))
   ),
-  { fontSize: 20, minimumScaleFactor: 0.65, width: 96 }
+  { fontSize: 22, minimumScaleFactor: 0.65, width: 96 }
 );
 assert.deepEqual(
   JSON.parse(
     JSON.stringify(context.__testApi.matchValueMetrics("small"))
   ),
-  { fontSize: 26, minimumScaleFactor: 0.6, width: 0 }
+  { fontSize: 28, minimumScaleFactor: 0.6, width: 0 }
 );
 
 assert.deepEqual(
