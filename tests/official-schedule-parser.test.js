@@ -23,6 +23,7 @@ const source = fs
       teamLogoScale,
       parseOfficialSchedule,
       resolveMatchUrl,
+      resolveThemeMode,
       shouldUseCompactMedium,
       sortMatchesByTime,
     };`
@@ -217,6 +218,7 @@ assert.deepEqual(
         livePlatform: "BILIBILI",
         cacheHours: 24,
         refreshProfile: "battery",
+        themeMode: "LIGHT",
         ignored: true,
       })
     )
@@ -227,6 +229,7 @@ assert.deepEqual(
     livePlatform: "bilibili",
     cacheHours: 24,
     refreshProfile: "battery",
+    themeMode: "light",
   }
 );
 assert.deepEqual(
@@ -239,8 +242,12 @@ assert.deepEqual(
     livePlatform: "official",
     cacheHours: 12,
     refreshProfile: "balanced",
+    themeMode: "dark",
   }
 );
+assert.equal(context.__testApi.resolveThemeMode("auto", true), "dark");
+assert.equal(context.__testApi.resolveThemeMode("auto", false), "light");
+assert.equal(context.__testApi.resolveThemeMode("LIGHT", true), "light");
 
 assert.equal(context.__testApi.shouldUseCompactMedium([upcoming, live]), false);
 assert.equal(

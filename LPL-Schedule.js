@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.8.4",
+  version: "1.9.0",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -56,8 +56,12 @@ const CONFIG = {
   normalRefreshMinutes: 15,
 
   highlightedTeams: ["BLG", "AL", "TES", "WBG"],
+  themeMode: "dark",
+  theme: null,
+};
 
-  theme: {
+const THEME_PALETTES = {
+  dark: {
     backgroundTop: "#292A58",
     backgroundBottom: "#171832",
     yellow: "#FFD34E",
@@ -68,7 +72,19 @@ const CONFIG = {
     muted: "#85869F",
     divider: "#FFFFFF",
   },
+  light: {
+    backgroundTop: "#F5F6FF",
+    backgroundBottom: "#E2E5F4",
+    yellow: "#C89000",
+    orange: "#DF5832",
+    red: "#D93650",
+    white: "#20213C",
+    secondary: "#55576F",
+    muted: "#77798F",
+    divider: "#20213C",
+  },
 };
+CONFIG.theme = { ...THEME_PALETTES.dark };
 
 const TEAM_ALIASES = {
   北京JDG: "JDG",
@@ -141,6 +157,7 @@ const DEFAULT_SETTINGS = {
   livePlatform: CONFIG.livePlatform,
   cacheHours: CONFIG.cacheHours,
   refreshProfile: "balanced",
+  themeMode: CONFIG.themeMode,
 };
 const MATCH_VALUE_METRICS = {
   medium: { fontSize: 28, minimumScaleFactor: 0.6, width: 112 },
@@ -231,6 +248,31 @@ function isHighlighted(name) {
 
 // MARK: - 用户设置
 
+function resolveThemeMode(mode, isDarkAppearance = true) {
+  const normalized = ["auto", "dark", "light"].includes(
+    String(mode || "").toLowerCase()
+  )
+    ? String(mode).toLowerCase()
+    : DEFAULT_SETTINGS.themeMode;
+  return normalized === "auto"
+    ? isDarkAppearance
+      ? "dark"
+      : "light"
+    : normalized;
+}
+
+function applyThemeMode(mode) {
+  const isDarkAppearance =
+    typeof Device !== "undefined" &&
+    typeof Device.isUsingDarkAppearance === "function"
+      ? Device.isUsingDarkAppearance()
+      : true;
+  const resolved = resolveThemeMode(mode, isDarkAppearance);
+  CONFIG.themeMode = mode;
+  CONFIG.theme = { ...THEME_PALETTES[resolved] };
+  return resolved;
+}
+
 function normalizeUserSettings(value) {
   const raw = value && typeof value === "object" ? value : {};
   const dataMode = ["auto", "remote", "official"].includes(
@@ -262,6 +304,11 @@ function normalizeUserSettings(value) {
   )
     ? String(raw.refreshProfile).toLowerCase()
     : DEFAULT_SETTINGS.refreshProfile;
+  const themeMode = ["auto", "dark", "light"].includes(
+    String(raw.themeMode || "").toLowerCase()
+  )
+    ? String(raw.themeMode).toLowerCase()
+    : DEFAULT_SETTINGS.themeMode;
 
   return {
     dataMode,
@@ -269,6 +316,7 @@ function normalizeUserSettings(value) {
     livePlatform,
     cacheHours,
     refreshProfile,
+    themeMode,
   };
 }
 
@@ -304,6 +352,7 @@ function applyUserSettings(settings) {
   CONFIG.highlightedTeams = [...normalized.highlightedTeams];
   CONFIG.livePlatform = normalized.livePlatform;
   CONFIG.cacheHours = normalized.cacheHours;
+  applyThemeMode(normalized.themeMode);
 
   const refresh = REFRESH_PROFILES[normalized.refreshProfile];
   CONFIG.liveRefreshMinutes = refresh.liveMinutes;
@@ -390,6 +439,22 @@ async function chooseRefreshProfile(current) {
   return choice === -1 ? current : entries[choice][0];
 }
 
+async function chooseThemeMode(current) {
+  const modes = [
+    ["auto", "跟随系统"],
+    ["dark", "深蓝主题"],
+    ["light", "浅色主题"],
+  ];
+  const alert = new Alert();
+  alert.title = "组件主题";
+  alert.message = `当前：${current}`;
+  modes.forEach(([, label]) => alert.addAction(label));
+  alert.addCancelAction("取消");
+
+  const choice = await alert.present();
+  return choice === -1 ? current : modes[choice][0];
+}
+
 async function presentSettings() {
   let settings = readUserSettings();
 
@@ -402,12 +467,14 @@ async function presentSettings() {
       `直播：${settings.livePlatform}`,
       `缓存：${settings.cacheHours} 小时`,
       `刷新：${REFRESH_PROFILES[settings.refreshProfile].label}`,
+      `主题：${settings.themeMode}`,
     ].join("\n");
     alert.addAction("关注队伍");
     alert.addAction("数据来源");
     alert.addAction("直播平台");
     alert.addAction("缓存有效期");
     alert.addAction("刷新频率");
+    alert.addAction("组件主题");
     alert.addDestructiveAction("恢复默认设置");
     alert.addCancelAction("完成");
 
@@ -431,6 +498,8 @@ async function presentSettings() {
         settings.refreshProfile
       );
     } else if (choice === 5) {
+      settings.themeMode = await chooseThemeMode(settings.themeMode);
+    } else if (choice === 6) {
       settings = normalizeUserSettings(DEFAULT_SETTINGS);
     }
 
