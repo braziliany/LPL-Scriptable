@@ -288,11 +288,21 @@ const diagnosticText = context.__testApi.buildDiagnosticText(
   "medium",
   new Date("2026-07-30T10:09:00+08:00")
 );
-assert.match(diagnosticText, /组件版本：2\.3\.0/);
-assert.match(diagnosticText, /设计系统：2\.3\.0/);
+assert.match(diagnosticText, /组件版本：2\.3\.1/);
+assert.match(diagnosticText, /设计系统：2\.3\.1/);
 assert.match(diagnosticText, /设置结构：v1/);
+assert.match(diagnosticText, /运行环境：中号组件/);
 assert.match(diagnosticText, /缓存状态：有效（9 分钟前）/);
 assert.match(diagnosticText, /缓存比赛：2 场/);
+assert.match(
+  context.__testApi.buildDiagnosticText(
+    null,
+    null,
+    "app",
+    new Date("2026-07-30T10:09:00+08:00")
+  ),
+  /运行环境：应用内运行/
+);
 assert.equal(context.__testApi.resolveThemeMode("auto", true), "dark");
 assert.equal(context.__testApi.resolveThemeMode("auto", false), "light");
 assert.equal(context.__testApi.resolveThemeMode("LIGHT", true), "light");

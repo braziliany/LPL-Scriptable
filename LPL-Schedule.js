@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "2.3.0",
+  version: "2.3.1",
   repository: "https://github.com/braziliany/LPL-Scriptable",
   rawBase: "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
@@ -351,7 +351,12 @@ function applyUserSettings(settings) {
 
 function settingsUrl() {
   const url = URLScheme.forRunningScript();
-  return `${url}${url.includes("?") ? "&" : "?"}action=settings`;
+  const family = ["small", "medium", "large"].includes(
+    String(config.widgetFamily || "").toLowerCase()
+  )
+    ? String(config.widgetFamily).toLowerCase()
+    : "unknown";
+  return `${url}${url.includes("?") ? "&" : "?"}action=settings&family=${family}`;
 }
 
 async function editHighlightedTeams(current) {
@@ -460,12 +465,21 @@ function buildDiagnosticText(
       : cacheAgeMinutes <= normalized.cacheHours * 60
         ? `有效（${cacheAgeMinutes} 分钟前）`
         : `已过期（${cacheAgeMinutes} 分钟前）`;
+  const familyLabels = {
+    small: "小号组件",
+    medium: "中号组件",
+    large: "大号组件",
+    app: "应用内运行",
+    unknown: "未识别",
+  };
+  const family = String(widgetFamily || "unknown").toLowerCase();
+  const runtimeLabel = familyLabels[family] || familyLabels.unknown;
 
   return [
     `组件版本：${APP.version}`,
     `设计系统：${DesignSystem.version || "未知"}`,
     `设置结构：v${normalized.schemaVersion}`,
-    `组件尺寸：${widgetFamily || "unknown"}`,
+    `运行环境：${runtimeLabel}`,
     `数据模式：${normalized.dataMode}`,
     `直播平台：${normalized.livePlatform}`,
     `主题模式：${normalized.themeMode}`,
@@ -484,7 +498,7 @@ async function presentDiagnostics(settings) {
     text = buildDiagnosticText(
       settings,
       readCache(),
-      config.widgetFamily,
+      args.queryParameters?.family || config.widgetFamily || "app",
       new Date()
     );
   } catch (error) {
