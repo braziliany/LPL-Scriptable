@@ -3,6 +3,8 @@
  * 可供其他 Scriptable 项目通过 importModule("LPL-Design-System") 复用。
  */
 
+const version = "2.1.0";
+
 const palettes = {
   dark: {
     backgroundTop: "#292A58",
@@ -81,6 +83,7 @@ function applyCardBackground(widget, palette) {
 }
 
 module.exports = {
+  version,
   palettes,
   typography,
   layout,
