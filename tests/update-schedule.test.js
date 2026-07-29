@@ -76,7 +76,13 @@ const fixture = {
   ],
 };
 
-const schedule = transformSchedule(fixture, teamFixture);
+const observedAt = "2026-07-26T17:05:00+08:00";
+const schedule = transformSchedule(
+  fixture,
+  teamFixture,
+  null,
+  observedAt
+);
 assert.equal(schedule.matches.length, 1);
 assert.deepEqual(schedule.matches[0], {
   id: "1",
@@ -91,8 +97,58 @@ assert.deepEqual(schedule.matches[0], {
   stage: "第三赛段组内赛",
   leftScore: 1,
   rightScore: 0,
+  scoreUpdatedAt: observedAt,
+  finishedAt: null,
   liveUrl: "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=1",
 });
+
+const updatedSchedule = transformSchedule(
+  {
+    ...fixture,
+    msg: [
+      {
+        ...fixture.msg[0],
+        MatchStatus: "3",
+        ScoreA: "2",
+        ScoreB: "0",
+      },
+    ],
+  },
+  teamFixture,
+  schedule,
+  "2026-07-26T18:25:00+08:00"
+);
+assert.equal(
+  updatedSchedule.matches[0].finishedAt,
+  "2026-07-26T18:25:00+08:00"
+);
+assert.equal(
+  updatedSchedule.matches[0].scoreUpdatedAt,
+  "2026-07-26T18:25:00+08:00"
+);
+
+const gameScoreSchedule = transformSchedule(
+  {
+    ...fixture,
+    msg: [
+      {
+        ...fixture.msg[0],
+        ScoreA: "1",
+        ScoreB: "1",
+      },
+    ],
+  },
+  teamFixture,
+  schedule,
+  "2026-07-26T17:45:00+08:00"
+);
+assert.equal(gameScoreSchedule.matches[0].leftScore, 1);
+assert.equal(gameScoreSchedule.matches[0].rightScore, 1);
+assert.equal(
+  gameScoreSchedule.matches[0].scoreUpdatedAt,
+  "2026-07-26T17:45:00+08:00"
+);
+assert.equal(gameScoreSchedule.matches[0].finishedAt, null);
 
 assert.throws(
   () => transformSchedule({ status: "0", msg: [] }),

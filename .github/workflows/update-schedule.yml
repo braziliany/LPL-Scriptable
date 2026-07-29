@@ -31,8 +31,12 @@ jobs:
 
       - name: Run tests
         run: |
+          node tests/installer.test.js
+          node tests/design-system.test.js
           node tests/official-schedule-parser.test.js
           node tests/update-schedule.test.js
+          node --check Installer.js
+          node --check LPL-Design-System.js
           node --check LPL-Schedule.js
 
       - name: Commit updated schedule

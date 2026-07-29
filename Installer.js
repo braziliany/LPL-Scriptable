@@ -10,7 +10,7 @@
  */
 
 const CONFIG = {
-  version: "2.1.0",
+  version: "2.2.0",
   changelogUrl:
     "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/CHANGELOG.md",
   resources: [

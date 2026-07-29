@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "2.1.0",
+  version: "2.2.0",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
@@ -65,6 +65,7 @@ const CONFIG = {
   liveRefreshMinutes: 3,
   nearMatchRefreshMinutes: 5,
   normalRefreshMinutes: 15,
+  finishedScoreHoldMinutes: 10,
 
   highlightedTeams: ["BLG", "AL", "TES", "WBG"],
   themeMode: "dark",
@@ -570,6 +571,8 @@ function normalizeMatch(raw) {
     rightLogo: String(raw.rightLogo || ""),
     leftScore: raw.leftScore ?? raw.scoreA ?? raw.homeScore ?? null,
     rightScore: raw.rightScore ?? raw.scoreB ?? raw.awayScore ?? null,
+    scoreUpdatedAt: raw.scoreUpdatedAt || null,
+    finishedAt: raw.finishedAt || null,
     status: normalizeStatus(raw.status || raw.statusText),
     matchType: String(raw.matchType || raw.bo || "BO3").toUpperCase(),
     stage: String(raw.stage || "常规赛"),
@@ -694,7 +697,11 @@ function isCacheFresh(payload) {
 // MARK: - 远程 JSON
 
 async function loadRemoteSchedule() {
-  const request = new Request(CONFIG.remoteScheduleUrl);
+  const separator = CONFIG.remoteScheduleUrl.includes("?") ? "&" : "?";
+  const cacheKey = Math.floor(Date.now() / (60 * 1000));
+  const request = new Request(
+    `${CONFIG.remoteScheduleUrl}${separator}v=${cacheKey}`
+  );
   request.timeoutInterval = 15;
   request.headers = {
     "User-Agent": "Scriptable-LPL-Schedule/1.0",
@@ -950,6 +957,17 @@ function sortMatchesByTime(matches) {
   return [...matches].sort((a, b) => a.timestamp - b.timestamp);
 }
 
+function isWithinFinishedScoreHold(match, now = new Date()) {
+  if (match.status !== "finished" || !match.finishedAt) return false;
+  const finishedAt = new Date(match.finishedAt).getTime();
+  if (!Number.isFinite(finishedAt)) return false;
+  const age = now.getTime() - finishedAt;
+  return (
+    age >= 0 &&
+    age < CONFIG.finishedScoreHoldMinutes * 60 * 1000
+  );
+}
+
 function findNextMatchDay(matches, now = new Date()) {
   const today = startOfDay(now);
   let finishedToday = null;
@@ -964,8 +982,12 @@ function findNextMatchDay(matches, now = new Date()) {
     const allFinished =
       dayMatches.length > 0 &&
       dayMatches.every((match) => match.status === "finished");
+    const keepRecentFinalScore =
+      offset === 0 &&
+      allFinished &&
+      dayMatches.some((match) => isWithinFinishedScoreHold(match, now));
 
-    if (offset === 0 && allFinished) {
+    if (offset === 0 && allFinished && !keepRecentFinalScore) {
       finishedToday = {
         dateString,
         matches: sortMatchesByTime(dayMatches),
@@ -974,7 +996,10 @@ function findNextMatchDay(matches, now = new Date()) {
       continue;
     }
 
-    if (dayMatches.length && !(offset === 0 && allFinished)) {
+    if (
+      dayMatches.length &&
+      (!(offset === 0 && allFinished) || keepRecentFinalScore)
+    ) {
       return {
         dateString,
         matches: sortMatchesByTime(dayMatches),
@@ -1175,7 +1200,22 @@ function nextRefreshDate(matches, now = new Date()) {
     }
   }
 
-  return new Date(now.getTime() + refreshMinutes * 60 * 1000);
+  let refreshAt = new Date(
+    now.getTime() + refreshMinutes * 60 * 1000
+  );
+  const holdExpirations = matches
+    .filter((match) => isWithinFinishedScoreHold(match, now))
+    .map(
+      (match) =>
+        new Date(match.finishedAt).getTime() +
+        CONFIG.finishedScoreHoldMinutes * 60 * 1000 +
+        1000
+    );
+  if (holdExpirations.length) {
+    const expiration = Math.max(...holdExpirations);
+    if (expiration < refreshAt.getTime()) refreshAt = new Date(expiration);
+  }
+  return refreshAt;
 }
 
 function configureRefresh(widget, result, now = new Date()) {

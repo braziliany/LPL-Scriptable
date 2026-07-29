@@ -68,12 +68,23 @@ function normalizeLogoUrl(value) {
   return "";
 }
 
-function transformSchedule(payload, teamPayload = null) {
+function transformSchedule(
+  payload,
+  teamPayload = null,
+  previousSchedule = null,
+  observedAt = new Date().toISOString()
+) {
   if (String(payload?.status) !== "0" || !Array.isArray(payload?.msg)) {
     throw new Error("官方赛程接口返回格式无效");
   }
 
   const yearPrefix = `${TARGET_YEAR}-`;
+  const previousById = new Map(
+    (previousSchedule?.matches || []).map((match) => [
+      String(match.id),
+      match,
+    ])
+  );
   const matches = payload.msg
     .filter(
       (match) =>
@@ -84,21 +95,46 @@ function transformSchedule(payload, teamPayload = null) {
     .map((match) => {
       const leftTeam = teamPayload?.msg?.[String(match.TeamA)] || {};
       const rightTeam = teamPayload?.msg?.[String(match.TeamB)] || {};
+      const id = String(match.bMatchId || "");
+      const previous = previousById.get(id);
+      const status = normalizeStatus(match.MatchStatus);
+      const leftScore =
+        String(match.MatchStatus) === "1" ? null : Number(match.ScoreA);
+      const rightScore =
+        String(match.MatchStatus) === "1" ? null : Number(match.ScoreB);
+      const scoreChanged =
+        !previous ||
+        previous.status !== status ||
+        previous.leftScore !== leftScore ||
+        previous.rightScore !== rightScore;
+      const scoreUpdatedAt =
+        status === "upcoming"
+          ? null
+          : scoreChanged
+            ? observedAt
+            : previous.scoreUpdatedAt || null;
+      const finishedAt =
+        status === "finished"
+          ? previous?.status === "finished"
+            ? previous.finishedAt || previous.scoreUpdatedAt || observedAt
+            : observedAt
+          : null;
+
       return {
-        id: String(match.bMatchId || ""),
+        id,
         gameId: String(match.GameId || ""),
         startTime: String(match.MatchDate),
         left: String(match.TeamShortNameA || "").trim().toUpperCase(),
         right: String(match.TeamShortNameB || "").trim().toUpperCase(),
         leftLogo: normalizeLogoUrl(leftTeam.TeamLogo),
         rightLogo: normalizeLogoUrl(rightTeam.TeamLogo),
-        status: normalizeStatus(match.MatchStatus),
+        status,
         matchType: String(match.GameModeName || "BO3").toUpperCase(),
         stage: String(match.GameTypeName || TARGET_STAGE),
-        leftScore:
-          String(match.MatchStatus) === "1" ? null : Number(match.ScoreA),
-        rightScore:
-          String(match.MatchStatus) === "1" ? null : Number(match.ScoreB),
+        leftScore,
+        rightScore,
+        scoreUpdatedAt,
+        finishedAt,
         liveUrl: buildMatchUrl(match),
       };
     })
@@ -148,7 +184,17 @@ async function updateSchedule() {
   }
 
   const teamPayload = parseTeamListScript(await teamResponse.text());
-  const schedule = transformSchedule(await response.json(), teamPayload);
+  let previousSchedule = null;
+  try {
+    previousSchedule = JSON.parse(fs.readFileSync(OUTPUT_PATH, "utf8"));
+  } catch (error) {
+    console.warn(`未读取到旧赛程，将创建新的状态时间线：${error.message}`);
+  }
+  const schedule = transformSchedule(
+    await response.json(),
+    teamPayload,
+    previousSchedule
+  );
   fs.writeFileSync(OUTPUT_PATH, `${JSON.stringify(schedule, null, 2)}\n`);
   console.log(
     `已更新 ${schedule.matches.length} 场比赛，官方数据时间：${schedule.updatedAt}`

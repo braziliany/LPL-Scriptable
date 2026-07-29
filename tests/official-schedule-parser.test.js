@@ -12,6 +12,7 @@ const source = fs
     `globalThis.__testApi = {
       countdownText,
       findNextMatchDay,
+      isWithinFinishedScoreHold,
       applyUserSettings,
       matchRightValue,
       matchSubtitle,
@@ -171,6 +172,31 @@ const tomorrow = {
   dateString: "2026-07-27",
   timestamp: new Date(2026, 6, 27, 17, 0).getTime(),
 };
+const recentlyFinished = {
+  ...finished,
+  finishedAt: "2026-07-26T18:25:00+08:00",
+};
+assert.equal(
+  context.__testApi.isWithinFinishedScoreHold(
+    recentlyFinished,
+    new Date("2026-07-26T18:34:00+08:00")
+  ),
+  true
+);
+assert.equal(
+  context.__testApi.findNextMatchDay(
+    [recentlyFinished, tomorrow],
+    new Date("2026-07-26T18:34:00+08:00")
+  ).dateString,
+  "2026-07-26"
+);
+assert.equal(
+  context.__testApi.findNextMatchDay(
+    [recentlyFinished, tomorrow],
+    new Date("2026-07-26T18:36:00+08:00")
+  ).dateString,
+  "2026-07-27"
+);
 const nextDay = JSON.parse(
   JSON.stringify(
     context.__testApi.findNextMatchDay([finished, tomorrow], now)
