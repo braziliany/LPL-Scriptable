@@ -15,14 +15,21 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "2.0.0",
+  version: "2.0.1",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
     "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
 
-const DesignSystem = importModule("LPL-Design-System");
+let DesignSystem;
+try {
+  DesignSystem = importModule("LPL-Design-System");
+} catch (error) {
+  throw new Error(
+    "缺少 LPL-Design-System。请复制并运行仓库中的最新版 Installer.js 完成安装。"
+  );
+}
 const TYPOGRAPHY = DesignSystem.typography;
 const LAYOUT = DesignSystem.layout;
 

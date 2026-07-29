@@ -59,9 +59,15 @@ braziliany/LPL-Scriptable
 1. 在 GitHub 打开 `Installer.js`
 2. 点击 **Raw**
 3. 全选复制
-4. 在 Scriptable 新建脚本并粘贴
+4. 在 Scriptable 新建临时脚本并粘贴
 5. 运行安装器
-6. 安装器会自动创建 `LPL-Design-System` 和 `LPL Schedule 2026`
+6. 安装器会自动创建：
+   - `LPL-Design-System`
+   - `LPL Schedule 2026`
+   - `LPL Schedule Installer`
+7. 以后只需运行 `LPL Schedule Installer` 完成全量更新
+
+> 如果手机里只有旧版安装器，必须从 GitHub 重新复制一次最新 `Installer.js`。旧安装器不会自动更新自身，因此只会安装主脚本。
 
 ## 安装方法二：手动复制两个脚本
 
@@ -137,6 +143,7 @@ node scripts/update-schedule.js
 node tests/official-schedule-parser.test.js
 node tests/update-schedule.test.js
 node tests/design-system.test.js
+node tests/installer.test.js
 node --check LPL-Schedule.js
 ```
 

@@ -10,7 +10,7 @@
  */
 
 const CONFIG = {
-  version: "2.0.0",
+  version: "2.0.1",
   resources: [
     {
       scriptName: "LPL-Design-System",
@@ -23,6 +23,12 @@ const CONFIG = {
       sourceUrl:
         "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/LPL-Schedule.js",
       marker: 'importModule("LPL-Design-System")',
+    },
+    {
+      scriptName: "LPL Schedule Installer",
+      sourceUrl:
+        "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/Installer.js",
+      marker: "LPL Schedule 一键安装器",
     },
   ],
 };
@@ -96,7 +102,9 @@ async function main() {
 
     const done = new Alert();
     done.title = "安装完成";
-    done.message = `已安装：\n${installed.join("\n")}`;
+    done.message =
+      `已安装：\n${installed.join("\n")}\n\n` +
+      "以后请运行 LPL Schedule Installer 更新。";
     done.addAction("打开 Scriptable");
     await done.present();
 
