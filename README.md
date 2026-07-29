@@ -166,6 +166,38 @@ npm run check
 
 `data/schedule.schema.json` 定义生成数据的正式结构。Schema 测试除字段类型外，还会检查比赛 ID 唯一性和全赛季时间排序。GitHub Actions 在提交自动赛程更新前必须通过同一套 `npm run check`。
 
+## 发布版本
+
+发布前需要同步修改以下四处版本号：
+
+- `package.json`
+- `Installer.js`
+- `LPL-Design-System.js`
+- `LPL-Schedule.js`
+
+本地检查并预览 Release Notes：
+
+```bash
+npm run check
+npm run version:check -- 2.2.0
+npm run release:notes -- v2.2.0
+```
+
+确认无误后创建并推送标签：
+
+```bash
+git tag v2.2.0
+git push origin v2.2.0
+```
+
+`Publish release` 工作流会再次执行完整质量检查，验证标签与四处版本号一致，从 `CHANGELOG.md` 提取对应更新说明，并创建 GitHub Release。Release 会附带：
+
+- `Installer.js`
+- `LPL-Schedule.js`
+- `LPL-Design-System.js`
+
+普通的 `main` 分支推送不会自动创建正式 Release。
+
 ## 复用设计系统
 
 其他 Scriptable 项目可以直接调用共享模块：

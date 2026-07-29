@@ -1,0 +1,48 @@
+name: Publish release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run quality checks
+        run: npm run check
+
+      - name: Validate tag version
+        shell: bash
+        run: node scripts/check-version.js "${GITHUB_REF_NAME#v}"
+
+      - name: Build release notes
+        run: node scripts/extract-release-notes.js "$GITHUB_REF_NAME" > release-notes.md
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME"
+          --title "LPL Schedule $GITHUB_REF_NAME"
+          --notes-file release-notes.md
+          Installer.js
+          LPL-Schedule.js
+          LPL-Design-System.js

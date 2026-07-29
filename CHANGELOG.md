@@ -9,6 +9,9 @@
 - 接入 ESLint 9，并声明 Scriptable 专用运行时全局变量。
 - 接入 Prettier 3，统一 JavaScript、JSON 和 YAML 格式。
 - 新增 `npm run check` 串联测试、静态检查与格式检查，GitHub Actions 使用同一入口。
+- 新增四处版本号一致性检查和 CHANGELOG Release Notes 提取工具。
+- 推送 `v*` 标签时自动验证版本、执行质量检查并创建带三个脚本附件的 GitHub Release。
+- 新增 `.gitattributes` 固定文本文件使用 LF，避免 Windows 与 CI 产生重复格式差异。
 
 ## 2.2.0 · 2026-07-29
 

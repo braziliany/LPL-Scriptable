@@ -8,12 +8,15 @@ const tests = [
   "tests/update-schedule.test.js",
   "tests/official-schedule-parser.test.js",
   "tests/schedule-schema.test.js",
+  "tests/release-tools.test.js",
 ];
 const syntaxChecks = [
   "Installer.js",
   "LPL-Design-System.js",
   "LPL-Schedule.js",
   "scripts/update-schedule.js",
+  "scripts/check-version.js",
+  "scripts/extract-release-notes.js",
 ];
 
 for (const file of tests) {
