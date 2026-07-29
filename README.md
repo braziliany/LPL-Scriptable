@@ -28,6 +28,7 @@
 ```text
 LPL-Scriptable/
 ├── LPL-Schedule.js          主组件
+├── LPL-Design-System.js     可复用的配色与设计规范
 ├── Installer.js             一键安装器
 ├── data/
 │   └── schedule.json        可手动维护的赛程数据
@@ -60,16 +61,19 @@ braziliany/LPL-Scriptable
 3. 全选复制
 4. 在 Scriptable 新建脚本并粘贴
 5. 运行安装器
-6. 安装器会自动创建 `LPL Schedule 2026`
+6. 安装器会自动创建 `LPL-Design-System` 和 `LPL Schedule 2026`
 
-## 安装方法二：直接复制主脚本
+## 安装方法二：手动复制两个脚本
 
-1. 打开 `LPL-Schedule.js`
+1. 打开 `LPL-Design-System.js`
 2. 点击 **Raw**
 3. 全选复制
-4. 在 Scriptable 新建脚本并粘贴
-5. 保存后运行一次
-6. 在桌面添加 Scriptable 中号组件，并选择该脚本
+4. 在 Scriptable 新建脚本，命名为 `LPL-Design-System` 并粘贴
+5. 以相同方式复制 `LPL-Schedule.js`
+6. 将主脚本命名为 `LPL Schedule 2026`，保存后运行一次
+7. 在桌面添加 Scriptable 中号组件，并选择主脚本
+
+> 主组件从 `2.0.0` 起依赖共享设计系统，两个脚本必须安装在同一个 Scriptable 文档目录中，且模块名称必须保持为 `LPL-Design-System`。
 
 ## 手动维护赛程
 
@@ -132,8 +136,37 @@ node scripts/update-schedule.js
 ```bash
 node tests/official-schedule-parser.test.js
 node tests/update-schedule.test.js
+node tests/design-system.test.js
 node --check LPL-Schedule.js
 ```
+
+## 复用设计系统
+
+其他 Scriptable 项目可以直接调用共享模块：
+
+```javascript
+const DesignSystem = importModule("LPL-Design-System");
+const palette = DesignSystem.resolvePalette(
+  "auto",
+  Device.isUsingDarkAppearance()
+);
+
+const widget = new ListWidget();
+DesignSystem.applyCardBackground(widget, palette);
+
+const title = widget.addText("NEW PROJECT");
+title.font = Font.mediumSystemFont(DesignSystem.typography.header);
+title.textColor = new Color(palette.white);
+```
+
+共享模块提供：
+
+- `palettes`：深蓝和浅色主题色板
+- `typography`：标题、队名、状态和数值字号
+- `layout`：Logo、标题方块和数值区域尺寸
+- `resolveThemeMode()`：解析深色、浅色或跟随系统
+- `resolvePalette()`：取得当前色板副本
+- `applyCardBackground()`：应用统一渐变卡片背景
 
 ## 用户设置
 
@@ -144,11 +177,12 @@ node --check LPL-Schedule.js
 - 直播平台：LPL 官方或哔哩哔哩
 - 缓存有效期：1、3、6、12 或 24 小时
 - 刷新频率：实时、均衡或省电
+- 组件主题：深蓝、浅色或跟随系统
 - 恢复默认设置
 
 设置保存在 Scriptable 本地文档目录的 `lpl-schedule-settings.json`，重新安装或升级主脚本不会覆盖。
 
-> GitHub 上的主脚本更新不会自动替换手机中已经安装的 Scriptable 脚本。要使用队伍 Logo，需要重新运行一次 `Installer.js`，覆盖安装到 `1.7.0` 或更高版本。
+> GitHub 上的脚本更新不会自动替换手机中的文件。`2.0.0` 起请重新运行 `Installer.js`，安装器会同时更新主组件与共享设计系统，并保留用户设置和 Logo 缓存。
 
 也可以通过 URL Scheme 直接打开设置：
 

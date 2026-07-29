@@ -15,12 +15,16 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "1.9.0",
+  version: "2.0.0",
   repository:
     "https://github.com/braziliany/LPL-Scriptable",
   rawBase:
     "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
+
+const DesignSystem = importModule("LPL-Design-System");
+const TYPOGRAPHY = DesignSystem.typography;
+const LAYOUT = DesignSystem.layout;
 
 const CONFIG = {
   title: "LPL SCHEDULE",
@@ -57,34 +61,8 @@ const CONFIG = {
 
   highlightedTeams: ["BLG", "AL", "TES", "WBG"],
   themeMode: "dark",
-  theme: null,
+  theme: DesignSystem.resolvePalette("dark"),
 };
-
-const THEME_PALETTES = {
-  dark: {
-    backgroundTop: "#292A58",
-    backgroundBottom: "#171832",
-    yellow: "#FFD34E",
-    orange: "#FF7043",
-    red: "#FF4D67",
-    white: "#F7F7FB",
-    secondary: "#AAAAC1",
-    muted: "#85869F",
-    divider: "#FFFFFF",
-  },
-  light: {
-    backgroundTop: "#F5F6FF",
-    backgroundBottom: "#E2E5F4",
-    yellow: "#C89000",
-    orange: "#DF5832",
-    red: "#D93650",
-    white: "#20213C",
-    secondary: "#55576F",
-    muted: "#77798F",
-    divider: "#20213C",
-  },
-};
-CONFIG.theme = { ...THEME_PALETTES.dark };
 
 const TEAM_ALIASES = {
   北京JDG: "JDG",
@@ -160,9 +138,21 @@ const DEFAULT_SETTINGS = {
   themeMode: CONFIG.themeMode,
 };
 const MATCH_VALUE_METRICS = {
-  medium: { fontSize: 28, minimumScaleFactor: 0.6, width: 112 },
-  large: { fontSize: 22, minimumScaleFactor: 0.65, width: 96 },
-  small: { fontSize: 28, minimumScaleFactor: 0.6, width: 0 },
+  medium: {
+    fontSize: TYPOGRAPHY.value,
+    minimumScaleFactor: 0.6,
+    width: LAYOUT.valueWidth,
+  },
+  large: {
+    fontSize: TYPOGRAPHY.valueCompact,
+    minimumScaleFactor: 0.65,
+    width: LAYOUT.valueWidthCompact,
+  },
+  small: {
+    fontSize: TYPOGRAPHY.valueSmall,
+    minimumScaleFactor: 0.6,
+    width: 0,
+  },
 };
 
 // MARK: - 基础工具
@@ -249,16 +239,7 @@ function isHighlighted(name) {
 // MARK: - 用户设置
 
 function resolveThemeMode(mode, isDarkAppearance = true) {
-  const normalized = ["auto", "dark", "light"].includes(
-    String(mode || "").toLowerCase()
-  )
-    ? String(mode).toLowerCase()
-    : DEFAULT_SETTINGS.themeMode;
-  return normalized === "auto"
-    ? isDarkAppearance
-      ? "dark"
-      : "light"
-    : normalized;
+  return DesignSystem.resolveThemeMode(mode, isDarkAppearance);
 }
 
 function applyThemeMode(mode) {
@@ -269,7 +250,7 @@ function applyThemeMode(mode) {
       : true;
   const resolved = resolveThemeMode(mode, isDarkAppearance);
   CONFIG.themeMode = mode;
-  CONFIG.theme = { ...THEME_PALETTES[resolved] };
+  CONFIG.theme = DesignSystem.resolvePalette(resolved);
   return resolved;
 }
 
@@ -1004,13 +985,7 @@ function findNextMatchDay(matches, now = new Date()) {
 // MARK: - 样式
 
 function applyBackground(widget) {
-  const gradient = new LinearGradient();
-  gradient.colors = [
-    new Color(CONFIG.theme.backgroundTop),
-    new Color(CONFIG.theme.backgroundBottom),
-  ];
-  gradient.locations = [0, 1];
-  widget.backgroundGradient = gradient;
+  DesignSystem.applyCardBackground(widget, CONFIG.theme);
 }
 
 function addHeader(widget, result) {
@@ -1021,22 +996,22 @@ function addHeader(widget, result) {
   row.url = settingsUrl();
 
   const square = row.addStack();
-  square.size = new Size(16, 16);
+  square.size = new Size(LAYOUT.headerSquare, LAYOUT.headerSquare);
   square.cornerRadius = 4;
   square.backgroundColor = new Color(CONFIG.theme.yellow);
   square.url = settingsUrl();
 
-  row.addSpacer(10);
+  row.addSpacer(LAYOUT.headerGap);
 
   const title = row.addText(CONFIG.title);
-  title.font = Font.mediumSystemFont(16);
+  title.font = Font.mediumSystemFont(TYPOGRAPHY.header);
   title.textColor = new Color(CONFIG.theme.white);
   title.minimumScaleFactor = 0.72;
 
   row.addSpacer();
 
   const date = row.addText(displayMonthDay(result.dateString));
-  date.font = Font.mediumSystemFont(15);
+  date.font = Font.mediumSystemFont(TYPOGRAPHY.date);
   date.textColor = new Color(CONFIG.theme.secondary);
 }
 
@@ -1232,24 +1207,30 @@ function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   top.layoutHorizontally();
   top.centerAlignContent();
 
-  const logoSize = compact ? 20 : 22;
+  const logoSize = compact ? LAYOUT.logoCompact : LAYOUT.logo;
   addTeamLogo(top, match.leftLogoImage, logoSize, visual.leftOpacity);
   top.addSpacer(6);
 
   const leftTeam = top.addText(match.left);
-  leftTeam.font = Font.semiboldSystemFont(compact ? 17 : 19);
+  leftTeam.font = Font.semiboldSystemFont(
+    compact ? TYPOGRAPHY.teamCompact : TYPOGRAPHY.team
+  );
   leftTeam.textColor = new Color(visual.leftColor);
   leftTeam.lineLimit = 1;
   leftTeam.minimumScaleFactor = 0.68;
 
   const versus = top.addText("  vs  ");
-  versus.font = Font.mediumSystemFont(compact ? 14 : 16);
+  versus.font = Font.mediumSystemFont(
+    compact ? TYPOGRAPHY.versusCompact : TYPOGRAPHY.versus
+  );
   versus.textColor = new Color(CONFIG.theme.secondary);
   versus.lineLimit = 1;
   versus.minimumScaleFactor = 0.8;
 
   const rightTeam = top.addText(match.right);
-  rightTeam.font = Font.semiboldSystemFont(compact ? 17 : 19);
+  rightTeam.font = Font.semiboldSystemFont(
+    compact ? TYPOGRAPHY.teamCompact : TYPOGRAPHY.team
+  );
   rightTeam.textColor = new Color(visual.rightColor);
   rightTeam.lineLimit = 1;
   rightTeam.minimumScaleFactor = 0.68;
@@ -1273,7 +1254,9 @@ function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   content.addSpacer(3);
 
   const subtitle = content.addText(matchSubtitle(match, now));
-  subtitle.font = Font.mediumSystemFont(compact ? 11 : 13);
+  subtitle.font = Font.mediumSystemFont(
+    compact ? TYPOGRAPHY.subtitleCompact : TYPOGRAPHY.subtitle
+  );
   subtitle.textColor = new Color(visual.subtitleColor);
   subtitle.lineLimit = 1;
 }
@@ -1400,28 +1383,38 @@ function renderSmall(result) {
   const teamRow = widget.addStack();
   teamRow.layoutHorizontally();
   teamRow.centerAlignContent();
-  addTeamLogo(teamRow, first.leftLogoImage, 22, visual.leftOpacity);
+  addTeamLogo(
+    teamRow,
+    first.leftLogoImage,
+    LAYOUT.logoSmall,
+    visual.leftOpacity
+  );
   teamRow.addSpacer(6);
 
   const leftTeam = teamRow.addText(first.left);
-  leftTeam.font = Font.semiboldSystemFont(16);
+  leftTeam.font = Font.semiboldSystemFont(TYPOGRAPHY.teamSmall);
   leftTeam.textColor = new Color(visual.leftColor);
   leftTeam.lineLimit = 1;
   leftTeam.minimumScaleFactor = 0.7;
 
   const versus = teamRow.addText(" vs ");
-  versus.font = Font.mediumSystemFont(14);
+  versus.font = Font.mediumSystemFont(TYPOGRAPHY.versusCompact);
   versus.textColor = new Color(CONFIG.theme.secondary);
   versus.lineLimit = 1;
 
   const rightTeam = teamRow.addText(first.right);
-  rightTeam.font = Font.semiboldSystemFont(16);
+  rightTeam.font = Font.semiboldSystemFont(TYPOGRAPHY.teamSmall);
   rightTeam.textColor = new Color(visual.rightColor);
   rightTeam.lineLimit = 1;
   rightTeam.minimumScaleFactor = 0.7;
 
   teamRow.addSpacer(6);
-  addTeamLogo(teamRow, first.rightLogoImage, 22, visual.rightOpacity);
+  addTeamLogo(
+    teamRow,
+    first.rightLogoImage,
+    LAYOUT.logoSmall,
+    visual.rightOpacity
+  );
 
   widget.addSpacer();
 

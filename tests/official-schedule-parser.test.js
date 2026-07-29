@@ -4,6 +4,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const scriptPath = path.join(__dirname, "..", "LPL-Schedule.js");
+const designSystem = require("../LPL-Design-System");
 const source = fs
   .readFileSync(scriptPath, "utf8")
   .replace(
@@ -31,6 +32,10 @@ const source = fs
 const context = {
   console,
   Set,
+  importModule(name) {
+    assert.equal(name, "LPL-Design-System");
+    return designSystem;
+  },
 };
 
 vm.runInNewContext(source, context, { filename: scriptPath });
