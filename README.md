@@ -153,12 +153,18 @@ node scripts/update-schedule.js
 
 ```bash
 npm install
-npm test
+npm run check
 ```
 
-`npm test` 会统一执行安装器、设计系统、赛程更新器、组件解析和 JSON Schema 五组测试，并检查四个 JavaScript 入口的语法。
+`npm run check` 会依次运行：
 
-`data/schedule.schema.json` 定义生成数据的正式结构。Schema 测试除字段类型外，还会检查比赛 ID 唯一性和全赛季时间排序。GitHub Actions 在提交自动赛程更新前必须通过同一套 `npm test`。
+- `npm test`：安装器、设计系统、赛程更新器、组件解析和 JSON Schema 五组测试，以及四个入口的语法检查
+- `npm run lint`：ESLint 静态检查，包含 Scriptable 专用全局变量配置
+- `npm run format:check`：检查 JavaScript、JSON 和 YAML 是否符合 Prettier 规范
+
+修改代码后可运行 `npm run format` 自动统一格式。
+
+`data/schedule.schema.json` 定义生成数据的正式结构。Schema 测试除字段类型外，还会检查比赛 ID 唯一性和全赛季时间排序。GitHub Actions 在提交自动赛程更新前必须通过同一套 `npm run check`。
 
 ## 复用设计系统
 

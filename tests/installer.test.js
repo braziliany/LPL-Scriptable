@@ -4,17 +4,15 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const installerPath = path.join(__dirname, "..", "Installer.js");
-const source = fs
-  .readFileSync(installerPath, "utf8")
-  .replace(
-    "await main();",
-    `globalThis.__installerTestApi = {
+const source = fs.readFileSync(installerPath, "utf8").replace(
+  "await main();",
+  `globalThis.__installerTestApi = {
       CONFIG,
       compareVersions,
       extractReleaseNotes,
       extractVersion,
     };`
-  );
+);
 const context = {};
 vm.runInNewContext(source, context, { filename: installerPath });
 
@@ -23,11 +21,7 @@ const resources = JSON.parse(
 );
 assert.deepEqual(
   resources.map((resource) => resource.scriptName),
-  [
-    "LPL-Design-System",
-    "LPL Schedule 2026",
-    "LPL Schedule Installer",
-  ]
+  ["LPL-Design-System", "LPL Schedule 2026", "LPL Schedule Installer"]
 );
 assert.match(resources[0].sourceUrl, /LPL-Design-System\.js$/);
 assert.match(resources[1].sourceUrl, /LPL-Schedule\.js$/);

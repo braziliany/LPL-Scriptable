@@ -15,7 +15,10 @@ assert.equal(
   normalizeUpdatedAt("2026-07-26 16:45:05"),
   "2026-07-26T16:45:05+08:00"
 );
-assert.equal(normalizeLogoUrl("//img.example.com/tt.png"), "https://img.example.com/tt.png");
+assert.equal(
+  normalizeLogoUrl("//img.example.com/tt.png"),
+  "https://img.example.com/tt.png"
+);
 assert.equal(normalizeLogoUrl("javascript:alert(1)"), "");
 
 const teamFixture = parseTeamListScript(
@@ -77,12 +80,7 @@ const fixture = {
 };
 
 const observedAt = "2026-07-26T17:05:00+08:00";
-const schedule = transformSchedule(
-  fixture,
-  teamFixture,
-  null,
-  observedAt
-);
+const schedule = transformSchedule(fixture, teamFixture, null, observedAt);
 assert.equal(schedule.matches.length, 1);
 assert.deepEqual(schedule.matches[0], {
   id: "1",

@@ -43,8 +43,12 @@ function extractVersion(content) {
 }
 
 function compareVersions(left, right) {
-  const a = String(left || "0.0.0").split(".").map(Number);
-  const b = String(right || "0.0.0").split(".").map(Number);
+  const a = String(left || "0.0.0")
+    .split(".")
+    .map(Number);
+  const b = String(right || "0.0.0")
+    .split(".")
+    .map(Number);
   for (let index = 0; index < 3; index++) {
     if ((a[index] || 0) < (b[index] || 0)) return -1;
     if ((a[index] || 0) > (b[index] || 0)) return 1;
@@ -120,9 +124,7 @@ async function installDownloads(downloads) {
 async function main() {
   try {
     // 先下载并校验完整安装包，此时不会改动本地文件。
-    const downloads = await Promise.all(
-      CONFIG.resources.map(downloadResource)
-    );
+    const downloads = await Promise.all(CONFIG.resources.map(downloadResource));
     const mainResource = downloads.find(
       (resource) => resource.scriptName === "LPL Schedule 2026"
     );
@@ -169,11 +171,7 @@ async function main() {
       alert.addDestructiveAction("降级安装");
     } else {
       alert.addAction(
-        localVersion
-          ? comparison < 0
-            ? "更新"
-            : "重新安装"
-          : "安装"
+        localVersion ? (comparison < 0 ? "更新" : "重新安装") : "安装"
       );
     }
     alert.addCancelAction("取消");

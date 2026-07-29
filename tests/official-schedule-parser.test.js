@@ -5,11 +5,9 @@ const vm = require("node:vm");
 
 const scriptPath = path.join(__dirname, "..", "LPL-Schedule.js");
 const designSystem = require("../LPL-Design-System");
-const source = fs
-  .readFileSync(scriptPath, "utf8")
-  .replace(
-    "await main();",
-    `globalThis.__testApi = {
+const source = fs.readFileSync(scriptPath, "utf8").replace(
+  "await main();",
+  `globalThis.__testApi = {
       countdownText,
       findNextMatchDay,
       isWithinFinishedScoreHold,
@@ -29,7 +27,7 @@ const source = fs
       shouldUseCompactMedium,
       sortMatchesByTime,
     };`
-  );
+);
 const context = {
   console,
   Set,
@@ -41,7 +39,10 @@ const context = {
 
 vm.runInNewContext(source, context, { filename: scriptPath });
 
-assert.equal(context.__testApi.logoCacheFileName("BLG"), "lpl-team-logo-BLG.png");
+assert.equal(
+  context.__testApi.logoCacheFileName("BLG"),
+  "lpl-team-logo-BLG.png"
+);
 assert.equal(context.__testApi.teamLogoScale("TES"), 1.51);
 assert.equal(context.__testApi.teamLogoScale("unknown"), 1.35);
 
@@ -198,9 +199,7 @@ assert.equal(
   "2026-07-27"
 );
 const nextDay = JSON.parse(
-  JSON.stringify(
-    context.__testApi.findNextMatchDay([finished, tomorrow], now)
-  )
+  JSON.stringify(context.__testApi.findNextMatchDay([finished, tomorrow], now))
 );
 assert.equal(nextDay.dateString, "2026-07-27");
 assert.equal(nextDay.offset, 1);
@@ -220,21 +219,15 @@ assert.equal(
   5 * 60 * 1000
 );
 assert.deepEqual(
-  JSON.parse(
-    JSON.stringify(context.__testApi.matchValueMetrics("medium"))
-  ),
+  JSON.parse(JSON.stringify(context.__testApi.matchValueMetrics("medium"))),
   { fontSize: 28, minimumScaleFactor: 0.6, width: 112 }
 );
 assert.deepEqual(
-  JSON.parse(
-    JSON.stringify(context.__testApi.matchValueMetrics("large"))
-  ),
+  JSON.parse(JSON.stringify(context.__testApi.matchValueMetrics("large"))),
   { fontSize: 22, minimumScaleFactor: 0.65, width: 96 }
 );
 assert.deepEqual(
-  JSON.parse(
-    JSON.stringify(context.__testApi.matchValueMetrics("small"))
-  ),
+  JSON.parse(JSON.stringify(context.__testApi.matchValueMetrics("small"))),
   { fontSize: 28, minimumScaleFactor: 0.6, width: 0 }
 );
 
@@ -264,9 +257,7 @@ assert.deepEqual(
   }
 );
 assert.deepEqual(
-  JSON.parse(
-    JSON.stringify(context.__testApi.normalizeUserSettings(null))
-  ),
+  JSON.parse(JSON.stringify(context.__testApi.normalizeUserSettings(null))),
   {
     dataMode: "auto",
     highlightedTeams: ["BLG", "AL", "TES", "WBG"],

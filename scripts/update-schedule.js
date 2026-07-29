@@ -80,10 +80,7 @@ function transformSchedule(
 
   const yearPrefix = `${TARGET_YEAR}-`;
   const previousById = new Map(
-    (previousSchedule?.matches || []).map((match) => [
-      String(match.id),
-      match,
-    ])
+    (previousSchedule?.matches || []).map((match) => [String(match.id), match])
   );
   const matches = payload.msg
     .filter(
@@ -124,8 +121,12 @@ function transformSchedule(
         id,
         gameId: String(match.GameId || ""),
         startTime: String(match.MatchDate),
-        left: String(match.TeamShortNameA || "").trim().toUpperCase(),
-        right: String(match.TeamShortNameB || "").trim().toUpperCase(),
+        left: String(match.TeamShortNameA || "")
+          .trim()
+          .toUpperCase(),
+        right: String(match.TeamShortNameB || "")
+          .trim()
+          .toUpperCase(),
         leftLogo: normalizeLogoUrl(leftTeam.TeamLogo),
         rightLogo: normalizeLogoUrl(rightTeam.TeamLogo),
         status,

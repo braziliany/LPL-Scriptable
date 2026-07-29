@@ -34,7 +34,7 @@ jobs:
         run: node scripts/update-schedule.js
 
       - name: Run tests
-        run: npm test
+        run: npm run check
 
       - name: Commit updated schedule
         run: |

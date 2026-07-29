@@ -16,10 +16,8 @@
 const APP = {
   name: "LPL Schedule",
   version: "2.2.0",
-  repository:
-    "https://github.com/braziliany/LPL-Scriptable",
-  rawBase:
-    "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
+  repository: "https://github.com/braziliany/LPL-Scriptable",
+  rawBase: "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
 
 let DesignSystem;
@@ -43,10 +41,8 @@ const CONFIG = {
   dataMode: "auto",
 
   remoteScheduleUrl: `${APP.rawBase}/data/schedule.json`,
-  officialScheduleUrl:
-    "https://lpl.qq.com/act/a20200518app/html/schedule.html",
-  schedulePageUrl:
-    "https://lpl.qq.com/web202301/schedule.html",
+  officialScheduleUrl: "https://lpl.qq.com/act/a20200518app/html/schedule.html",
+  schedulePageUrl: "https://lpl.qq.com/web202301/schedule.html",
   liveUrl: "https://lpl.qq.com/web202301/schedule.html",
   bilibiliLiveUrl: "https://live.bilibili.com/6",
   livePlatform: "official",
@@ -418,9 +414,7 @@ async function chooseRefreshProfile(current) {
   alert.title = "刷新频率";
   alert.message = "实时更新更快，省电模式刷新更少。";
   entries.forEach(([, profile]) =>
-    alert.addAction(
-      `${profile.label}（直播 ${profile.liveMinutes} 分钟）`
-    )
+    alert.addAction(`${profile.label}（直播 ${profile.liveMinutes} 分钟）`)
   );
   alert.addCancelAction("取消");
 
@@ -477,9 +471,7 @@ async function presentSettings() {
     } else if (choice === 1) {
       settings.dataMode = await chooseDataMode(settings.dataMode);
     } else if (choice === 2) {
-      settings.livePlatform = await chooseLivePlatform(
-        settings.livePlatform
-      );
+      settings.livePlatform = await chooseLivePlatform(settings.livePlatform);
     } else if (choice === 3) {
       settings.cacheHours = await chooseCacheHours(settings.cacheHours);
     } else if (choice === 4) {
@@ -601,10 +593,7 @@ function normalizeTeamLogoImage(image, team) {
   context.size = new Size(canvasSize, canvasSize);
   context.opaque = false;
   context.respectScreenScale = true;
-  context.drawImageInRect(
-    image,
-    new Rect(offset, offset, drawSize, drawSize)
-  );
+  context.drawImageInRect(image, new Rect(offset, offset, drawSize, drawSize));
   return context.getImage();
 }
 
@@ -712,8 +701,8 @@ async function loadRemoteSchedule() {
   const sourceMatches = Array.isArray(payload)
     ? payload
     : Array.isArray(payload?.matches)
-    ? payload.matches
-    : [];
+      ? payload.matches
+      : [];
 
   const matches = sourceMatches.map(normalizeMatch).filter(Boolean);
 
@@ -766,11 +755,7 @@ function findPreviousTeam(lines, index) {
 }
 
 function findNextTeam(lines, index) {
-  for (
-    let i = index + 1;
-    i <= Math.min(lines.length - 1, index + 16);
-    i++
-  ) {
+  for (let i = index + 1; i <= Math.min(lines.length - 1, index + 16); i++) {
     if (isKnownTeam(lines[i])) return normalizeTeamName(lines[i]);
   }
   return null;
@@ -827,7 +812,9 @@ function findScore(lines, index, matchType) {
   // 常见格式：2-1、2 : 0、比分 2-1。
   // 只接受对应赛制可达的比分，日期和 0-0 等无效组合会被排除。
   for (const line of area) {
-    const match = line.match(/(?:^|\s|比分\s*)([0-3])\s*[:：-]\s*([0-3])(?:\s|$)/);
+    const match = line.match(
+      /(?:^|\s|比分\s*)([0-3])\s*[:：-]\s*([0-3])(?:\s|$)/
+    );
     if (match && isValidScore(matchType, match[1], match[2])) {
       return {
         leftScore: match[1],
@@ -962,10 +949,7 @@ function isWithinFinishedScoreHold(match, now = new Date()) {
   const finishedAt = new Date(match.finishedAt).getTime();
   if (!Number.isFinite(finishedAt)) return false;
   const age = now.getTime() - finishedAt;
-  return (
-    age >= 0 &&
-    age < CONFIG.finishedScoreHoldMinutes * 60 * 1000
-  );
+  return age >= 0 && age < CONFIG.finishedScoreHoldMinutes * 60 * 1000;
 }
 
 function findNextMatchDay(matches, now = new Date()) {
@@ -1061,8 +1045,7 @@ function matchWinner(match) {
 
 function matchVisualStyle(match, index, now = new Date()) {
   const winner = matchWinner(match);
-  const highlighted =
-    isHighlighted(match.left) || isHighlighted(match.right);
+  const highlighted = isHighlighted(match.left) || isHighlighted(match.right);
   const countdown = countdownText(match, now);
 
   return {
@@ -1075,13 +1058,9 @@ function matchVisualStyle(match, index, now = new Date()) {
             ? CONFIG.theme.yellow
             : accentColor(index),
     leftColor:
-      winner && winner !== "left"
-        ? CONFIG.theme.muted
-        : CONFIG.theme.white,
+      winner && winner !== "left" ? CONFIG.theme.muted : CONFIG.theme.white,
     rightColor:
-      winner && winner !== "right"
-        ? CONFIG.theme.muted
-        : CONFIG.theme.white,
+      winner && winner !== "right" ? CONFIG.theme.muted : CONFIG.theme.white,
     leftOpacity: winner && winner !== "left" ? 0.5 : 1,
     rightOpacity: winner && winner !== "right" ? 0.5 : 1,
     valueColor:
@@ -1095,9 +1074,7 @@ function matchVisualStyle(match, index, now = new Date()) {
               ? CONFIG.theme.yellow
               : accentColor(index),
     subtitleColor:
-      match.status === "live"
-        ? CONFIG.theme.red
-        : CONFIG.theme.secondary,
+      match.status === "live" ? CONFIG.theme.red : CONFIG.theme.secondary,
   };
 }
 
@@ -1156,9 +1133,7 @@ function matchRightValue(match, now = new Date()) {
 }
 
 function matchValueMetrics(layout) {
-  return (
-    MATCH_VALUE_METRICS[layout] || MATCH_VALUE_METRICS.medium
-  );
+  return MATCH_VALUE_METRICS[layout] || MATCH_VALUE_METRICS.medium;
 }
 
 function matchValueFont(size) {
@@ -1200,9 +1175,7 @@ function nextRefreshDate(matches, now = new Date()) {
     }
   }
 
-  let refreshAt = new Date(
-    now.getTime() + refreshMinutes * 60 * 1000
-  );
+  let refreshAt = new Date(now.getTime() + refreshMinutes * 60 * 1000);
   const holdExpirations = matches
     .filter((match) => isWithinFinishedScoreHold(match, now))
     .map(

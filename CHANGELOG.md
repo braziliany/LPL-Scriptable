@@ -6,6 +6,9 @@
 - 新增 `data/schedule.schema.json`，校验赛程字段、状态与比分时间线。
 - Schema 测试额外检查比赛 ID 唯一性和全赛季时间排序。
 - GitHub Actions 改用 `npm ci` 与 `npm test`，本地和 CI 使用同一测试清单。
+- 接入 ESLint 9，并声明 Scriptable 专用运行时全局变量。
+- 接入 Prettier 3，统一 JavaScript、JSON 和 YAML 格式。
+- 新增 `npm run check` 串联测试、静态检查与格式检查，GitHub Actions 使用同一入口。
 
 ## 2.2.0 · 2026-07-29
 
