@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "2.2.0",
+  version: "2.3.0",
   repository: "https://github.com/braziliany/LPL-Scriptable",
   rawBase: "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
@@ -113,6 +113,7 @@ const TEAM_LOGO_SCALES = {
 
 const CACHE_FILE = "lpl-schedule-cache.json";
 const SETTINGS_FILE = "lpl-schedule-settings.json";
+const SETTINGS_SCHEMA_VERSION = 1;
 const REFRESH_PROFILES = {
   realtime: {
     label: "实时",
@@ -134,6 +135,7 @@ const REFRESH_PROFILES = {
   },
 };
 const DEFAULT_SETTINGS = {
+  schemaVersion: SETTINGS_SCHEMA_VERSION,
   dataMode: CONFIG.dataMode,
   highlightedTeams: [...CONFIG.highlightedTeams],
   livePlatform: CONFIG.livePlatform,
@@ -296,6 +298,7 @@ function normalizeUserSettings(value) {
     : DEFAULT_SETTINGS.themeMode;
 
   return {
+    schemaVersion: SETTINGS_SCHEMA_VERSION,
     dataMode,
     highlightedTeams,
     livePlatform,
@@ -438,6 +441,66 @@ async function chooseThemeMode(current) {
   return choice === -1 ? current : modes[choice][0];
 }
 
+function buildDiagnosticText(
+  settings,
+  cache,
+  widgetFamily = "unknown",
+  now = new Date()
+) {
+  const normalized = normalizeUserSettings(settings);
+  const cacheTime = cache?.updatedAt
+    ? new Date(cache.updatedAt).getTime()
+    : NaN;
+  const cacheAgeMinutes = Number.isFinite(cacheTime)
+    ? Math.max(0, Math.floor((now.getTime() - cacheTime) / (60 * 1000)))
+    : null;
+  const cacheStatus =
+    cacheAgeMinutes === null
+      ? "无缓存"
+      : cacheAgeMinutes <= normalized.cacheHours * 60
+        ? `有效（${cacheAgeMinutes} 分钟前）`
+        : `已过期（${cacheAgeMinutes} 分钟前）`;
+
+  return [
+    `组件版本：${APP.version}`,
+    `设计系统：${DesignSystem.version || "未知"}`,
+    `设置结构：v${normalized.schemaVersion}`,
+    `组件尺寸：${widgetFamily || "unknown"}`,
+    `数据模式：${normalized.dataMode}`,
+    `直播平台：${normalized.livePlatform}`,
+    `主题模式：${normalized.themeMode}`,
+    `刷新策略：${normalized.refreshProfile}`,
+    `缓存时长：${normalized.cacheHours} 小时`,
+    `缓存状态：${cacheStatus}`,
+    `缓存来源：${cache?.source || "无"}`,
+    `缓存比赛：${cache?.matches?.length || 0} 场`,
+    `缓存时间：${cache?.updatedAt || "无"}`,
+  ].join("\n");
+}
+
+async function presentDiagnostics(settings) {
+  let text;
+  try {
+    text = buildDiagnosticText(
+      settings,
+      readCache(),
+      config.widgetFamily,
+      new Date()
+    );
+  } catch (error) {
+    text = `诊断信息生成失败：${error?.message || error}`;
+  }
+
+  const alert = new Alert();
+  alert.title = "运行诊断";
+  alert.message = text;
+  alert.addAction("复制诊断信息");
+  alert.addCancelAction("返回");
+  if ((await alert.present()) === 0) {
+    Pasteboard.copyString(text);
+  }
+}
+
 async function presentSettings() {
   let settings = readUserSettings();
 
@@ -458,6 +521,7 @@ async function presentSettings() {
     alert.addAction("缓存有效期");
     alert.addAction("刷新频率");
     alert.addAction("组件主题");
+    alert.addAction("运行诊断");
     alert.addDestructiveAction("恢复默认设置");
     alert.addCancelAction("完成");
 
@@ -481,6 +545,8 @@ async function presentSettings() {
     } else if (choice === 5) {
       settings.themeMode = await chooseThemeMode(settings.themeMode);
     } else if (choice === 6) {
+      await presentDiagnostics(settings);
+    } else if (choice === 7) {
       settings = normalizeUserSettings(DEFAULT_SETTINGS);
     }
 

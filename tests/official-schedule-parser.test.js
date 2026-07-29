@@ -9,6 +9,7 @@ const source = fs.readFileSync(scriptPath, "utf8").replace(
   "await main();",
   `globalThis.__testApi = {
       countdownText,
+      buildDiagnosticText,
       findNextMatchDay,
       isWithinFinishedScoreHold,
       applyUserSettings,
@@ -248,6 +249,7 @@ assert.deepEqual(
     )
   ),
   {
+    schemaVersion: 1,
     dataMode: "remote",
     highlightedTeams: ["TT", "BLG"],
     livePlatform: "bilibili",
@@ -259,6 +261,7 @@ assert.deepEqual(
 assert.deepEqual(
   JSON.parse(JSON.stringify(context.__testApi.normalizeUserSettings(null))),
   {
+    schemaVersion: 1,
     dataMode: "auto",
     highlightedTeams: ["BLG", "AL", "TES", "WBG"],
     livePlatform: "official",
@@ -267,6 +270,29 @@ assert.deepEqual(
     themeMode: "dark",
   }
 );
+
+const diagnosticText = context.__testApi.buildDiagnosticText(
+  {
+    dataMode: "remote",
+    highlightedTeams: ["BLG"],
+    livePlatform: "official",
+    cacheHours: 12,
+    refreshProfile: "balanced",
+    themeMode: "dark",
+  },
+  {
+    updatedAt: "2026-07-30T10:00:00+08:00",
+    source: "remote",
+    matches: [upcoming, live],
+  },
+  "medium",
+  new Date("2026-07-30T10:09:00+08:00")
+);
+assert.match(diagnosticText, /组件版本：2\.3\.0/);
+assert.match(diagnosticText, /设计系统：2\.3\.0/);
+assert.match(diagnosticText, /设置结构：v1/);
+assert.match(diagnosticText, /缓存状态：有效（9 分钟前）/);
+assert.match(diagnosticText, /缓存比赛：2 场/);
 assert.equal(context.__testApi.resolveThemeMode("auto", true), "dark");
 assert.equal(context.__testApi.resolveThemeMode("auto", false), "light");
 assert.equal(context.__testApi.resolveThemeMode("LIGHT", true), "light");
