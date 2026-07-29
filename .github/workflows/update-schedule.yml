@@ -25,19 +25,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Update schedule
         run: node scripts/update-schedule.js
 
       - name: Run tests
-        run: |
-          node tests/installer.test.js
-          node tests/design-system.test.js
-          node tests/official-schedule-parser.test.js
-          node tests/update-schedule.test.js
-          node --check Installer.js
-          node --check LPL-Design-System.js
-          node --check LPL-Schedule.js
+        run: npm test
 
       - name: Commit updated schedule
         run: |

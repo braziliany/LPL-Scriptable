@@ -1,0 +1,16 @@
+{
+  "name": "lpl-scriptable",
+  "version": "2.2.0",
+  "private": true,
+  "description": "LPL schedule widget for Scriptable",
+  "scripts": {
+    "test": "node tests/run-all.js",
+    "test:schema": "node tests/schedule-schema.test.js"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -149,15 +149,16 @@ node scripts/update-schedule.js
 
 更新脚本只保留 `2026 LPL 第三赛段`，并校验比赛编号、时间和对阵双方。官方数据异常或筛选结果为空时，脚本会失败且不会覆盖现有文件。
 
-运行回归测试：
+首次安装开发依赖并运行全部回归测试：
 
 ```bash
-node tests/official-schedule-parser.test.js
-node tests/update-schedule.test.js
-node tests/design-system.test.js
-node tests/installer.test.js
-node --check LPL-Schedule.js
+npm install
+npm test
 ```
+
+`npm test` 会统一执行安装器、设计系统、赛程更新器、组件解析和 JSON Schema 五组测试，并检查四个 JavaScript 入口的语法。
+
+`data/schedule.schema.json` 定义生成数据的正式结构。Schema 测试除字段类型外，还会检查比赛 ID 唯一性和全赛季时间排序。GitHub Actions 在提交自动赛程更新前必须通过同一套 `npm test`。
 
 ## 复用设计系统
 
