@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "2.4.0",
+  version: "2.5.0",
   repository: "https://github.com/braziliany/LPL-Scriptable",
   rawBase: "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
@@ -41,6 +41,8 @@ const CONFIG = {
   dataMode: "auto",
 
   remoteScheduleUrl: `${APP.rawBase}/data/schedule.json`,
+  officialDataUrl:
+    "https://lpl.qq.com/web201612/data/LOL_MATCH2_MATCH_HOMEPAGE_BMATCH_LIST.js",
   officialScheduleUrl: "https://lpl.qq.com/act/a20200518app/html/schedule.html",
   schedulePageUrl: "https://lpl.qq.com/web202301/schedule.html",
   liveUrl: "https://lpl.qq.com/web202301/schedule.html",
@@ -62,6 +64,7 @@ const CONFIG = {
   nearMatchRefreshMinutes: 5,
   normalRefreshMinutes: 15,
   finishedScoreHoldMinutes: 10,
+  inferredLiveDelayMinutes: 10,
 
   highlightedTeams: ["BLG", "AL", "TES", "WBG"],
   themeMode: "dark",
@@ -647,6 +650,8 @@ function normalizeMatch(raw) {
   if (!left || !right || left === right) return null;
 
   return {
+    id: String(raw.id || raw.bMatchId || ""),
+    gameId: String(raw.gameId || raw.GameId || ""),
     startTime: `${formatDate(date)} ${pad2(date.getHours())}:${pad2(
       date.getMinutes()
     )}:00`,
@@ -846,6 +851,108 @@ async function loadRemoteSchedule() {
   return uniqueMatches(matches).sort((a, b) => a.timestamp - b.timestamp);
 }
 
+function officialApiStatus(value) {
+  if (String(value) === "2") return "live";
+  if (String(value) === "3") return "finished";
+  return "upcoming";
+}
+
+function officialMatchUrl(match) {
+  const matchId = encodeURIComponent(String(match.bMatchId || ""));
+  const gameId = encodeURIComponent(String(match.GameId || ""));
+  const newsId = encodeURIComponent(String(match.NewsId || ""));
+  const base = "https://lpl.qq.com/web202301";
+
+  if (String(match.MatchStatus) === "2" && matchId && gameId) {
+    return `${base}/live.html?bgid=${gameId}&bmid=${matchId}`;
+  }
+  if (String(match.MatchStatus) === "3" && newsId && newsId !== "0") {
+    return `${base}/video_detail.shtml?nid=${newsId}`;
+  }
+  if (String(match.MatchStatus) === "3" && matchId) {
+    return `${base}/stats.shtml?bmid=${matchId}`;
+  }
+  return CONFIG.schedulePageUrl;
+}
+
+function parseOfficialApiState(payload) {
+  if (String(payload?.status) !== "0" || !Array.isArray(payload?.msg)) {
+    throw new Error("官方状态接口返回格式无效");
+  }
+
+  return payload.msg
+    .filter(
+      (match) =>
+        String(match.MatchDate || "").startsWith("2026-") &&
+        String(match.GameName || "").includes("2026职业联赛") &&
+        String(match.GameTypeName || "").includes("第三赛段")
+    )
+    .map((match) => {
+      const status = officialApiStatus(match.MatchStatus);
+      return {
+        id: String(match.bMatchId || ""),
+        gameId: String(match.GameId || ""),
+        status,
+        leftScore: status === "upcoming" ? null : Number(match.ScoreA ?? null),
+        rightScore: status === "upcoming" ? null : Number(match.ScoreB ?? null),
+        liveUrl: officialMatchUrl(match),
+      };
+    })
+    .filter((match) => match.id);
+}
+
+async function loadOfficialApiState() {
+  const separator = CONFIG.officialDataUrl.includes("?") ? "&" : "?";
+  const request = new Request(
+    `${CONFIG.officialDataUrl}${separator}v=${Date.now()}`
+  );
+  request.timeoutInterval = 12;
+  request.headers = {
+    "User-Agent": "Scriptable-LPL-Schedule/1.0",
+    "Cache-Control": "no-cache",
+  };
+  return parseOfficialApiState(await request.loadJSON());
+}
+
+function mergeOfficialState(matches, states, observedAt = new Date()) {
+  const byId = new Map(states.map((state) => [String(state.id), state]));
+  const observedAtText = observedAt.toISOString();
+
+  return matches.map((match) => {
+    const state = byId.get(String(match.id));
+    if (!state) return match;
+    const changed =
+      state.status !== match.status ||
+      state.leftScore !== match.leftScore ||
+      state.rightScore !== match.rightScore;
+    return {
+      ...match,
+      ...state,
+      scoreUpdatedAt:
+        state.status === "upcoming"
+          ? null
+          : changed
+            ? observedAtText
+            : match.scoreUpdatedAt,
+      finishedAt:
+        state.status === "finished"
+          ? match.status === "finished"
+            ? match.finishedAt || match.scoreUpdatedAt || observedAtText
+            : observedAtText
+          : null,
+    };
+  });
+}
+
+function shouldRefreshOfficialState(matches, now = new Date()) {
+  return matches.some(
+    (match) =>
+      match.status === "upcoming" &&
+      Number.isFinite(match.timestamp) &&
+      match.timestamp <= now.getTime()
+  );
+}
+
 // MARK: - 官方页面解析
 
 async function sleep(seconds) {
@@ -1042,11 +1149,25 @@ async function loadSchedule() {
 
   if (mode === "auto" || mode === "remote") {
     try {
-      const matches = await loadRemoteSchedule();
+      let matches = await loadRemoteSchedule();
+      let source = "GitHub";
       attempts.push({ source: "GitHub", status: "success" });
-      writeCache(matches, "remote");
-      writeDataDiagnostics(mode, "GitHub", attempts);
-      return { matches, source: "GitHub" };
+      if (shouldRefreshOfficialState(matches)) {
+        try {
+          matches = mergeOfficialState(matches, await loadOfficialApiState());
+          source = "GitHub + 官方状态";
+          attempts.push({ source: "官方状态接口", status: "success" });
+        } catch (error) {
+          attempts.push({
+            source: "官方状态接口",
+            status: "failure",
+            message: String(error.message || error).slice(0, 160),
+          });
+        }
+      }
+      writeCache(matches, source);
+      writeDataDiagnostics(mode, source, attempts);
+      return { matches, source };
     } catch (error) {
       const message = String(error.message || error).slice(0, 160);
       errors.push(`GitHub：${message}`);
@@ -1213,15 +1334,16 @@ function matchWinner(match) {
 }
 
 function matchVisualStyle(match, index, now = new Date()) {
+  const status = effectiveMatchStatus(match, now);
   const winner = matchWinner(match);
   const highlighted = isHighlighted(match.left) || isHighlighted(match.right);
   const countdown = countdownText(match, now);
 
   return {
     accent:
-      match.status === "live"
+      status === "live"
         ? CONFIG.theme.red
-        : match.status === "finished"
+        : status === "finished"
           ? CONFIG.theme.yellow
           : highlighted
             ? CONFIG.theme.yellow
@@ -1233,17 +1355,17 @@ function matchVisualStyle(match, index, now = new Date()) {
     leftOpacity: winner && winner !== "left" ? 0.5 : 1,
     rightOpacity: winner && winner !== "right" ? 0.5 : 1,
     valueColor:
-      match.status === "live"
+      status === "live"
         ? CONFIG.theme.red
         : countdown
           ? CONFIG.theme.orange
-          : match.status === "finished"
+          : status === "finished"
             ? CONFIG.theme.yellow
             : highlighted
               ? CONFIG.theme.yellow
               : accentColor(index),
     subtitleColor:
-      match.status === "live" ? CONFIG.theme.red : CONFIG.theme.secondary,
+      status === "live" ? CONFIG.theme.red : CONFIG.theme.secondary,
   };
 }
 
@@ -1258,8 +1380,20 @@ function hasValidScore(match) {
   return isValidScore(match.matchType, match.leftScore, match.rightScore);
 }
 
+function effectiveMatchStatus(match, now = new Date()) {
+  if (
+    match.status === "upcoming" &&
+    Number.isFinite(match.timestamp) &&
+    now.getTime() >=
+      match.timestamp + CONFIG.inferredLiveDelayMinutes * 60 * 1000
+  ) {
+    return "live";
+  }
+  return match.status;
+}
+
 function countdownText(match, now = new Date()) {
-  if (match.status !== "upcoming") return null;
+  if (effectiveMatchStatus(match, now) !== "upcoming") return null;
 
   const remainingMs = match.timestamp - now.getTime();
   if (remainingMs <= 0) return "即将开始";
@@ -1270,12 +1404,16 @@ function countdownText(match, now = new Date()) {
 }
 
 function matchSubtitle(match, now = new Date()) {
-  if (match.status === "live") {
+  const status = effectiveMatchStatus(match, now);
+  if (status === "live") {
+    if (match.status === "upcoming") {
+      return `进行中 · 状态待更新 · ${match.matchType}`;
+    }
     return hasValidScore(match)
       ? `进行中 · ${match.matchType}`
       : `直播中 · 比分待更新 · ${match.matchType}`;
   }
-  if (match.status === "finished") {
+  if (status === "finished") {
     return hasValidScore(match)
       ? `已结束 · ${match.matchType}`
       : `已结束 · 比分待确认 · ${match.matchType}`;
@@ -1288,12 +1426,13 @@ function matchSubtitle(match, now = new Date()) {
 }
 
 function matchRightValue(match, now = new Date()) {
-  if (match.status === "live") {
+  const status = effectiveMatchStatus(match, now);
+  if (status === "live") {
     return hasValidScore(match)
       ? `${match.leftScore}-${match.rightScore}`
       : "进行中";
   }
-  if (match.status === "finished") {
+  if (status === "finished") {
     return hasValidScore(match)
       ? `${match.leftScore}-${match.rightScore}`
       : "已结束";
@@ -1319,7 +1458,7 @@ function shouldUseCompactMedium(matches) {
 function nextRefreshDate(matches, now = new Date()) {
   let refreshMinutes = CONFIG.normalRefreshMinutes;
 
-  if (matches.some((match) => match.status === "live")) {
+  if (matches.some((match) => effectiveMatchStatus(match, now) === "live")) {
     refreshMinutes = CONFIG.liveRefreshMinutes;
   } else {
     const nextMatch = matches
@@ -1364,8 +1503,15 @@ function configureRefresh(widget, result, now = new Date()) {
   widget.refreshAfterDate = nextRefreshDate(result.matches, now);
 }
 
-function resolveMatchUrl(match, livePlatform = CONFIG.livePlatform) {
-  if (match.status === "live" && livePlatform === "bilibili") {
+function resolveMatchUrl(
+  match,
+  livePlatform = CONFIG.livePlatform,
+  now = new Date()
+) {
+  if (
+    effectiveMatchStatus(match, now) === "live" &&
+    livePlatform === "bilibili"
+  ) {
     return CONFIG.bilibiliLiveUrl;
   }
   return match.liveUrl || CONFIG.liveUrl;
@@ -1383,7 +1529,7 @@ function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   const row = widget.addStack();
   row.layoutHorizontally();
   row.centerAlignContent();
-  row.url = resolveMatchUrl(match);
+  row.url = resolveMatchUrl(match, CONFIG.livePlatform, now);
 
   const visual = matchVisualStyle(match, index, now);
   addAccentBar(row, visual.accent, compact);

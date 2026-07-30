@@ -9,6 +9,7 @@ const source = fs.readFileSync(scriptPath, "utf8").replace(
   "await main();",
   `globalThis.__testApi = {
       countdownText,
+      effectiveMatchStatus,
       buildDiagnosticText,
       findNextMatchDay,
       isWithinFinishedScoreHold,
@@ -23,6 +24,8 @@ const source = fs.readFileSync(scriptPath, "utf8").replace(
       logoCacheFileName,
       teamLogoScale,
       parseOfficialSchedule,
+      parseOfficialApiState,
+      mergeOfficialState,
       resolveMatchUrl,
       resolveThemeMode,
       shouldUseCompactMedium,
@@ -104,6 +107,25 @@ assert.equal(
     now
   ),
   "即将开始"
+);
+const delayedUpcoming = {
+  ...upcoming,
+  id: "13381",
+  timestamp: now.getTime() - 11 * 60 * 1000,
+};
+assert.equal(
+  context.__testApi.effectiveMatchStatus(delayedUpcoming, now),
+  "live"
+);
+assert.equal(context.__testApi.countdownText(delayedUpcoming, now), null);
+assert.equal(context.__testApi.matchRightValue(delayedUpcoming, now), "进行中");
+assert.equal(
+  context.__testApi.matchSubtitle(delayedUpcoming, now),
+  "进行中 · 状态待更新 · BO3"
+);
+assert.equal(
+  context.__testApi.matchVisualStyle(delayedUpcoming, 0, now).accent,
+  "#FF4D67"
 );
 assert.equal(context.__testApi.matchRightValue(upcoming, now), "还有30分钟");
 assert.equal(
@@ -219,6 +241,11 @@ assert.equal(
   context.__testApi.nextRefreshDate([upcoming], now).getTime() - now.getTime(),
   5 * 60 * 1000
 );
+assert.equal(
+  context.__testApi.nextRefreshDate([delayedUpcoming], now).getTime() -
+    now.getTime(),
+  3 * 60 * 1000
+);
 assert.deepEqual(
   JSON.parse(JSON.stringify(context.__testApi.matchValueMetrics("medium"))),
   { fontSize: 28, minimumScaleFactor: 0.6, width: 112 }
@@ -288,8 +315,8 @@ const diagnosticText = context.__testApi.buildDiagnosticText(
   "medium",
   new Date("2026-07-30T10:09:00+08:00")
 );
-assert.match(diagnosticText, /组件版本：2\.4\.0/);
-assert.match(diagnosticText, /设计系统：2\.4\.0/);
+assert.match(diagnosticText, /组件版本：2\.5\.0/);
+assert.match(diagnosticText, /设计系统：2\.5\.0/);
 assert.match(diagnosticText, /设置结构：v1/);
 assert.match(diagnosticText, /运行环境：中号组件/);
 assert.match(diagnosticText, /缓存状态：有效（9 分钟前）/);
@@ -359,6 +386,44 @@ assert.equal(
   ),
   "https://lpl.qq.com/replay/1"
 );
+assert.equal(
+  context.__testApi.resolveMatchUrl(delayedUpcoming, "bilibili", now),
+  "https://live.bilibili.com/6"
+);
+
+const officialStates = context.__testApi.parseOfficialApiState({
+  status: "0",
+  msg: [
+    {
+      bMatchId: "13381",
+      GameId: "237",
+      MatchDate: "2026-07-30 15:00:00",
+      GameName: "2026职业联赛",
+      GameTypeName: "第三赛段组内赛",
+      MatchStatus: "2",
+      ScoreA: "1",
+      ScoreB: "0",
+    },
+    {
+      bMatchId: "other",
+      MatchDate: "2026-07-30 15:00:00",
+      GameName: "其他赛事",
+      GameTypeName: "第三赛段",
+      MatchStatus: "2",
+    },
+  ],
+});
+assert.equal(officialStates.length, 1);
+assert.equal(officialStates[0].status, "live");
+assert.equal(officialStates[0].leftScore, 1);
+const mergedState = context.__testApi.mergeOfficialState(
+  [delayedUpcoming],
+  officialStates,
+  now
+)[0];
+assert.equal(mergedState.status, "live");
+assert.equal(mergedState.leftScore, 1);
+assert.match(mergedState.liveUrl, /live\.html\?bgid=237&bmid=13381/);
 
 context.__testApi.applyUserSettings({
   refreshProfile: "battery",

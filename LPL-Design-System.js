@@ -3,7 +3,7 @@
  * 可供其他 Scriptable 项目通过 importModule("LPL-Design-System") 复用。
  */
 
-const version = "2.4.0";
+const version = "2.5.0";
 
 const palettes = {
   dark: {
