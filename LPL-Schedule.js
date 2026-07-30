@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "2.3.1",
+  version: "2.4.0",
   repository: "https://github.com/braziliany/LPL-Scriptable",
   rawBase: "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
@@ -113,6 +113,7 @@ const TEAM_LOGO_SCALES = {
 
 const CACHE_FILE = "lpl-schedule-cache.json";
 const SETTINGS_FILE = "lpl-schedule-settings.json";
+const DATA_DIAGNOSTICS_FILE = "lpl-schedule-data-diagnostics.json";
 const SETTINGS_SCHEMA_VERSION = 1;
 const REFRESH_PROFILES = {
   realtime: {
@@ -450,7 +451,8 @@ function buildDiagnosticText(
   settings,
   cache,
   widgetFamily = "unknown",
-  now = new Date()
+  now = new Date(),
+  dataDiagnostics = null
 ) {
   const normalized = normalizeUserSettings(settings);
   const cacheTime = cache?.updatedAt
@@ -474,6 +476,16 @@ function buildDiagnosticText(
   };
   const family = String(widgetFamily || "unknown").toLowerCase();
   const runtimeLabel = familyLabels[family] || familyLabels.unknown;
+  const attempts = Array.isArray(dataDiagnostics?.attempts)
+    ? dataDiagnostics.attempts
+        .map((attempt) => {
+          const status = attempt.status === "success" ? "成功" : "失败";
+          return `${attempt.source}=${status}${
+            attempt.message ? `（${attempt.message}）` : ""
+          }`;
+        })
+        .join(" → ")
+    : "暂无记录";
 
   return [
     `组件版本：${APP.version}`,
@@ -489,6 +501,9 @@ function buildDiagnosticText(
     `缓存来源：${cache?.source || "无"}`,
     `缓存比赛：${cache?.matches?.length || 0} 场`,
     `缓存时间：${cache?.updatedAt || "无"}`,
+    `最近来源：${dataDiagnostics?.selectedSource || "无"}`,
+    `读取时间：${dataDiagnostics?.updatedAt || "无"}`,
+    `读取路径：${attempts}`,
   ].join("\n");
 }
 
@@ -499,7 +514,8 @@ async function presentDiagnostics(settings) {
       settings,
       readCache(),
       args.queryParameters?.family || config.widgetFamily || "app",
-      new Date()
+      new Date(),
+      readDataDiagnostics()
     );
   } catch (error) {
     text = `诊断信息生成失败：${error?.message || error}`;
@@ -719,6 +735,43 @@ async function prepareMatchLogos(matches) {
 function cachePath() {
   const fm = FileManager.local();
   return fm.joinPath(fm.documentsDirectory(), CACHE_FILE);
+}
+
+function dataDiagnosticsPath() {
+  const fm = FileManager.local();
+  return fm.joinPath(fm.documentsDirectory(), DATA_DIAGNOSTICS_FILE);
+}
+
+function readDataDiagnostics() {
+  try {
+    const fm = FileManager.local();
+    const path = dataDiagnosticsPath();
+    if (!fm.fileExists(path)) return null;
+    return JSON.parse(fm.readString(path));
+  } catch (error) {
+    console.warn(`读取数据诊断失败：${error}`);
+    return null;
+  }
+}
+
+function writeDataDiagnostics(mode, selectedSource, attempts) {
+  try {
+    FileManager.local().writeString(
+      dataDiagnosticsPath(),
+      JSON.stringify(
+        {
+          updatedAt: new Date().toISOString(),
+          mode,
+          selectedSource,
+          attempts,
+        },
+        null,
+        2
+      )
+    );
+  } catch (error) {
+    console.warn(`写入数据诊断失败：${error}`);
+  }
 }
 
 function readCache() {
@@ -985,15 +1038,27 @@ async function loadSchedule() {
   const mode = String(CONFIG.dataMode).toLowerCase();
   const cached = readCache();
   const errors = [];
+  const attempts = [];
 
   if (mode === "auto" || mode === "remote") {
     try {
       const matches = await loadRemoteSchedule();
+      attempts.push({ source: "GitHub", status: "success" });
       writeCache(matches, "remote");
+      writeDataDiagnostics(mode, "GitHub", attempts);
       return { matches, source: "GitHub" };
     } catch (error) {
-      errors.push(`GitHub：${error.message || error}`);
-      if (mode === "remote") throw error;
+      const message = String(error.message || error).slice(0, 160);
+      errors.push(`GitHub：${message}`);
+      attempts.push({
+        source: "GitHub",
+        status: "failure",
+        message,
+      });
+      if (mode === "remote") {
+        writeDataDiagnostics(mode, "无", attempts);
+        throw error;
+      }
     }
   }
 
@@ -1001,21 +1066,45 @@ async function loadSchedule() {
     try {
       const text = await loadOfficialPageText();
       const matches = parseOfficialSchedule(text);
+      attempts.push({ source: "官方页面", status: "success" });
       writeCache(matches, "official");
+      writeDataDiagnostics(mode, "官方页面", attempts);
       return { matches, source: "官方页面" };
     } catch (error) {
-      errors.push(`官方页面：${error.message || error}`);
-      if (mode === "official") throw error;
+      const message = String(error.message || error).slice(0, 160);
+      errors.push(`官方页面：${message}`);
+      attempts.push({
+        source: "官方页面",
+        status: "failure",
+        message,
+      });
+      if (mode === "official") {
+        writeDataDiagnostics(mode, "无", attempts);
+        throw error;
+      }
     }
   }
 
   if (cached?.matches?.length) {
+    const source = isCacheFresh(cached) ? "本地缓存" : "过期缓存";
+    attempts.push({
+      source: "本地缓存",
+      status: "success",
+      message: source === "本地缓存" ? "有效" : "已过期",
+    });
+    writeDataDiagnostics(mode, source, attempts);
     return {
       matches: cached.matches.map(normalizeMatch).filter(Boolean),
-      source: isCacheFresh(cached) ? "本地缓存" : "过期缓存",
+      source,
     };
   }
 
+  attempts.push({
+    source: "本地缓存",
+    status: "failure",
+    message: "无可用缓存",
+  });
+  writeDataDiagnostics(mode, "无", attempts);
   throw new Error(errors.join("\n") || "没有可用的赛程数据");
 }
 
