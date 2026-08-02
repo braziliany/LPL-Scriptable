@@ -1,6 +1,6 @@
 {
   "season": "2026 LPL 第三赛段",
-  "updatedAt": "2026-08-02T17:50:05+08:00",
+  "updatedAt": "2026-08-02T19:00:05+08:00",
   "source": "https://lpl.qq.com/web201612/data/LOL_MATCH2_MATCH_HOMEPAGE_BMATCH_LIST.js",
   "matches": [
     {
@@ -423,8 +423,8 @@
       "matchType": "BO3",
       "stage": "第三赛段组内赛",
       "leftScore": 0,
-      "rightScore": 0,
-      "scoreUpdatedAt": "2026-08-02T10:19:19.974Z",
+      "rightScore": 1,
+      "scoreUpdatedAt": "2026-08-02T11:37:28.637Z",
       "finishedAt": null,
       "liveUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13390"
     },
