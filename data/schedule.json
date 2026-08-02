@@ -1,6 +1,6 @@
 {
   "season": "2026 LPL 第三赛段",
-  "updatedAt": "2026-08-02T19:50:07+08:00",
+  "updatedAt": "2026-08-02T22:10:06+08:00",
   "source": "https://lpl.qq.com/web201612/data/LOL_MATCH2_MATCH_HOMEPAGE_BMATCH_LIST.js",
   "matches": [
     {
@@ -436,14 +436,14 @@
       "right": "JDG",
       "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20240920155538/5beb948638f00bcda68fc4942e3f0a51/0",
       "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230921143554/1e5189e914e40bfe18045bccbfc7ef82/0",
-      "status": "live",
+      "status": "finished",
       "matchType": "BO3",
       "stage": "第三赛段组内赛",
-      "leftScore": 0,
+      "leftScore": 2,
       "rightScore": 0,
-      "scoreUpdatedAt": "2026-08-02T12:40:06.621Z",
-      "finishedAt": null,
-      "liveUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13391"
+      "scoreUpdatedAt": "2026-08-02T14:13:06.061Z",
+      "finishedAt": "2026-08-02T14:13:06.061Z",
+      "liveUrl": "https://lpl.qq.com/web202301/stats.shtml?bmid=13391"
     },
     {
       "id": "13392",
