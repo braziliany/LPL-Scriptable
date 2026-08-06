@@ -1,6 +1,6 @@
 {
   "season": "2026 LPL 第三赛段",
-  "updatedAt": "2026-08-06T17:00:07+08:00",
+  "updatedAt": "2026-08-06T19:00:07+08:00",
   "source": "https://lpl.qq.com/web201612/data/LOL_MATCH2_MATCH_HOMEPAGE_BMATCH_LIST.js",
   "matches": [
     {
@@ -487,14 +487,14 @@
       "right": "TT",
       "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20230103153121/0cef697fa6d0416e672c2fd90f30718c/0",
       "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152930/f1e243799a62f73f37af8f10be9dd977/0",
-      "status": "live",
+      "status": "finished",
       "matchType": "BO3",
       "stage": "第三赛段组内赛",
       "leftScore": 1,
-      "rightScore": 1,
-      "scoreUpdatedAt": "2026-08-06T09:17:20.476Z",
-      "finishedAt": null,
-      "liveUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13394"
+      "rightScore": 2,
+      "scoreUpdatedAt": "2026-08-06T11:34:32.222Z",
+      "finishedAt": "2026-08-06T11:34:32.222Z",
+      "liveUrl": "https://lpl.qq.com/web202301/stats.shtml?bmid=13394"
     },
     {
       "id": "13395",
@@ -504,14 +504,14 @@
       "right": "NIP",
       "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152918/562affbb9f99b0e472644f93a19291e7/0",
       "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152746/c8a8f59fadc0da0bda0c4997e3f62afb/0",
-      "status": "upcoming",
+      "status": "live",
       "matchType": "BO3",
       "stage": "第三赛段组内赛",
-      "leftScore": null,
-      "rightScore": null,
-      "scoreUpdatedAt": null,
+      "leftScore": 1,
+      "rightScore": 0,
+      "scoreUpdatedAt": "2026-08-06T11:34:32.222Z",
       "finishedAt": null,
-      "liveUrl": "https://lpl.qq.com/web202301/schedule.html"
+      "liveUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13395"
     },
     {
       "id": "13396",
