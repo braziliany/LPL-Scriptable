@@ -234,7 +234,7 @@ title.textColor = new Color(palette.white);
 
 ## 用户设置
 
-点击中号或大号组件的整个顶部标题栏，即可在 Scriptable 中打开设置菜单；小号组件可点击黄色方块或日期。当前支持：
+直接在 Scriptable 中运行主脚本即可打开设置菜单。也可以点击中号或大号组件的整个顶部标题栏；小号组件可点击黄色方块或日期。当前支持：
 
 - 关注队伍
 - 数据来源
@@ -242,6 +242,7 @@ title.textColor = new Color(palette.white);
 - 缓存有效期：1、3、6、12 或 24 小时
 - 刷新频率：实时、均衡或省电
 - 组件主题：深蓝、浅色或跟随系统
+- 预览中号单场布局
 - 运行诊断并一键复制诊断信息
 - 恢复默认设置
 
@@ -287,7 +288,8 @@ scriptable:///run?scriptName=LPL%20Schedule%202026&action=settings
 
 在 Scriptable 内运行主脚本时：
 
-- 默认预览中号
+- 无参数运行默认打开设置菜单
+- 将脚本参数设置为 `medium` 可预览中号
 - 将脚本参数设置为 `large` 可预览大号
 - 设置为 `small` 可预览小号
 

@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "2.9.0",
+  version: "2.9.1",
   repository: "https://github.com/braziliany/LPL-Scriptable",
   rawBase: "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
@@ -1927,18 +1927,21 @@ async function buildWidget() {
   return renderMedium(result, data.source);
 }
 
+function shouldOpenSettings(runsInWidget, action) {
+  if (runsInWidget) return false;
+  const value = String(action || "").toLowerCase();
+  return !value || value === "settings";
+}
+
 async function main() {
   applyUserSettings(readUserSettings());
 
-  if (
-    !config.runsInWidget &&
-    String(
-      args.queryParameters?.action ||
-        args.shortcutParameter ||
-        args.widgetParameter ||
-        ""
-    ).toLowerCase() === "settings"
-  ) {
+  const launchAction =
+    args.queryParameters?.action ||
+    args.shortcutParameter ||
+    args.widgetParameter ||
+    "";
+  if (shouldOpenSettings(config.runsInWidget, launchAction)) {
     await presentSettings();
     Script.complete();
     return;

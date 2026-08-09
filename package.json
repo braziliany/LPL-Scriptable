@@ -1,6 +1,6 @@
 {
   "name": "lpl-scriptable",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "private": true,
   "description": "LPL schedule widget for Scriptable",
   "scripts": {

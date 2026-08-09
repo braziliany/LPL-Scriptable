@@ -32,6 +32,7 @@ const source = fs.readFileSync(scriptPath, "utf8").replace(
       resolveMatchUrl,
       resolveThemeMode,
       shouldUseCompactMedium,
+      shouldOpenSettings,
       singleMatchPreviewResult,
       sortMatchesByTime,
     };`
@@ -355,8 +356,8 @@ const diagnosticText = context.__testApi.buildDiagnosticText(
   "medium",
   new Date("2026-07-30T10:09:00+08:00")
 );
-assert.match(diagnosticText, /组件版本：2\.9\.0/);
-assert.match(diagnosticText, /设计系统：2\.9\.0/);
+assert.match(diagnosticText, /组件版本：2\.9\.1/);
+assert.match(diagnosticText, /设计系统：2\.9\.1/);
 assert.match(diagnosticText, /设置结构：v1/);
 assert.match(diagnosticText, /运行环境：中号组件/);
 assert.match(diagnosticText, /缓存状态：有效（9 分钟前）/);
@@ -441,6 +442,10 @@ assert.throws(
   () => context.__testApi.singleMatchPreviewResult({ matches: [] }),
   /没有可用于预览的比赛/
 );
+assert.equal(context.__testApi.shouldOpenSettings(false, ""), true);
+assert.equal(context.__testApi.shouldOpenSettings(false, "settings"), true);
+assert.equal(context.__testApi.shouldOpenSettings(false, "medium"), false);
+assert.equal(context.__testApi.shouldOpenSettings(true, "settings"), false);
 assert.deepEqual(
   JSON.parse(
     JSON.stringify(context.__testApi.mediumLayoutProfile([live, upcoming]))
