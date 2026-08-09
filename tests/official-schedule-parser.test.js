@@ -16,6 +16,7 @@ const source = fs.readFileSync(scriptPath, "utf8").replace(
       isWithinFinishedScoreHold,
       applyUserSettings,
       matchRightValue,
+      matchStageLabel,
       matchSubtitle,
       matchVisualStyle,
       matchWinner,
@@ -53,6 +54,28 @@ assert.equal(context.__testApi.teamLogoScale("unknown"), 1.35);
 assert.equal(context.__testApi.inferMatchGroup("TT", "TES"), "登峰组");
 assert.equal(context.__testApi.inferMatchGroup("IG", "LNG"), "涅槃组");
 assert.equal(context.__testApi.inferMatchGroup("TT", "LNG"), "");
+assert.equal(
+  context.__testApi.matchStageLabel({
+    stage: "第三赛段骑士之路",
+    left: "TT",
+    right: "WBG",
+  }),
+  "骑士之路"
+);
+assert.equal(
+  context.__testApi.matchStageLabel({
+    stage: "第三赛段淘汰赛",
+    phase: "败者组决赛",
+  }),
+  "败者组决赛"
+);
+assert.equal(
+  context.__testApi.matchStageLabel({
+    stage: "第三赛段淘汰赛",
+    phase: "第一轮",
+  }),
+  "淘汰赛"
+);
 
 const pageText = [
   "LNG",
@@ -145,6 +168,17 @@ assert.equal(
     now
   ),
   "登峰组 · 未开始 · BO3"
+);
+assert.equal(
+  context.__testApi.matchSubtitle(
+    {
+      ...upcoming,
+      stage: "第三赛段骑士之路",
+      matchType: "BO5",
+    },
+    now
+  ),
+  "骑士之路 · 还有30分钟 · BO5"
 );
 assert.equal(context.__testApi.matchRightValue(live, now), "1-0");
 assert.equal(
@@ -319,8 +353,8 @@ const diagnosticText = context.__testApi.buildDiagnosticText(
   "medium",
   new Date("2026-07-30T10:09:00+08:00")
 );
-assert.match(diagnosticText, /组件版本：2\.6\.0/);
-assert.match(diagnosticText, /设计系统：2\.6\.0/);
+assert.match(diagnosticText, /组件版本：2\.7\.0/);
+assert.match(diagnosticText, /设计系统：2\.7\.0/);
 assert.match(diagnosticText, /设置结构：v1/);
 assert.match(diagnosticText, /运行环境：中号组件/);
 assert.match(diagnosticText, /缓存状态：有效（9 分钟前）/);

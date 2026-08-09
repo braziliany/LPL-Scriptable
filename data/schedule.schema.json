@@ -115,6 +115,9 @@
         "group": {
           "enum": ["登峰组", "涅槃组", ""]
         },
+        "phase": {
+          "type": "string"
+        },
         "leftScore": {
           "$ref": "#/$defs/nullableScore"
         },

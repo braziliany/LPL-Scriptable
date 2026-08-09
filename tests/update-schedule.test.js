@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const {
   buildMatchUrl,
   inferMatchGroup,
+  inferMatchGroupForStage,
   normalizeLogoUrl,
   normalizeStatus,
   normalizeUpdatedAt,
@@ -15,6 +16,8 @@ assert.equal(normalizeStatus("3"), "finished");
 assert.equal(inferMatchGroup("TT", "EDG"), "登峰组");
 assert.equal(inferMatchGroup("NIP", "WBG"), "涅槃组");
 assert.equal(inferMatchGroup("TT", "WBG"), "");
+assert.equal(inferMatchGroupForStage("第三赛段组内赛", "TT", "EDG"), "登峰组");
+assert.equal(inferMatchGroupForStage("第三赛段骑士之路", "TT", "WBG"), "");
 assert.equal(
   normalizeUpdatedAt("2026-07-26 16:45:05"),
   "2026-07-26T16:45:05+08:00"
@@ -97,6 +100,7 @@ assert.deepEqual(schedule.matches[0], {
   status: "live",
   matchType: "BO3",
   stage: "第三赛段组内赛",
+  phase: "",
   group: "登峰组",
   leftScore: 1,
   rightScore: 0,
@@ -152,6 +156,29 @@ assert.equal(
   "2026-07-26T17:45:00+08:00"
 );
 assert.equal(gameScoreSchedule.matches[0].finishedAt, null);
+
+const playoffSchedule = transformSchedule(
+  {
+    ...fixture,
+    msg: [
+      {
+        ...fixture.msg[0],
+        GameTypeName: "第三赛段淘汰赛",
+        GameProcName: "败者组决赛",
+        TeamShortNameA: "TT",
+        TeamShortNameB: "WBG",
+        GameModeName: "BO5",
+      },
+    ],
+  },
+  teamFixture,
+  null,
+  observedAt
+);
+assert.equal(playoffSchedule.matches[0].stage, "第三赛段淘汰赛");
+assert.equal(playoffSchedule.matches[0].phase, "败者组决赛");
+assert.equal(playoffSchedule.matches[0].group, "");
+assert.equal(playoffSchedule.matches[0].matchType, "BO5");
 
 assert.throws(
   () => transformSchedule({ status: "0", msg: [] }),

@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "2.6.0",
+  version: "2.7.0",
   repository: "https://github.com/braziliany/LPL-Scriptable",
   rawBase: "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
@@ -116,6 +116,28 @@ function normalizeMatchGroup(value, left, right) {
   if (text.includes("登峰")) return "登峰组";
   if (text.includes("涅槃")) return "涅槃组";
   return inferMatchGroup(left, right);
+}
+
+function matchStageLabel(match) {
+  const stage = String(match.stage || "");
+  const phase = String(match.phase || "");
+
+  if (/骑士之路/.test(stage)) return "骑士之路";
+  if (/淘汰赛|季后赛/.test(stage)) {
+    const namedRound = phase.match(
+      /(总决赛|胜者组决赛|败者组决赛|胜者组半决赛|败者组半决赛|季军赛)/
+    );
+    return namedRound ? namedRound[1] : "淘汰赛";
+  }
+  if (/总决赛|决赛/.test(stage)) return "总决赛";
+
+  if (/组内赛|常规赛/.test(stage) || !stage) {
+    return (
+      normalizeMatchGroup(match.group, match.left, match.right) || "组内赛"
+    );
+  }
+
+  return stage.replace(/^第三赛段/, "") || "赛事";
 }
 // 官方 Logo 均为 200×200 透明画布，但图案占比不同。
 // 以下系数根据非透明像素边界计算，使队标在相同容器中视觉大小接近。
@@ -689,6 +711,7 @@ function normalizeMatch(raw) {
     status: normalizeStatus(raw.status || raw.statusText),
     matchType: String(raw.matchType || raw.bo || "BO3").toUpperCase(),
     stage: String(raw.stage || "常规赛"),
+    phase: String(raw.phase || ""),
     group: normalizeMatchGroup(raw.group, left, right),
     liveUrl: raw.liveUrl || CONFIG.liveUrl,
   };
@@ -1145,6 +1168,7 @@ function parseOfficialSchedule(text) {
       status: findStatus(lines, index),
       matchType,
       stage: "常规赛",
+      phase: "",
       group: inferMatchGroup(left, right),
       liveUrl: CONFIG.liveUrl,
     });
@@ -1426,8 +1450,8 @@ function countdownText(match, now = new Date()) {
 }
 
 function matchSubtitle(match, now = new Date()) {
-  const group = normalizeMatchGroup(match.group, match.left, match.right);
-  const prefix = group ? `${group} · ` : "";
+  const stage = matchStageLabel(match);
+  const prefix = stage ? `${stage} · ` : "";
   const status = effectiveMatchStatus(match, now);
   if (status === "live") {
     if (match.status === "upcoming") {

@@ -26,6 +26,10 @@ function inferMatchGroup(left, right) {
   return "";
 }
 
+function inferMatchGroupForStage(stage, left, right) {
+  return /组内赛/.test(String(stage || "")) ? inferMatchGroup(left, right) : "";
+}
+
 function buildMatchUrl(match) {
   const matchId = encodeURIComponent(String(match.bMatchId || ""));
   const gameId = encodeURIComponent(String(match.GameId || ""));
@@ -111,6 +115,7 @@ function transformSchedule(
       const id = String(match.bMatchId || "");
       const previous = previousById.get(id);
       const status = normalizeStatus(match.MatchStatus);
+      const stage = String(match.GameTypeName || TARGET_STAGE);
       const leftScore =
         String(match.MatchStatus) === "1" ? null : Number(match.ScoreA);
       const rightScore =
@@ -147,8 +152,13 @@ function transformSchedule(
         rightLogo: normalizeLogoUrl(rightTeam.TeamLogo),
         status,
         matchType: String(match.GameModeName || "BO3").toUpperCase(),
-        stage: String(match.GameTypeName || TARGET_STAGE),
-        group: inferMatchGroup(match.TeamShortNameA, match.TeamShortNameB),
+        stage,
+        phase: String(match.GameProcName || ""),
+        group: inferMatchGroupForStage(
+          stage,
+          match.TeamShortNameA,
+          match.TeamShortNameB
+        ),
         leftScore,
         rightScore,
         scoreUpdatedAt,
@@ -229,6 +239,7 @@ if (require.main === module) {
 module.exports = {
   buildMatchUrl,
   inferMatchGroup,
+  inferMatchGroupForStage,
   normalizeLogoUrl,
   normalizeStatus,
   normalizeUpdatedAt,
