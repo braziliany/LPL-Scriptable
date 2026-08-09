@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "2.5.0",
+  version: "2.6.0",
   repository: "https://github.com/braziliany/LPL-Scriptable",
   rawBase: "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
@@ -97,6 +97,26 @@ const KNOWN_TEAMS = [
   "UP",
   "TT",
 ];
+
+const MATCH_GROUPS = {
+  登峰组: new Set(["AL", "BLG", "EDG", "JDG", "LGD", "TES", "TT", "WE"]),
+  涅槃组: new Set(["IG", "LNG", "NIP", "WBG"]),
+};
+
+function inferMatchGroup(left, right) {
+  const teams = [normalizeTeamName(left), normalizeTeamName(right)];
+  for (const [group, members] of Object.entries(MATCH_GROUPS)) {
+    if (teams.every((team) => members.has(team))) return group;
+  }
+  return "";
+}
+
+function normalizeMatchGroup(value, left, right) {
+  const text = String(value || "");
+  if (text.includes("登峰")) return "登峰组";
+  if (text.includes("涅槃")) return "涅槃组";
+  return inferMatchGroup(left, right);
+}
 // 官方 Logo 均为 200×200 透明画布，但图案占比不同。
 // 以下系数根据非透明像素边界计算，使队标在相同容器中视觉大小接近。
 const TEAM_LOGO_SCALES = {
@@ -669,6 +689,7 @@ function normalizeMatch(raw) {
     status: normalizeStatus(raw.status || raw.statusText),
     matchType: String(raw.matchType || raw.bo || "BO3").toUpperCase(),
     stage: String(raw.stage || "常规赛"),
+    group: normalizeMatchGroup(raw.group, left, right),
     liveUrl: raw.liveUrl || CONFIG.liveUrl,
   };
 }
@@ -1124,6 +1145,7 @@ function parseOfficialSchedule(text) {
       status: findStatus(lines, index),
       matchType,
       stage: "常规赛",
+      group: inferMatchGroup(left, right),
       liveUrl: CONFIG.liveUrl,
     });
   }
@@ -1404,25 +1426,27 @@ function countdownText(match, now = new Date()) {
 }
 
 function matchSubtitle(match, now = new Date()) {
+  const group = normalizeMatchGroup(match.group, match.left, match.right);
+  const prefix = group ? `${group} · ` : "";
   const status = effectiveMatchStatus(match, now);
   if (status === "live") {
     if (match.status === "upcoming") {
-      return `进行中 · 状态待更新 · ${match.matchType}`;
+      return `${prefix}进行中 · 状态待更新 · ${match.matchType}`;
     }
     return hasValidScore(match)
-      ? `进行中 · ${match.matchType}`
-      : `直播中 · 比分待更新 · ${match.matchType}`;
+      ? `${prefix}进行中 · ${match.matchType}`
+      : `${prefix}直播中 · 比分待更新 · ${match.matchType}`;
   }
   if (status === "finished") {
     return hasValidScore(match)
-      ? `已结束 · ${match.matchType}`
-      : `已结束 · 比分待确认 · ${match.matchType}`;
+      ? `${prefix}已结束 · ${match.matchType}`
+      : `${prefix}已结束 · 比分待确认 · ${match.matchType}`;
   }
 
   const countdown = countdownText(match, now);
   return countdown
-    ? `${countdown} · ${match.matchType}`
-    : `未开始 · ${match.matchType}`;
+    ? `${prefix}${countdown} · ${match.matchType}`
+    : `${prefix}未开始 · ${match.matchType}`;
 }
 
 function matchRightValue(match, now = new Date()) {

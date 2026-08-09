@@ -12,6 +12,7 @@ const source = fs.readFileSync(scriptPath, "utf8").replace(
       effectiveMatchStatus,
       buildDiagnosticText,
       findNextMatchDay,
+      inferMatchGroup,
       isWithinFinishedScoreHold,
       applyUserSettings,
       matchRightValue,
@@ -49,6 +50,9 @@ assert.equal(
 );
 assert.equal(context.__testApi.teamLogoScale("TES"), 1.51);
 assert.equal(context.__testApi.teamLogoScale("unknown"), 1.35);
+assert.equal(context.__testApi.inferMatchGroup("TT", "TES"), "登峰组");
+assert.equal(context.__testApi.inferMatchGroup("IG", "LNG"), "涅槃组");
+assert.equal(context.__testApi.inferMatchGroup("TT", "LNG"), "");
 
 const pageText = [
   "LNG",
@@ -121,7 +125,7 @@ assert.equal(context.__testApi.countdownText(delayedUpcoming, now), null);
 assert.equal(context.__testApi.matchRightValue(delayedUpcoming, now), "进行中");
 assert.equal(
   context.__testApi.matchSubtitle(delayedUpcoming, now),
-  "进行中 · 状态待更新 · BO3"
+  "登峰组 · 进行中 · 状态待更新 · BO3"
 );
 assert.equal(
   context.__testApi.matchVisualStyle(delayedUpcoming, 0, now).accent,
@@ -130,7 +134,7 @@ assert.equal(
 assert.equal(context.__testApi.matchRightValue(upcoming, now), "还有30分钟");
 assert.equal(
   context.__testApi.matchSubtitle(upcoming, now),
-  "还有30分钟 · BO3"
+  "登峰组 · 还有30分钟 · BO3"
 );
 assert.equal(
   context.__testApi.matchSubtitle(
@@ -140,7 +144,7 @@ assert.equal(
     },
     now
   ),
-  "未开始 · BO3"
+  "登峰组 · 未开始 · BO3"
 );
 assert.equal(context.__testApi.matchRightValue(live, now), "1-0");
 assert.equal(
@@ -148,7 +152,7 @@ assert.equal(
     { ...live, leftScore: 0, rightScore: 0 },
     now
   ),
-  "直播中 · 比分待更新 · BO3"
+  "登峰组 · 直播中 · 比分待更新 · BO3"
 );
 assert.equal(context.__testApi.matchWinner(finished), "right");
 assert.equal(
@@ -315,8 +319,8 @@ const diagnosticText = context.__testApi.buildDiagnosticText(
   "medium",
   new Date("2026-07-30T10:09:00+08:00")
 );
-assert.match(diagnosticText, /组件版本：2\.5\.0/);
-assert.match(diagnosticText, /设计系统：2\.5\.0/);
+assert.match(diagnosticText, /组件版本：2\.6\.0/);
+assert.match(diagnosticText, /设计系统：2\.6\.0/);
 assert.match(diagnosticText, /设置结构：v1/);
 assert.match(diagnosticText, /运行环境：中号组件/);
 assert.match(diagnosticText, /缓存状态：有效（9 分钟前）/);

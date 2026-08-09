@@ -112,6 +112,9 @@
           "type": "string",
           "minLength": 1
         },
+        "group": {
+          "enum": ["登峰组", "涅槃组", ""]
+        },
         "leftScore": {
           "$ref": "#/$defs/nullableScore"
         },

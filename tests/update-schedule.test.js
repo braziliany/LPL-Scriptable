@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const {
   buildMatchUrl,
+  inferMatchGroup,
   normalizeLogoUrl,
   normalizeStatus,
   normalizeUpdatedAt,
@@ -11,6 +12,9 @@ const {
 assert.equal(normalizeStatus("1"), "upcoming");
 assert.equal(normalizeStatus("2"), "live");
 assert.equal(normalizeStatus("3"), "finished");
+assert.equal(inferMatchGroup("TT", "EDG"), "登峰组");
+assert.equal(inferMatchGroup("NIP", "WBG"), "涅槃组");
+assert.equal(inferMatchGroup("TT", "WBG"), "");
 assert.equal(
   normalizeUpdatedAt("2026-07-26 16:45:05"),
   "2026-07-26T16:45:05+08:00"
@@ -93,6 +97,7 @@ assert.deepEqual(schedule.matches[0], {
   status: "live",
   matchType: "BO3",
   stage: "第三赛段组内赛",
+  group: "登峰组",
   leftScore: 1,
   rightScore: 0,
   scoreUpdatedAt: observedAt,

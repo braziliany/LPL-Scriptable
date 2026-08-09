@@ -9,6 +9,22 @@ const OUTPUT_PATH = path.join(__dirname, "..", "data", "schedule.json");
 const TARGET_YEAR = 2026;
 const TARGET_STAGE = "第三赛段";
 const OFFICIAL_BASE_URL = "https://lpl.qq.com/web202301";
+const MATCH_GROUPS = {
+  登峰组: new Set(["AL", "BLG", "EDG", "JDG", "LGD", "TES", "TT", "WE"]),
+  涅槃组: new Set(["IG", "LNG", "NIP", "WBG"]),
+};
+
+function inferMatchGroup(left, right) {
+  const teams = [left, right].map((team) =>
+    String(team || "")
+      .trim()
+      .toUpperCase()
+  );
+  for (const [group, members] of Object.entries(MATCH_GROUPS)) {
+    if (teams.every((team) => members.has(team))) return group;
+  }
+  return "";
+}
 
 function buildMatchUrl(match) {
   const matchId = encodeURIComponent(String(match.bMatchId || ""));
@@ -132,6 +148,7 @@ function transformSchedule(
         status,
         matchType: String(match.GameModeName || "BO3").toUpperCase(),
         stage: String(match.GameTypeName || TARGET_STAGE),
+        group: inferMatchGroup(match.TeamShortNameA, match.TeamShortNameB),
         leftScore,
         rightScore,
         scoreUpdatedAt,
@@ -211,6 +228,7 @@ if (require.main === module) {
 
 module.exports = {
   buildMatchUrl,
+  inferMatchGroup,
   normalizeLogoUrl,
   normalizeStatus,
   normalizeUpdatedAt,
