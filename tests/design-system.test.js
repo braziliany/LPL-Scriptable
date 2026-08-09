@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const DesignSystem = require("../LPL-Design-System");
 
-assert.equal(DesignSystem.version, "2.8.0");
+assert.equal(DesignSystem.version, "2.9.0");
 assert.equal(DesignSystem.normalizeThemeMode("LIGHT"), "light");
 assert.equal(DesignSystem.normalizeThemeMode("invalid"), "dark");
 assert.equal(DesignSystem.resolveThemeMode("auto", true), "dark");

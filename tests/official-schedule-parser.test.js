@@ -32,6 +32,7 @@ const source = fs.readFileSync(scriptPath, "utf8").replace(
       resolveMatchUrl,
       resolveThemeMode,
       shouldUseCompactMedium,
+      singleMatchPreviewResult,
       sortMatchesByTime,
     };`
 );
@@ -354,8 +355,8 @@ const diagnosticText = context.__testApi.buildDiagnosticText(
   "medium",
   new Date("2026-07-30T10:09:00+08:00")
 );
-assert.match(diagnosticText, /组件版本：2\.8\.0/);
-assert.match(diagnosticText, /设计系统：2\.8\.0/);
+assert.match(diagnosticText, /组件版本：2\.9\.0/);
+assert.match(diagnosticText, /设计系统：2\.9\.0/);
 assert.match(diagnosticText, /设置结构：v1/);
 assert.match(diagnosticText, /运行环境：中号组件/);
 assert.match(diagnosticText, /缓存状态：有效（9 分钟前）/);
@@ -423,6 +424,22 @@ assert.deepEqual(
     headerSpacer: 4,
     rowSpacer: 3,
   }
+);
+const singlePreview = JSON.parse(
+  JSON.stringify(
+    context.__testApi.singleMatchPreviewResult({
+      dateString: "2026-08-09",
+      offset: 0,
+      matches: [upcoming, live, finished],
+    })
+  )
+);
+assert.equal(singlePreview.matches.length, 1);
+assert.equal(singlePreview.matches[0].left, "TT");
+assert.equal(singlePreview.dateString, "2026-08-09");
+assert.throws(
+  () => context.__testApi.singleMatchPreviewResult({ matches: [] }),
+  /没有可用于预览的比赛/
 );
 assert.deepEqual(
   JSON.parse(

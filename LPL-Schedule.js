@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "2.8.0",
+  version: "2.9.0",
   repository: "https://github.com/braziliany/LPL-Scriptable",
   rawBase: "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
@@ -576,6 +576,25 @@ async function presentDiagnostics(settings) {
   }
 }
 
+function singleMatchPreviewResult(result) {
+  if (!result?.matches?.length) {
+    throw new Error("当前没有可用于预览的比赛");
+  }
+  return {
+    ...result,
+    matches: [result.matches[0]],
+  };
+}
+
+async function presentSingleMatchPreview(settings) {
+  applyUserSettings(settings);
+  const data = await loadSchedule();
+  const result = singleMatchPreviewResult(findNextMatchDay(data.matches));
+  await prepareMatchLogos(result.matches);
+  const widget = renderMedium(result, `${data.source} · 单场预览`);
+  await widget.presentMedium();
+}
+
 async function presentSettings() {
   let settings = readUserSettings();
 
@@ -596,6 +615,7 @@ async function presentSettings() {
     alert.addAction("缓存有效期");
     alert.addAction("刷新频率");
     alert.addAction("组件主题");
+    alert.addAction("预览中号单场");
     alert.addAction("运行诊断");
     alert.addDestructiveAction("恢复默认设置");
     alert.addCancelAction("完成");
@@ -620,8 +640,18 @@ async function presentSettings() {
     } else if (choice === 5) {
       settings.themeMode = await chooseThemeMode(settings.themeMode);
     } else if (choice === 6) {
-      await presentDiagnostics(settings);
+      try {
+        await presentSingleMatchPreview(settings);
+      } catch (error) {
+        const previewError = new Alert();
+        previewError.title = "预览失败";
+        previewError.message = String(error?.message || error);
+        previewError.addAction("返回");
+        await previewError.present();
+      }
     } else if (choice === 7) {
+      await presentDiagnostics(settings);
+    } else if (choice === 8) {
       settings = normalizeUserSettings(DEFAULT_SETTINGS);
     }
 
