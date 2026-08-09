@@ -15,7 +15,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "2.7.0",
+  version: "2.8.0",
   repository: "https://github.com/braziliany/LPL-Scriptable",
   rawBase: "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
@@ -1340,7 +1340,7 @@ function applyBackground(widget) {
   DesignSystem.applyCardBackground(widget, CONFIG.theme);
 }
 
-function addHeader(widget, result) {
+function addHeader(widget, result, dense = false) {
   const row = widget.addStack();
   row.layoutHorizontally();
   row.centerAlignContent();
@@ -1348,22 +1348,23 @@ function addHeader(widget, result) {
   row.url = settingsUrl();
 
   const square = row.addStack();
-  square.size = new Size(LAYOUT.headerSquare, LAYOUT.headerSquare);
+  const squareSize = dense ? 14 : LAYOUT.headerSquare;
+  square.size = new Size(squareSize, squareSize);
   square.cornerRadius = 4;
   square.backgroundColor = new Color(CONFIG.theme.yellow);
   square.url = settingsUrl();
 
-  row.addSpacer(LAYOUT.headerGap);
+  row.addSpacer(dense ? 8 : LAYOUT.headerGap);
 
   const title = row.addText(CONFIG.title);
-  title.font = Font.mediumSystemFont(TYPOGRAPHY.header);
+  title.font = Font.mediumSystemFont(dense ? 15 : TYPOGRAPHY.header);
   title.textColor = new Color(CONFIG.theme.white);
   title.minimumScaleFactor = 0.72;
 
   row.addSpacer();
 
   const date = row.addText(displayMonthDay(result.dateString));
-  date.font = Font.mediumSystemFont(TYPOGRAPHY.date);
+  date.font = Font.mediumSystemFont(dense ? 14 : TYPOGRAPHY.date);
   date.textColor = new Color(CONFIG.theme.secondary);
 }
 
@@ -1415,9 +1416,9 @@ function matchVisualStyle(match, index, now = new Date()) {
   };
 }
 
-function addAccentBar(row, color, compact = false) {
+function addAccentBar(row, color, compact = false, dense = false) {
   const bar = row.addStack();
-  bar.size = new Size(6, compact ? 29 : 37);
+  bar.size = new Size(6, dense ? 25 : compact ? 29 : 37);
   bar.cornerRadius = 3;
   bar.backgroundColor = new Color(color);
 }
@@ -1503,6 +1504,25 @@ function shouldUseCompactMedium(matches) {
   return Array.isArray(matches) && matches.length >= 3;
 }
 
+function mediumLayoutProfile(matches) {
+  const dense = shouldUseCompactMedium(matches);
+  return dense
+    ? {
+        dense: true,
+        compact: true,
+        padding: [8, 16, 7, 16],
+        headerSpacer: 4,
+        rowSpacer: 3,
+      }
+    : {
+        dense: false,
+        compact: false,
+        padding: [14, 16, 12, 16],
+        headerSpacer: 12,
+        rowSpacer: 16,
+      };
+}
+
 function nextRefreshDate(matches, now = new Date()) {
   let refreshMinutes = CONFIG.normalRefreshMinutes;
 
@@ -1573,15 +1593,22 @@ function addTeamLogo(stack, image, size, opacity = 1) {
   logo.resizable = true;
 }
 
-function addMatchRow(widget, match, index, compact = false, now = new Date()) {
+function addMatchRow(
+  widget,
+  match,
+  index,
+  compact = false,
+  now = new Date(),
+  dense = false
+) {
   const row = widget.addStack();
   row.layoutHorizontally();
   row.centerAlignContent();
   row.url = resolveMatchUrl(match, CONFIG.livePlatform, now);
 
   const visual = matchVisualStyle(match, index, now);
-  addAccentBar(row, visual.accent, compact);
-  row.addSpacer(compact ? 10 : 12);
+  addAccentBar(row, visual.accent, compact, dense);
+  row.addSpacer(dense ? 8 : compact ? 10 : 12);
 
   const content = row.addStack();
   content.layoutVertically();
@@ -1590,7 +1617,7 @@ function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   top.layoutHorizontally();
   top.centerAlignContent();
 
-  const logoSize = compact ? LAYOUT.logoCompact : LAYOUT.logo;
+  const logoSize = dense ? 18 : compact ? LAYOUT.logoCompact : LAYOUT.logo;
   addTeamLogo(top, match.leftLogoImage, logoSize, visual.leftOpacity);
   top.addSpacer(6);
 
@@ -1634,7 +1661,7 @@ function addMatchRow(widget, match, index, compact = false, now = new Date()) {
   value.lineLimit = 1;
   value.minimumScaleFactor = metrics.minimumScaleFactor;
 
-  content.addSpacer(3);
+  content.addSpacer(dense ? 1 : 3);
 
   const subtitle = content.addText(matchSubtitle(match, now));
   subtitle.font = Font.mediumSystemFont(
@@ -1663,7 +1690,7 @@ function addEmptyRow(widget) {
   text.textColor = new Color(CONFIG.theme.secondary);
 }
 
-function addFooter(widget, source, result) {
+function addFooter(widget, source, result, dense = false) {
   widget.addSpacer();
 
   const row = widget.addStack();
@@ -1673,33 +1700,34 @@ function addFooter(widget, source, result) {
   const left = row.addText(
     result.offset === 0 ? "今日赛程" : `${weekdayText(result.dateString)}赛程`
   );
-  left.font = Font.mediumSystemFont(10);
+  left.font = Font.mediumSystemFont(dense ? 9 : 10);
   left.textColor = new Color(CONFIG.theme.muted);
 
   row.addSpacer();
 
   const right = row.addText(`${CONFIG.seasonText} · ${source}`);
-  right.font = Font.mediumSystemFont(10);
+  right.font = Font.mediumSystemFont(dense ? 9 : 10);
   right.textColor = new Color(CONFIG.theme.muted);
 }
 
 function renderMedium(result, source) {
   const widget = new ListWidget();
   const now = new Date();
-  widget.setPadding(14, 16, 12, 16);
+  const layout = mediumLayoutProfile(result.matches);
+  widget.setPadding(...layout.padding);
   widget.url = CONFIG.schedulePageUrl;
   configureRefresh(widget, result, now);
   applyBackground(widget);
 
-  addHeader(widget, result);
+  addHeader(widget, result, layout.dense);
   const visible = result.matches;
-  const compact = shouldUseCompactMedium(visible);
-  widget.addSpacer(compact ? 8 : 12);
+  const compact = layout.compact;
+  widget.addSpacer(layout.headerSpacer);
 
   visible.forEach((match, index) => {
-    addMatchRow(widget, match, index, compact, now);
+    addMatchRow(widget, match, index, compact, now, layout.dense);
     if (index < visible.length - 1) {
-      widget.addSpacer(compact ? 7 : 16);
+      widget.addSpacer(layout.rowSpacer);
     }
   });
 
@@ -1708,7 +1736,7 @@ function renderMedium(result, source) {
     addEmptyRow(widget);
   }
 
-  addFooter(widget, source, result);
+  addFooter(widget, source, result, layout.dense);
   return widget;
 }
 

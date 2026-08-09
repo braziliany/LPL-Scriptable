@@ -21,6 +21,7 @@ const source = fs.readFileSync(scriptPath, "utf8").replace(
       matchVisualStyle,
       matchWinner,
       matchValueMetrics,
+      mediumLayoutProfile,
       nextRefreshDate,
       normalizeUserSettings,
       logoCacheFileName,
@@ -353,8 +354,8 @@ const diagnosticText = context.__testApi.buildDiagnosticText(
   "medium",
   new Date("2026-07-30T10:09:00+08:00")
 );
-assert.match(diagnosticText, /组件版本：2\.7\.0/);
-assert.match(diagnosticText, /设计系统：2\.7\.0/);
+assert.match(diagnosticText, /组件版本：2\.8\.0/);
+assert.match(diagnosticText, /设计系统：2\.8\.0/);
 assert.match(diagnosticText, /设置结构：v1/);
 assert.match(diagnosticText, /运行环境：中号组件/);
 assert.match(diagnosticText, /缓存状态：有效（9 分钟前）/);
@@ -408,6 +409,32 @@ assert.equal(context.__testApi.shouldUseCompactMedium([upcoming, live]), false);
 assert.equal(
   context.__testApi.shouldUseCompactMedium([finished, live, upcoming]),
   true
+);
+assert.deepEqual(
+  JSON.parse(
+    JSON.stringify(
+      context.__testApi.mediumLayoutProfile([finished, live, upcoming])
+    )
+  ),
+  {
+    dense: true,
+    compact: true,
+    padding: [8, 16, 7, 16],
+    headerSpacer: 4,
+    rowSpacer: 3,
+  }
+);
+assert.deepEqual(
+  JSON.parse(
+    JSON.stringify(context.__testApi.mediumLayoutProfile([live, upcoming]))
+  ),
+  {
+    dense: false,
+    compact: false,
+    padding: [14, 16, 12, 16],
+    headerSpacer: 12,
+    rowSpacer: 16,
+  }
 );
 
 assert.equal(
