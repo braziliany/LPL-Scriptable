@@ -9,6 +9,8 @@ const OUTPUT_PATH = path.join(__dirname, "..", "data", "schedule.json");
 const TARGET_YEAR = 2026;
 const TARGET_STAGE = "第三赛段";
 const OFFICIAL_BASE_URL = "https://lpl.qq.com/web202301";
+const REQUEST_RETRY_ATTEMPTS = 3;
+const REQUEST_RETRY_BASE_DELAY_MS = 1000;
 const MATCH_GROUPS = {
   登峰组: new Set(["AL", "BLG", "EDG", "JDG", "LGD", "TES", "TT", "WE"]),
   涅槃组: new Set(["IG", "LNG", "NIP", "WBG"]),
@@ -86,6 +88,48 @@ function normalizeLogoUrl(value) {
   if (url.startsWith("//")) return `https:${url}`;
   if (/^https?:\/\//i.test(url)) return url;
   return "";
+}
+
+function shouldRetryStatus(status) {
+  return Number(status) === 429 || Number(status) >= 500;
+}
+
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function fetchWithRetry(
+  url,
+  options = {},
+  {
+    attempts = REQUEST_RETRY_ATTEMPTS,
+    baseDelayMs = REQUEST_RETRY_BASE_DELAY_MS,
+    fetchImpl = globalThis.fetch,
+    sleepImpl = delay,
+  } = {}
+) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const response = await fetchImpl(url, options);
+      if (!shouldRetryStatus(response.status) || attempt === attempts) {
+        return response;
+      }
+      lastError = new Error(`HTTP ${response.status}`);
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts) throw error;
+    }
+
+    const waitMs = baseDelayMs * 2 ** (attempt - 1);
+    console.warn(
+      `请求失败，第 ${attempt}/${attempts} 次，${waitMs}ms 后重试：${lastError.message}`
+    );
+    await sleepImpl(waitMs);
+  }
+
+  throw lastError;
 }
 
 function transformSchedule(
@@ -200,8 +244,8 @@ async function updateSchedule() {
     },
   };
   const [response, teamResponse] = await Promise.all([
-    fetch(SOURCE_URL, requestOptions),
-    fetch(TEAM_SOURCE_URL, requestOptions),
+    fetchWithRetry(SOURCE_URL, requestOptions),
+    fetchWithRetry(TEAM_SOURCE_URL, requestOptions),
   ]);
 
   if (!response.ok) {
@@ -238,11 +282,13 @@ if (require.main === module) {
 
 module.exports = {
   buildMatchUrl,
+  fetchWithRetry,
   inferMatchGroup,
   inferMatchGroupForStage,
   normalizeLogoUrl,
   normalizeStatus,
   normalizeUpdatedAt,
   parseTeamListScript,
+  shouldRetryStatus,
   transformSchedule,
 };
