@@ -4,7 +4,7 @@
 
 /**
  * LPL Schedule Widget
- * 2026 LPL 第三赛段赛程组件
+ * LPL 赛程组件
  *
  * 推荐尺寸：中号 / 大号
  * 数据回退顺序：
@@ -15,9 +15,14 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "2.9.1",
+  version: "3.0.0",
   repository: "https://github.com/braziliany/LPL-Scriptable",
   rawBase: "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
+};
+
+const SEASON = {
+  year: 2026,
+  stage: "第三赛段",
 };
 
 let DesignSystem;
@@ -33,7 +38,7 @@ const LAYOUT = DesignSystem.layout;
 
 const CONFIG = {
   title: "LPL SCHEDULE",
-  seasonText: "2026 第三赛段",
+  seasonText: `${SEASON.year} ${SEASON.stage}`,
 
   // auto：远程 JSON → 官方页面 → 本地缓存
   // remote：只使用远程 JSON
@@ -47,7 +52,7 @@ const CONFIG = {
   schedulePageUrl: "https://lpl.qq.com/web202301/schedule.html",
   liveUrl: "https://lpl.qq.com/web202301/schedule.html",
   bilibiliLiveUrl: "https://live.bilibili.com/6",
-  livePlatform: "official",
+  livePlatform: "bilibili",
 
   // 官方页面动态加载等待时间
   officialPageWaitSeconds: 4,
@@ -159,7 +164,7 @@ const TEAM_LOGO_SCALES = {
 const CACHE_FILE = "lpl-schedule-cache.json";
 const SETTINGS_FILE = "lpl-schedule-settings.json";
 const DATA_DIAGNOSTICS_FILE = "lpl-schedule-data-diagnostics.json";
-const SETTINGS_SCHEMA_VERSION = 1;
+const SETTINGS_SCHEMA_VERSION = 2;
 const REFRESH_PROFILES = {
   realtime: {
     label: "实时",
@@ -323,11 +328,14 @@ function normalizeUserSettings(value) {
         ),
       ]
     : [...DEFAULT_SETTINGS.highlightedTeams];
-  const livePlatform = ["official", "bilibili"].includes(
-    String(raw.livePlatform || "").toLowerCase()
-  )
-    ? String(raw.livePlatform).toLowerCase()
-    : DEFAULT_SETTINGS.livePlatform;
+  const storedSchemaVersion = Number(raw.schemaVersion || 1);
+  const storedLivePlatform = String(raw.livePlatform || "").toLowerCase();
+  const livePlatform =
+    storedSchemaVersion < 2 && storedLivePlatform === "official"
+      ? "bilibili"
+      : ["official", "bilibili"].includes(storedLivePlatform)
+        ? storedLivePlatform
+        : DEFAULT_SETTINGS.livePlatform;
   const cacheHours = [1, 3, 6, 12, 24].includes(Number(raw.cacheHours))
     ? Number(raw.cacheHours)
     : DEFAULT_SETTINGS.cacheHours;
@@ -536,6 +544,7 @@ function buildDiagnosticText(
     `组件版本：${APP.version}`,
     `设计系统：${DesignSystem.version || "未知"}`,
     `设置结构：v${normalized.schemaVersion}`,
+    `当前赛季：${CONFIG.seasonText}`,
     `运行环境：${runtimeLabel}`,
     `数据模式：${normalized.dataMode}`,
     `直播平台：${normalized.livePlatform}`,
@@ -1606,10 +1615,7 @@ function resolveMatchUrl(
   livePlatform = CONFIG.livePlatform,
   now = new Date()
 ) {
-  if (
-    effectiveMatchStatus(match, now) === "live" &&
-    livePlatform === "bilibili"
-  ) {
+  if (livePlatform === "bilibili") {
     return CONFIG.bilibiliLiveUrl;
   }
   return match.liveUrl || CONFIG.liveUrl;
@@ -1745,7 +1751,10 @@ function renderMedium(result, source) {
   const now = new Date();
   const layout = mediumLayoutProfile(result.matches);
   widget.setPadding(...layout.padding);
-  widget.url = CONFIG.schedulePageUrl;
+  widget.url =
+    CONFIG.livePlatform === "bilibili"
+      ? CONFIG.bilibiliLiveUrl
+      : CONFIG.schedulePageUrl;
   configureRefresh(widget, result, now);
   applyBackground(widget);
 
@@ -1774,7 +1783,10 @@ function renderLarge(result, source) {
   const widget = new ListWidget();
   const now = new Date();
   widget.setPadding(16, 17, 14, 17);
-  widget.url = CONFIG.schedulePageUrl;
+  widget.url =
+    CONFIG.livePlatform === "bilibili"
+      ? CONFIG.bilibiliLiveUrl
+      : CONFIG.schedulePageUrl;
   configureRefresh(widget, result, now);
   applyBackground(widget);
 
@@ -1802,7 +1814,10 @@ function renderSmall(result) {
   const first = result.matches[0];
   const visual = matchVisualStyle(first, 0, now);
   widget.setPadding(14, 14, 13, 14);
-  widget.url = CONFIG.schedulePageUrl;
+  widget.url =
+    CONFIG.livePlatform === "bilibili"
+      ? CONFIG.bilibiliLiveUrl
+      : CONFIG.schedulePageUrl;
   configureRefresh(widget, result, now);
   applyBackground(widget);
 

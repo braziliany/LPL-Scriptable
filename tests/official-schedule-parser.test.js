@@ -317,7 +317,7 @@ assert.deepEqual(
     )
   ),
   {
-    schemaVersion: 1,
+    schemaVersion: 2,
     dataMode: "remote",
     highlightedTeams: ["TT", "BLG"],
     livePlatform: "bilibili",
@@ -329,10 +329,10 @@ assert.deepEqual(
 assert.deepEqual(
   JSON.parse(JSON.stringify(context.__testApi.normalizeUserSettings(null))),
   {
-    schemaVersion: 1,
+    schemaVersion: 2,
     dataMode: "auto",
     highlightedTeams: ["BLG", "AL", "TES", "WBG"],
-    livePlatform: "official",
+    livePlatform: "bilibili",
     cacheHours: 12,
     refreshProfile: "balanced",
     themeMode: "dark",
@@ -356,9 +356,10 @@ const diagnosticText = context.__testApi.buildDiagnosticText(
   "medium",
   new Date("2026-07-30T10:09:00+08:00")
 );
-assert.match(diagnosticText, /组件版本：2\.9\.1/);
-assert.match(diagnosticText, /设计系统：2\.9\.1/);
-assert.match(diagnosticText, /设置结构：v1/);
+assert.match(diagnosticText, /组件版本：3\.0\.0/);
+assert.match(diagnosticText, /设计系统：3\.0\.0/);
+assert.match(diagnosticText, /设置结构：v2/);
+assert.match(diagnosticText, /当前赛季：2026 第三赛段/);
 assert.match(diagnosticText, /运行环境：中号组件/);
 assert.match(diagnosticText, /缓存状态：有效（9 分钟前）/);
 assert.match(diagnosticText, /缓存比赛：2 场/);
@@ -470,6 +471,13 @@ assert.equal(
   context.__testApi.resolveMatchUrl(
     { status: "finished", liveUrl: "https://lpl.qq.com/replay/1" },
     "bilibili"
+  ),
+  "https://live.bilibili.com/6"
+);
+assert.equal(
+  context.__testApi.resolveMatchUrl(
+    { status: "finished", liveUrl: "https://lpl.qq.com/replay/1" },
+    "official"
   ),
   "https://lpl.qq.com/replay/1"
 );

@@ -16,6 +16,9 @@ jobs:
   update:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      LPL_YEAR: "2026"
+      LPL_STAGE: "第三赛段"
 
     steps:
       - name: Checkout repository

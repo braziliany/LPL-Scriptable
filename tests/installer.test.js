@@ -19,6 +19,7 @@ vm.runInNewContext(source, context, { filename: installerPath });
 const resources = JSON.parse(
   JSON.stringify(context.__installerTestApi.CONFIG.resources)
 );
+assert.equal(context.__installerTestApi.CONFIG.season, "2026 第三赛段");
 assert.deepEqual(
   resources.map((resource) => resource.scriptName),
   ["LPL-Design-System", "LPL Schedule 2026", "LPL Schedule Installer"]

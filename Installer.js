@@ -10,7 +10,8 @@
  */
 
 const CONFIG = {
-  version: "2.9.1",
+  version: "3.0.0",
+  season: "2026 第三赛段",
   changelogUrl:
     "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/CHANGELOG.md",
   resources: [
@@ -163,6 +164,7 @@ async function main() {
     alert.message = [
       `本地：${localVersion || "未安装"}`,
       `远端：${remoteVersion}`,
+      `赛季：${CONFIG.season}`,
       releaseNotes ? `\n更新内容：\n${releaseNotes}` : "",
       "\n现有设置与 Logo 缓存不会被覆盖。",
     ].join("\n");

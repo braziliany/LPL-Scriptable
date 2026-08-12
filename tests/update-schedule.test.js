@@ -7,8 +7,20 @@ const {
   normalizeStatus,
   normalizeUpdatedAt,
   parseTeamListScript,
+  resolveSeasonConfig,
   transformSchedule,
 } = require("../scripts/update-schedule");
+
+assert.deepEqual(resolveSeasonConfig({}), { year: 2026, stage: "第三赛段" });
+assert.deepEqual(
+  resolveSeasonConfig({ LPL_YEAR: "2027", LPL_STAGE: "第一赛段" }),
+  { year: 2027, stage: "第一赛段" }
+);
+assert.throws(() => resolveSeasonConfig({ LPL_YEAR: "abc" }), /LPL_YEAR 无效/);
+assert.throws(
+  () => resolveSeasonConfig({ LPL_STAGE: " " }),
+  /LPL_STAGE 不能为空/
+);
 
 assert.equal(normalizeStatus("1"), "upcoming");
 assert.equal(normalizeStatus("2"), "live");

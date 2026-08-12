@@ -6,8 +6,17 @@ const SOURCE_URL =
 const TEAM_SOURCE_URL =
   "https://lpl.qq.com/web201612/data/LOL_MATCH2_TEAM_LIST.js";
 const OUTPUT_PATH = path.join(__dirname, "..", "data", "schedule.json");
-const TARGET_YEAR = 2026;
-const TARGET_STAGE = "第三赛段";
+function resolveSeasonConfig(environment = process.env) {
+  const year = Number(environment.LPL_YEAR || 2026);
+  const stage = String(environment.LPL_STAGE || "第三赛段").trim();
+  if (!Number.isInteger(year) || year < 2020 || year > 2100) {
+    throw new Error(`LPL_YEAR 无效：${environment.LPL_YEAR}`);
+  }
+  if (!stage) throw new Error("LPL_STAGE 不能为空");
+  return { year, stage };
+}
+
+const SEASON = resolveSeasonConfig();
 const OFFICIAL_BASE_URL = "https://lpl.qq.com/web202301";
 const REQUEST_RETRY_ATTEMPTS = 3;
 const REQUEST_RETRY_BASE_DELAY_MS = 1000;
@@ -142,7 +151,7 @@ function transformSchedule(
     throw new Error("官方赛程接口返回格式无效");
   }
 
-  const yearPrefix = `${TARGET_YEAR}-`;
+  const yearPrefix = `${SEASON.year}-`;
   const previousById = new Map(
     (previousSchedule?.matches || []).map((match) => [String(match.id), match])
   );
@@ -150,8 +159,8 @@ function transformSchedule(
     .filter(
       (match) =>
         String(match.MatchDate || "").startsWith(yearPrefix) &&
-        String(match.GameName || "").includes(`${TARGET_YEAR}职业联赛`) &&
-        String(match.GameTypeName || "").includes(TARGET_STAGE)
+        String(match.GameName || "").includes(`${SEASON.year}职业联赛`) &&
+        String(match.GameTypeName || "").includes(SEASON.stage)
     )
     .map((match) => {
       const leftTeam = teamPayload?.msg?.[String(match.TeamA)] || {};
@@ -159,7 +168,7 @@ function transformSchedule(
       const id = String(match.bMatchId || "");
       const previous = previousById.get(id);
       const status = normalizeStatus(match.MatchStatus);
-      const stage = String(match.GameTypeName || TARGET_STAGE);
+      const stage = String(match.GameTypeName || SEASON.stage);
       const leftScore =
         String(match.MatchStatus) === "1" ? null : Number(match.ScoreA);
       const rightScore =
@@ -213,7 +222,9 @@ function transformSchedule(
     .filter(
       (match) =>
         match.id &&
-        /^2026-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(match.startTime) &&
+        new RegExp(`^${SEASON.year}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$`).test(
+          match.startTime
+        ) &&
         match.left &&
         match.right &&
         match.left !== match.right
@@ -225,11 +236,11 @@ function transformSchedule(
   ];
 
   if (!uniqueMatches.length) {
-    throw new Error(`官方数据中没有 ${TARGET_YEAR} LPL ${TARGET_STAGE}赛程`);
+    throw new Error(`官方数据中没有 ${SEASON.year} LPL ${SEASON.stage}赛程`);
   }
 
   return {
-    season: `${TARGET_YEAR} LPL ${TARGET_STAGE}`,
+    season: `${SEASON.year} LPL ${SEASON.stage}`,
     updatedAt: normalizeUpdatedAt(payload.lastUpTime),
     source: SOURCE_URL,
     matches: uniqueMatches,
@@ -289,6 +300,7 @@ module.exports = {
   normalizeStatus,
   normalizeUpdatedAt,
   parseTeamListScript,
+  resolveSeasonConfig,
   shouldRetryStatus,
   transformSchedule,
 };
