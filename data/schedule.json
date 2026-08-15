@@ -1,6 +1,6 @@
 {
   "season": "2026 LPL 第三赛段",
-  "updatedAt": "2026-08-15T13:30:07+08:00",
+  "updatedAt": "2026-08-15T14:05:04+08:00",
   "source": "https://lpl.qq.com/web201612/data/LOL_MATCH2_MATCH_HOMEPAGE_BMATCH_LIST.js",
   "matches": [
     {
@@ -923,16 +923,16 @@
       "right": "LNG",
       "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152746/c8a8f59fadc0da0bda0c4997e3f62afb/0",
       "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20240920155556/f4510f27cb1d914d0d3204c8dbab6217/0",
-      "status": "upcoming",
+      "status": "live",
       "matchType": "BO3",
       "stage": "第三赛段组内赛",
       "phase": "第四周",
       "group": "涅槃组",
-      "leftScore": null,
-      "rightScore": null,
-      "scoreUpdatedAt": null,
+      "leftScore": 0,
+      "rightScore": 0,
+      "scoreUpdatedAt": "2026-08-15T06:31:23.642Z",
       "finishedAt": null,
-      "liveUrl": "https://lpl.qq.com/web202301/schedule.html"
+      "liveUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13414"
     },
     {
       "id": "13415",
