@@ -1,6 +1,6 @@
 {
   "season": "2026 LPL 第三赛段",
-  "updatedAt": "2026-08-15T20:20:05+08:00",
+  "updatedAt": "2026-08-15T20:40:07+08:00",
   "source": "https://lpl.qq.com/web201612/data/LOL_MATCH2_MATCH_HOMEPAGE_BMATCH_LIST.js",
   "matches": [
     {
@@ -932,7 +932,7 @@
       "rightScore": 1,
       "scoreUpdatedAt": "2026-08-15T09:54:07.730Z",
       "finishedAt": "2026-08-15T09:54:07.730Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80315"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80317"
     },
     {
       "id": "13415",
@@ -942,16 +942,16 @@
       "right": "AL",
       "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152930/f1e243799a62f73f37af8f10be9dd977/0",
       "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20250618145633/b8741548f37b60a6693cdb6f4949a7fd/0",
-      "status": "live",
+      "status": "finished",
       "matchType": "BO3",
       "stage": "第三赛段组内赛",
       "phase": "第四周",
       "group": "登峰组",
       "leftScore": 1,
-      "rightScore": 1,
-      "scoreUpdatedAt": "2026-08-15T11:45:17.740Z",
-      "finishedAt": null,
-      "liveUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13415"
+      "rightScore": 2,
+      "scoreUpdatedAt": "2026-08-15T13:05:47.237Z",
+      "finishedAt": "2026-08-15T13:05:47.237Z",
+      "liveUrl": "https://lpl.qq.com/web202301/stats.shtml?bmid=13415"
     },
     {
       "id": "13416",
@@ -961,16 +961,16 @@
       "right": "WE",
       "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20250618144525/49342dadcecf162e8ac94fad6eb91540/0",
       "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103153050/5c22150153baa973f73adf4909a041ec/0",
-      "status": "upcoming",
+      "status": "live",
       "matchType": "BO3",
       "stage": "第三赛段组内赛",
       "phase": "第四周",
       "group": "登峰组",
-      "leftScore": null,
-      "rightScore": null,
-      "scoreUpdatedAt": null,
+      "leftScore": 0,
+      "rightScore": 0,
+      "scoreUpdatedAt": "2026-08-15T13:05:47.237Z",
       "finishedAt": null,
-      "liveUrl": "https://lpl.qq.com/web202301/schedule.html"
+      "liveUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13416"
     },
     {
       "id": "13417",
