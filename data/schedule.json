@@ -1,6 +1,6 @@
 {
   "season": "2026 LPL 第三赛段",
-  "updatedAt": "2026-08-23T15:45:05+08:00",
+  "updatedAt": "2026-08-23T16:10:06+08:00",
   "source": "https://lpl.qq.com/web201612/data/LOL_MATCH2_MATCH_HOMEPAGE_BMATCH_LIST.js",
   "matches": [
     {
@@ -1198,7 +1198,7 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-22T10:00:54.196Z",
       "finishedAt": "2026-08-22T10:00:54.196Z",
-      "liveUrl": "https://lpl.qq.com/web202301/stats.shtml?bmid=13428"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80705"
     },
     {
       "id": "13429",
@@ -1236,7 +1236,7 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-08-22T14:38:38.205Z",
       "finishedAt": "2026-08-22T14:38:38.205Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80684"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80707"
     },
     {
       "id": "13431",
