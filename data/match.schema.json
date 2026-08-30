@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/braziliany/LPL-Scriptable/data/match.schema.json",
+  "title": "Tournament Router Match",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tournamentId",
+    "startTime",
+    "left",
+    "right",
+    "status",
+    "matchType",
+    "stage",
+    "leftScore",
+    "rightScore",
+    "liveUrl",
+    "detailUrl"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "gameId": { "type": "string" },
+    "tournamentId": { "type": "string", "minLength": 1 },
+    "startTime": {
+      "type": "string",
+      "pattern": "^20\\d{2}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$"
+    },
+    "left": { "type": "string", "minLength": 1 },
+    "right": { "type": "string", "minLength": 1 },
+    "leftLogo": { "type": "string" },
+    "rightLogo": { "type": "string" },
+    "status": { "enum": ["upcoming", "live", "finished"] },
+    "matchType": { "type": "string", "minLength": 1 },
+    "stage": { "type": "string" },
+    "phase": { "type": "string" },
+    "group": { "type": "string" },
+    "leftScore": {
+      "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }]
+    },
+    "rightScore": {
+      "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }]
+    },
+    "scoreUpdatedAt": {
+      "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }]
+    },
+    "finishedAt": {
+      "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }]
+    },
+    "liveUrl": { "type": "string", "pattern": "^(?:https?://.*)?$" },
+    "detailUrl": { "type": "string", "pattern": "^(?:https?://.*)?$" }
+  },
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "pattern": "^20\\d{2}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?(?:Z|[+-]\\d{2}:\\d{2})$"
+    }
+  }
+}

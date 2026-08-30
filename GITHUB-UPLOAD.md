@@ -2,7 +2,7 @@
 
 1. 解压项目压缩包。
 2. 打开 GitHub 仓库 `braziliany/LPL-Scriptable`。
-3. 进入或新建 `Scriptable` 文件夹。
+3. 保持在仓库根目录，不要新建 `Scriptable` 子目录。
 4. 选择 **Add file → Upload files**。
 5. 将压缩包解压后，把其中所有文件上传到仓库根目录，并保持目录结构。
 6. 提交到 `main` 分支。
@@ -11,7 +11,32 @@
 最终路径必须是：
 
 ```text
+LPL-Design-System.js
 LPL-Schedule.js
 Installer.js
+CHANGELOG.md
+README.md
+GITHUB-UPLOAD.md
+LICENSE
+package.json
+package-lock.json
+eslint.config.js
+.gitattributes
+.gitignore
+.prettierignore
+src/tournament-router.js
+scripts/*.js
+data/tournaments.json
+data/active.json
+data/match.schema.json
+data/tournaments.schema.json
+data/tournament-schedule.schema.json
+data/active.schema.json
+data/schedules/*.json
 data/schedule.json
+data/schedule.schema.json
+.github/workflows/*.yml
+docs/*
+tests/*.test.js
+tests/run-all.js
 ```

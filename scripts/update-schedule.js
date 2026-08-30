@@ -1,5 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
+const { writeTournamentSchedules } = require("./build-tournament-data");
+const { generateActiveFile } = require("./generate-active");
 
 const SOURCE_URL =
   "https://lpl.qq.com/web201612/data/LOL_MATCH2_MATCH_HOMEPAGE_BMATCH_LIST.js";
@@ -39,6 +41,15 @@ function inferMatchGroup(left, right) {
 
 function inferMatchGroupForStage(stage, left, right) {
   return /组内赛/.test(String(stage || "")) ? inferMatchGroup(left, right) : "";
+}
+
+function isSeasonStage(stage, season = SEASON) {
+  const value = String(stage || "");
+  if (value.includes(season.stage)) return true;
+  return (
+    season.stage === "第三赛段" &&
+    (value.includes(`${season.year}赛季季后赛`) || value.includes("资格赛"))
+  );
 }
 
 function buildMatchUrl(match) {
@@ -160,7 +171,7 @@ function transformSchedule(
       (match) =>
         String(match.MatchDate || "").startsWith(yearPrefix) &&
         String(match.GameName || "").includes(`${SEASON.year}职业联赛`) &&
-        String(match.GameTypeName || "").includes(SEASON.stage)
+        isSeasonStage(match.GameTypeName)
     )
     .map((match) => {
       const leftTeam = teamPayload?.msg?.[String(match.TeamA)] || {};
@@ -279,6 +290,8 @@ async function updateSchedule() {
     previousSchedule
   );
   fs.writeFileSync(OUTPUT_PATH, `${JSON.stringify(schedule, null, 2)}\n`);
+  writeTournamentSchedules(schedule);
+  generateActiveFile();
   console.log(
     `已更新 ${schedule.matches.length} 场比赛，官方数据时间：${schedule.updatedAt}`
   );
@@ -296,6 +309,7 @@ module.exports = {
   fetchWithRetry,
   inferMatchGroup,
   inferMatchGroupForStage,
+  isSeasonStage,
   normalizeLogoUrl,
   normalizeStatus,
   normalizeUpdatedAt,

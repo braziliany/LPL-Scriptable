@@ -1,11 +1,14 @@
 {
   "name": "lpl-scriptable",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "private": true,
-  "description": "LPL schedule widget for Scriptable",
+  "description": "Smart League of Legends tournament schedule widget for Scriptable",
   "scripts": {
     "test": "node tests/run-all.js",
     "test:schema": "node tests/schedule-schema.test.js",
+    "tournament:build": "node scripts/build-tournament-data.js",
+    "active:generate": "node scripts/generate-active.js",
+    "dev:installer": "node scripts/build-dev-installer.js",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,json,yml}\"",
     "format:check": "prettier --check \"**/*.{js,json,yml}\"",

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/braziliany/LPL-Scriptable/data/tournament-schedule.schema.json",
+  "title": "Tournament Router Schedule",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tournamentId", "updatedAt", "source", "matches"],
+  "properties": {
+    "tournamentId": { "type": "string", "minLength": 1 },
+    "updatedAt": {
+      "type": "string",
+      "pattern": "^20\\d{2}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?(?:Z|[+-]\\d{2}:\\d{2})$"
+    },
+    "source": {
+      "oneOf": [{ "type": "string" }, { "type": "null" }]
+    },
+    "matches": {
+      "type": "array",
+      "items": {
+        "$ref": "https://github.com/braziliany/LPL-Scriptable/data/match.schema.json"
+      }
+    }
+  }
+}

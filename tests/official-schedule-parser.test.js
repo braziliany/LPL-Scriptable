@@ -10,9 +10,12 @@ const source = fs.readFileSync(scriptPath, "utf8").replace(
   `globalThis.__testApi = {
       countdownText,
       effectiveMatchStatus,
+      addFooter,
+      addHeader,
       buildDiagnosticText,
       findNextMatchDay,
       inferMatchGroup,
+      isCurrentSeasonStage,
       isWithinFinishedScoreHold,
       applyUserSettings,
       matchRightValue,
@@ -23,6 +26,8 @@ const source = fs.readFileSync(scriptPath, "utf8").replace(
       matchValueMetrics,
       mediumLayoutProfile,
       nextRefreshDate,
+      normalizeActivePayload,
+      normalizeRemoteSchedulePayload,
       normalizeUserSettings,
       logoCacheFileName,
       teamLogoScale,
@@ -31,10 +36,14 @@ const source = fs.readFileSync(scriptPath, "utf8").replace(
       mergeOfficialState,
       resolveMatchUrl,
       resolveThemeMode,
+      remoteScheduleFreshnessError,
       shouldUseCompactMedium,
       shouldOpenSettings,
       singleMatchPreviewResult,
+      selectScheduleResult,
       sortMatchesByTime,
+      tournamentFooterText,
+      tournamentTitle,
     };`
 );
 const context = {
@@ -48,6 +57,51 @@ const context = {
 
 vm.runInNewContext(source, context, { filename: scriptPath });
 
+function renderingStack(texts) {
+  return {
+    addStack() {
+      return renderingStack(texts);
+    },
+    addSpacer() {},
+    addText(value) {
+      texts.push(value);
+      return {};
+    },
+    centerAlignContent() {},
+    layoutHorizontally() {},
+  };
+}
+
+context.Color = class Color {};
+context.Font = { mediumSystemFont: () => ({}) };
+context.Size = class Size {};
+context.URLScheme = { forRunningScript: () => "scriptable:///run" };
+context.config = { widgetFamily: "medium" };
+
+for (const [shortName, name, stage] of [
+  ["LPL PLAYOFFS", "2026 LPL 第三赛段", "季后赛"],
+  ["WORLDS 2026", "2026 英雄联盟全球总决赛", "全球总决赛"],
+]) {
+  const texts = [];
+  const tournament = {
+    id: shortName.toLowerCase().replaceAll(" ", "-"),
+    shortName,
+    name,
+    season: "2026",
+    region: "INTL",
+    stage,
+  };
+  const result = {
+    dateString: "2026-10-20",
+    offset: 0,
+    tournament,
+  };
+  context.__testApi.addHeader(renderingStack(texts), result);
+  context.__testApi.addFooter(renderingStack(texts), "GitHub Active", result);
+  assert.equal(texts[0], shortName);
+  assert.equal(texts.at(-1), `${name} · ${stage} · GitHub Active`);
+}
+
 assert.equal(
   context.__testApi.logoCacheFileName("BLG"),
   "lpl-team-logo-BLG.png"
@@ -57,6 +111,10 @@ assert.equal(context.__testApi.teamLogoScale("unknown"), 1.35);
 assert.equal(context.__testApi.inferMatchGroup("TT", "TES"), "登峰组");
 assert.equal(context.__testApi.inferMatchGroup("IG", "LNG"), "涅槃组");
 assert.equal(context.__testApi.inferMatchGroup("TT", "LNG"), "");
+assert.equal(context.__testApi.isCurrentSeasonStage("第三赛段组内赛"), true);
+assert.equal(context.__testApi.isCurrentSeasonStage("2026赛季季后赛"), true);
+assert.equal(context.__testApi.isCurrentSeasonStage("资格赛"), true);
+assert.equal(context.__testApi.isCurrentSeasonStage("第二赛段组内赛"), false);
 assert.equal(
   context.__testApi.matchStageLabel({
     stage: "第三赛段骑士之路",
@@ -129,6 +187,198 @@ const finished = {
   leftScore: 0,
   rightScore: 2,
 };
+
+const freshnessNow = new Date(2026, 7, 27, 12, 0);
+const freshRemotePayload = {
+  season: "2026 LPL 第三赛段",
+  updatedAt: "2026-08-27T10:00:00+08:00",
+  matches: [
+    {
+      id: "13492",
+      startTime: "2026-08-28 14:00:00",
+      left: "EDG",
+      right: "NIP",
+      status: "upcoming",
+      matchType: "BO5",
+      stage: "第三赛段骑士之路",
+    },
+  ],
+};
+
+const activeTournament = {
+  id: "worlds-2026",
+  name: "2026 英雄联盟全球总决赛",
+  shortName: "WORLDS 2026",
+  season: "2026",
+  region: "INTL",
+  stage: "全球总决赛",
+  startDate: "2026-10-15",
+  endDate: "2026-11-14",
+  dataSource: "manual",
+};
+const activePayload = {
+  generatedAt: "2026-10-20T02:00:00.000Z",
+  sourceUpdatedAt: "2026-10-20T01:00:00.000Z",
+  tournament: activeTournament,
+  selectedDate: "2026-10-20",
+  selectionReason: "SMART_TODAY_MATCHES",
+  matches: [
+    {
+      tournamentId: "worlds-2026",
+      startTime: "2026-10-20 17:00:00",
+      left: "AAA",
+      right: "BBB",
+      status: "upcoming",
+      matchType: "BO3",
+      stage: "瑞士轮",
+      leftScore: null,
+      rightScore: null,
+      liveUrl: "",
+      detailUrl: "",
+    },
+  ],
+};
+const normalizedActive = context.__testApi.normalizeActivePayload(
+  activePayload,
+  new Date("2026-10-20T03:00:00.000Z")
+);
+assert.equal(normalizedActive.tournament.shortName, "WORLDS 2026");
+assert.equal(normalizedActive.matches[0].tournamentId, "worlds-2026");
+assert.equal(
+  context.__testApi.tournamentTitle(activeTournament),
+  "WORLDS 2026"
+);
+assert.equal(
+  context.__testApi.tournamentFooterText(activeTournament),
+  "2026 英雄联盟全球总决赛 · 全球总决赛"
+);
+assert.equal(
+  context.__testApi.tournamentTitle({
+    ...activeTournament,
+    id: "ewc-2026",
+    shortName: "EWC 2026",
+  }),
+  "EWC 2026"
+);
+assert.throws(
+  () =>
+    context.__testApi.normalizeActivePayload(
+      { ...activePayload, generatedAt: "2026-10-17T02:00:00.000Z" },
+      new Date("2026-10-20T03:00:00.000Z")
+    ),
+  /更新时间已超过 48 小时/
+);
+assert.throws(
+  () =>
+    context.__testApi.normalizeActivePayload(
+      { ...activePayload, sourceUpdatedAt: "2026-10-17T02:00:00.000Z" },
+      new Date("2026-10-20T03:00:00.000Z")
+    ),
+  /源数据更新时间已超过 48 小时/
+);
+assert.throws(
+  () =>
+    context.__testApi.normalizeActivePayload(
+      {
+        ...activePayload,
+        tournament: { ...activeTournament, season: "2025" },
+      },
+      new Date("2026-10-20T03:00:00.000Z")
+    ),
+  /赛季不匹配/
+);
+assert.throws(
+  () =>
+    context.__testApi.normalizeActivePayload(
+      {
+        ...activePayload,
+        tournament: { ...activeTournament, endDate: "2026-10-19" },
+      },
+      new Date("2026-10-20T03:00:00.000Z")
+    ),
+  /超出赛事日期范围|赛事已经结束/
+);
+assert.throws(
+  () =>
+    context.__testApi.normalizeActivePayload(
+      {
+        ...activePayload,
+        matches: [
+          { ...activePayload.matches[0], tournamentId: "other-tournament" },
+        ],
+      },
+      new Date("2026-10-20T03:00:00.000Z")
+    ),
+  /tournamentId/
+);
+
+assert.equal(
+  context.__testApi.normalizeRemoteSchedulePayload(
+    freshRemotePayload,
+    freshnessNow
+  ).length,
+  1
+);
+assert.throws(
+  () =>
+    context.__testApi.normalizeRemoteSchedulePayload(
+      { ...freshRemotePayload, season: "2026 LPL 第二赛段" },
+      freshnessNow
+    ),
+  /赛季不匹配/
+);
+assert.throws(
+  () =>
+    context.__testApi.normalizeRemoteSchedulePayload(
+      { ...freshRemotePayload, updatedAt: "invalid" },
+      freshnessNow
+    ),
+  /更新时间无效/
+);
+assert.throws(
+  () =>
+    context.__testApi.normalizeRemoteSchedulePayload(
+      { ...freshRemotePayload, updatedAt: "2026-08-29T13:00:00+08:00" },
+      freshnessNow
+    ),
+  /明显晚于设备时间/
+);
+assert.throws(
+  () =>
+    context.__testApi.normalizeRemoteSchedulePayload(
+      { ...freshRemotePayload, updatedAt: "2026-08-25T11:00:00+08:00" },
+      freshnessNow
+    ),
+  /更新时间已超过 48 小时/
+);
+assert.throws(
+  () =>
+    context.__testApi.normalizeRemoteSchedulePayload(
+      {
+        ...freshRemotePayload,
+        matches: [
+          {
+            ...freshRemotePayload.matches[0],
+            startTime: "2026-08-26 14:00:00",
+          },
+        ],
+      },
+      freshnessNow
+    ),
+  /没有今天或未来的赛程/
+);
+assert.equal(
+  context.__testApi.remoteScheduleFreshnessError(
+    freshRemotePayload,
+    [
+      {
+        timestamp: new Date(2026, 7, 27, 10, 0).getTime(),
+      },
+    ],
+    freshnessNow
+  ),
+  null
+);
 
 assert.equal(context.__testApi.countdownText(upcoming, now), "还有30分钟");
 assert.equal(
@@ -351,15 +601,20 @@ const diagnosticText = context.__testApi.buildDiagnosticText(
   {
     updatedAt: "2026-07-30T10:00:00+08:00",
     source: "remote",
+    tournament: activeTournament,
+    selectedDate: "2026-10-20",
+    selectionReason: "SMART_TODAY_MATCHES",
     matches: [upcoming, live],
   },
   "medium",
   new Date("2026-07-30T10:09:00+08:00")
 );
-assert.match(diagnosticText, /组件版本：3\.0\.0/);
-assert.match(diagnosticText, /设计系统：3\.0\.0/);
+assert.match(diagnosticText, /组件版本：3\.1\.0/);
+assert.match(diagnosticText, /设计系统：3\.1\.0/);
 assert.match(diagnosticText, /设置结构：v2/);
-assert.match(diagnosticText, /当前赛季：2026 第三赛段/);
+assert.match(diagnosticText, /当前赛事：2026 英雄联盟全球总决赛/);
+assert.match(diagnosticText, /赛事短名：WORLDS 2026/);
+assert.match(diagnosticText, /选择原因：SMART_TODAY_MATCHES/);
 assert.match(diagnosticText, /运行环境：中号组件/);
 assert.match(diagnosticText, /缓存状态：有效（9 分钟前）/);
 assert.match(diagnosticText, /缓存比赛：2 场/);
@@ -439,6 +694,15 @@ const singlePreview = JSON.parse(
 assert.equal(singlePreview.matches.length, 1);
 assert.equal(singlePreview.matches[0].left, "TT");
 assert.equal(singlePreview.dateString, "2026-08-09");
+const routedResult = context.__testApi.selectScheduleResult(
+  {
+    ...normalizedActive,
+    source: "GitHub Active",
+  },
+  new Date("2026-10-20T03:00:00.000Z")
+);
+assert.equal(routedResult.dateString, "2026-10-20");
+assert.equal(routedResult.tournament.shortName, "WORLDS 2026");
 assert.throws(
   () => context.__testApi.singleMatchPreviewResult({ matches: [] }),
   /没有可用于预览的比赛/
@@ -480,6 +744,18 @@ assert.equal(
     "official"
   ),
   "https://lpl.qq.com/replay/1"
+);
+assert.equal(
+  context.__testApi.resolveMatchUrl(
+    {
+      ...live,
+      liveUrl: "https://example.com/live",
+      detailUrl: "https://example.com/detail",
+    },
+    "official",
+    now
+  ),
+  "https://example.com/live"
 );
 assert.equal(
   context.__testApi.resolveMatchUrl(delayedUpcoming, "bilibili", now),

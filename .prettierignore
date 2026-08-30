@@ -1,3 +1,4 @@
 node_modules/
 data/schedule.json
 docs/
+Installer-Dev.js

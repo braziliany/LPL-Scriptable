@@ -1,6 +1,6 @@
-# LPL Schedule 2026 · Scriptable
+# LOL Tournament Schedule 2026 · Scriptable
 
-一个为 **2026 LPL 第三赛段**设计的 Scriptable 赛程小组件，视觉参考深蓝色倒计时卡片：深蓝渐变背景、彩色竖线、右侧突出显示比赛时间或比分。
+一个自动选择当前 LOL 赛事的 Scriptable 赛程小组件。v3.1.0 在保留现有深蓝倒计时卡片 UI 的基础上，通过 Tournament Router 在 LPL、MSI、EWC、LPL 资格赛与 Worlds 之间选择当前比赛日。
 
 ## 主要功能
 
@@ -12,17 +12,19 @@
 - 已结束比赛突出胜者并弱化败者，直播与倒计时使用独立强调色
 - 长队名自动缩放，比分、时间和倒计时使用稳定的固定宽度区域
 - 支持深蓝、浅色和自动跟随系统外观三种主题模式
-- 自动寻找今天或未来最近一个比赛日
+- SMART 模式优先选择今天有比赛且优先级最高的赛事，否则选择最近未来比赛日
+- 赛事日期、优先级和赛程路径集中维护在 `data/tournaments.json`
 - 比赛副标题显示第三赛段所属的登峰组或涅槃组
 - 进入骑士之路和淘汰赛后自动切换为实际赛事阶段，不再显示组别
 - 未开始显示时间，进行中显示 `LIVE`，结束后显示比分
 - 中号和大号自动显示当天全部比赛，中号在 3 场时自动使用紧凑布局
 - 中号三场使用真机优化的密集间距，避免标题和页脚被系统裁切
 - 可高亮关注队伍
-- 三层数据回退：
-  1. 仓库中的 `data/schedule.json`
-  2. LPL 官方赛事页面
-  3. Scriptable 本地缓存
+- 四层数据回退：
+  1. Tournament Router 生成的 `data/active.json`
+  2. v3.0.0 兼容数据 `data/schedule.json`
+  3. LPL 官方赛事页面
+  4. Scriptable 本地缓存
 - GitHub 状态滞后时，开赛后直接补查官方状态接口
 - 官方状态暂不可用时，开赛 10 分钟后推定为进行中并持续快速刷新
 - 点击组件打开官方赛程页面
@@ -37,9 +39,16 @@ LPL-Scriptable/
 ├── LPL-Design-System.js     可复用的配色与设计规范
 ├── Installer.js             一键安装器
 ├── data/
-│   └── schedule.json        可手动维护的赛程数据
+│   ├── tournaments.json     集中式赛事元数据
+│   ├── active.json          当前 SMART 选择结果
+│   ├── schedules/           按赛事拆分的标准化赛程
+│   └── schedule.json        v3.0.0 兼容 LPL 赛程
 ├── scripts/
-│   └── update-schedule.js   官方赛程同步脚本
+│   ├── update-schedule.js   LPL 官方赛程同步脚本
+│   ├── build-tournament-data.js
+│   └── generate-active.js
+├── src/
+│   └── tournament-router.js SMART 赛事选择模块
 ├── tests/                   数据转换与解析回归测试
 ├── .github/workflows/
 │   └── update-schedule.yml  定时更新赛程
@@ -59,6 +68,8 @@ braziliany/LPL-Scriptable
 ```
 
 上传完成后，主脚本和安装器中预设的 Raw 地址即可生效。
+
+未提交候选版本的 iPhone 验收请使用 [Scriptable 真机回归流程](docs/scriptable-device-regression.md)。该流程通过本地生成的 `Installer-Dev.js` 安装独立的 `LPL Schedule DEV`，不会覆盖正式脚本或读取 GitHub `main` 数据。
 
 ## 安装方法一：使用安装器
 
@@ -95,9 +106,17 @@ braziliany/LPL-Scriptable
 
 > 主组件从 `2.0.0` 起依赖共享设计系统，两个脚本必须安装在同一个 Scriptable 文档目录中，且模块名称必须保持为 `LPL-Design-System`。
 
-## 手动维护赛程
+## 赛事路由与手动维护赛程
 
-`data/schedule.json` 的格式：
+赛事日期、名称、赛段、优先级和 `schedulePath` 统一配置在 `data/tournaments.json`，不要在组件或 Renderer 中增加赛事日期。各赛事文件位于 `data/schedules/`，统一 Match Schema 见 `data/match.schema.json`。
+
+修改赛事元数据或标准化赛程后，重新生成当前选择：
+
+```bash
+npm run active:generate
+```
+
+`data/schedule.json` 保留为 v3.0.0 LPL 数据源和官方页面回退的兼容层，其格式为：
 
 ```json
 {
@@ -122,11 +141,11 @@ braziliany/LPL-Scriptable
 - `live`：进行中
 - `finished`：已结束
 
-更新 `schedule.json` 后，Scriptable 会在下一次刷新时获取最新数据。GitHub Raw 内容可能存在几分钟缓存。
+更新兼容 `schedule.json` 后运行 `npm run tournament:build`，会重建对应的分赛事赛程和 `active.json`。Scriptable 会在下一次刷新时获取最新数据；GitHub Raw 内容可能存在几分钟缓存。
 
 ## 自动更新赛程
 
-仓库中的 GitHub Actions 默认每 5 分钟读取 LPL 官方公开赛程数据，并在内容变化时更新 `data/schedule.json`。也可以在仓库的 **Actions → Update LPL schedule → Run workflow** 中手动执行。
+仓库中的 GitHub Actions 默认每 5 分钟读取 LPL 官方公开赛程数据，并在内容变化时更新 `data/schedule.json`、对应的 `data/schedules/` 文件和 `data/active.json`。也可以在仓库的 **Actions → Update LPL schedule → Run workflow** 中手动执行。
 
 组件会根据比赛状态动态安排刷新：
 
@@ -140,7 +159,7 @@ braziliany/LPL-Scriptable
 
 GitHub Actions 每 5 分钟同步一次官方局分，直播组件通常每 3 分钟刷新一次，并使用分钟级缓存键绕过旧 Raw 缓存。正常情况下，小场结束后的最新局分会在 10 分钟内显示；实际时间仍取决于 LPL 官方接口何时更新比分。
 
-比赛区域的跳转地址也会随状态更新：
+直播平台选择 `LPL 官方` 时，比赛区域的跳转地址会随状态更新：
 
 - 直播中：打开该场比赛的 LPL 官方直播页。
 - 已结束且有回放：打开该场比赛的官方回放页。
@@ -187,15 +206,15 @@ npm run check
 
 ```bash
 npm run check
-npm run version:check -- 2.2.0
-npm run release:notes -- v2.2.0
+npm run version:check -- 3.1.0
+npm run release:notes -- v3.1.0
 ```
 
 确认无误后创建并推送标签：
 
 ```bash
-git tag v2.2.0
-git push origin v2.2.0
+git tag v3.1.0
+git push origin v3.1.0
 ```
 
 `Publish release` 工作流会再次执行完整质量检查，验证标签与四处版本号一致，从 `CHANGELOG.md` 提取对应更新说明，并创建 GitHub Release。Release 会附带：
@@ -293,7 +312,7 @@ GitHub Actions 在工作流的 `env` 中显式保存这两个值。切换赛季�
 | 均衡 | 3 分钟 | 5 分钟 | 15 分钟 |
 | 省电 | 5 分钟 | 10 分钟 | 30 分钟 |
 
-选择哔哩哔哩后，只有直播中的比赛会打开哔哩哔哩赛事直播间；已结束比赛仍会进入对应的 LPL 官方回放页或数据页。
+选择哔哩哔哩后，组件整体和所有比赛区域都会打开哔哩哔哩 LPL 直播间；如需按比赛状态进入官方直播、回放或数据页，请将直播平台切换为 `LPL 官方`。
 
 ## 组件预览
 

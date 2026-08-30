@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/braziliany/LPL-Scriptable/data/active.schema.json",
+  "title": "Tournament Router Active Selection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "generatedAt",
+    "sourceUpdatedAt",
+    "tournament",
+    "selectedDate",
+    "selectionReason",
+    "matches"
+  ],
+  "properties": {
+    "generatedAt": {
+      "type": "string",
+      "pattern": "^20\\d{2}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z$"
+    },
+    "sourceUpdatedAt": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^20\\d{2}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z$"
+        },
+        { "type": "null" }
+      ]
+    },
+    "tournament": {
+      "oneOf": [
+        {
+          "$ref": "https://github.com/braziliany/LPL-Scriptable/data/tournaments.schema.json#/$defs/tournament"
+        },
+        { "type": "null" }
+      ]
+    },
+    "selectedDate": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^20\\d{2}-\\d{2}-\\d{2}$"
+        },
+        { "type": "null" }
+      ]
+    },
+    "selectionReason": { "type": "string", "minLength": 1 },
+    "matches": {
+      "type": "array",
+      "items": {
+        "$ref": "https://github.com/braziliany/LPL-Scriptable/data/match.schema.json"
+      }
+    }
+  }
+}

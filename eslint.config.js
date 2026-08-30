@@ -33,7 +33,7 @@ const scriptableGlobals = {
 
 module.exports = [
   {
-    ignores: ["node_modules/**", "data/schedule.json"],
+    ignores: ["node_modules/**", "data/schedule.json", "Installer-Dev.js"],
   },
   {
     files: ["tests/**/*.js", "scripts/**/*.js", "eslint.config.js"],

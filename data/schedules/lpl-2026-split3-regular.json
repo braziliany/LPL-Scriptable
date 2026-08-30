@@ -1,11 +1,12 @@
 {
-  "season": "2026 LPL 第三赛段",
+  "tournamentId": "lpl-2026-split3-regular",
   "updatedAt": "2026-08-31T03:40:07+08:00",
   "source": "https://lpl.qq.com/web201612/data/LOL_MATCH2_MATCH_HOMEPAGE_BMATCH_LIST.js",
   "matches": [
     {
       "id": "13366",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-22 17:00:00",
       "left": "LGD",
       "right": "EDG",
@@ -20,11 +21,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-07-29T11:39:33.383Z",
       "finishedAt": "2026-07-29T11:39:33.383Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79121"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79121",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79121"
     },
     {
       "id": "13367",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-22 19:00:00",
       "left": "TES",
       "right": "WE",
@@ -39,11 +42,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-07-29T11:39:33.383Z",
       "finishedAt": "2026-07-29T11:39:33.383Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79143"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79143",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79143"
     },
     {
       "id": "13368",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-23 17:00:00",
       "left": "JDG",
       "right": "AL",
@@ -58,11 +63,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-07-29T11:39:33.383Z",
       "finishedAt": "2026-07-29T11:39:33.383Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79199"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79199",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79199"
     },
     {
       "id": "13369",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-23 19:00:00",
       "left": "BLG",
       "right": "TT",
@@ -77,11 +84,13 @@
       "rightScore": 1,
       "scoreUpdatedAt": "2026-07-29T11:39:33.383Z",
       "finishedAt": "2026-07-29T11:39:33.383Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79167"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79167",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79167"
     },
     {
       "id": "13370",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-24 15:00:00",
       "left": "AL",
       "right": "LGD",
@@ -96,11 +105,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-07-29T11:39:33.383Z",
       "finishedAt": "2026-07-29T11:39:33.383Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79230"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79230",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79230"
     },
     {
       "id": "13371",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-24 17:00:00",
       "left": "WE",
       "right": "JDG",
@@ -115,11 +126,13 @@
       "rightScore": 1,
       "scoreUpdatedAt": "2026-07-29T11:39:33.383Z",
       "finishedAt": "2026-07-29T11:39:33.383Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79252"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79252",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79252"
     },
     {
       "id": "13372",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-24 19:00:00",
       "left": "EDG",
       "right": "BLG",
@@ -134,11 +147,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-07-29T11:39:33.383Z",
       "finishedAt": "2026-07-29T11:39:33.383Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79282"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79282",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79282"
     },
     {
       "id": "13373",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-25 15:00:00",
       "left": "LGD",
       "right": "WE",
@@ -153,11 +168,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-07-29T11:39:33.383Z",
       "finishedAt": "2026-07-29T11:39:33.383Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79310"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79310",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79310"
     },
     {
       "id": "13374",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-25 17:00:00",
       "left": "IG",
       "right": "WBG",
@@ -172,11 +189,13 @@
       "rightScore": 1,
       "scoreUpdatedAt": "2026-07-29T11:39:33.383Z",
       "finishedAt": "2026-07-29T11:39:33.383Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79331"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79331",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79331"
     },
     {
       "id": "13375",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-25 19:00:00",
       "left": "TES",
       "right": "TT",
@@ -191,11 +210,13 @@
       "rightScore": 1,
       "scoreUpdatedAt": "2026-07-29T11:39:33.383Z",
       "finishedAt": "2026-07-29T11:39:33.383Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79360"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79360",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79360"
     },
     {
       "id": "13376",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-26 15:00:00",
       "left": "LNG",
       "right": "NIP",
@@ -210,11 +231,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-07-29T11:39:33.383Z",
       "finishedAt": "2026-07-29T11:39:33.383Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79398"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79398",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79398"
     },
     {
       "id": "13377",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-26 17:00:00",
       "left": "TT",
       "right": "EDG",
@@ -229,11 +252,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-07-29T11:39:33.383Z",
       "finishedAt": "2026-07-29T11:39:33.383Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79411"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79411",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79411"
     },
     {
       "id": "13378",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-26 19:00:00",
       "left": "AL",
       "right": "BLG",
@@ -248,11 +273,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-07-29T11:39:33.383Z",
       "finishedAt": "2026-07-29T11:39:33.383Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79432"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79432",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79432"
     },
     {
       "id": "13379",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-29 17:00:00",
       "left": "TES",
       "right": "AL",
@@ -267,11 +294,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-07-29T11:39:33.383Z",
       "finishedAt": "2026-07-29T11:39:33.383Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79491"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79491",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79491"
     },
     {
       "id": "13380",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-29 19:00:00",
       "left": "BLG",
       "right": "LGD",
@@ -286,11 +315,13 @@
       "rightScore": 1,
       "scoreUpdatedAt": "2026-07-29T15:20:57.666Z",
       "finishedAt": "2026-07-29T15:20:57.666Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79461"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79461",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79461"
     },
     {
       "id": "13381",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-30 15:00:00",
       "left": "NIP",
       "right": "WBG",
@@ -305,11 +336,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-07-30T10:50:23.285Z",
       "finishedAt": "2026-07-30T10:50:23.285Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79567"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79567",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79567"
     },
     {
       "id": "13382",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-30 17:00:00",
       "left": "EDG",
       "right": "WE",
@@ -324,11 +357,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-07-30T12:17:37.684Z",
       "finishedAt": "2026-07-30T12:17:37.684Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79543"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79543",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79543"
     },
     {
       "id": "13383",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-30 19:00:00",
       "left": "TT",
       "right": "JDG",
@@ -343,11 +378,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-07-30T14:35:11.473Z",
       "finishedAt": "2026-07-30T14:35:11.473Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79513"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79513",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79513"
     },
     {
       "id": "13384",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-31 15:00:00",
       "left": "AL",
       "right": "EDG",
@@ -362,11 +399,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-07-31T10:04:07.413Z",
       "finishedAt": "2026-07-31T10:04:07.413Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79608"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79608",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79608"
     },
     {
       "id": "13385",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-07-31 17:00:00",
       "left": "WE",
       "right": "BLG",
@@ -381,11 +420,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-07-31T14:30:54.215Z",
       "finishedAt": "2026-07-31T14:30:54.215Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79586"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79586",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79586"
     },
     {
       "id": "13386",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-01 15:00:00",
       "left": "AL",
       "right": "TT",
@@ -400,11 +441,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-08-01T09:13:17.479Z",
       "finishedAt": "2026-08-01T09:13:17.479Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79643"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79643",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79643"
     },
     {
       "id": "13387",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-01 17:00:00",
       "left": "LGD",
       "right": "TES",
@@ -419,11 +462,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-01T11:48:53.989Z",
       "finishedAt": "2026-08-01T11:48:53.989Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79652"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79652",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79652"
     },
     {
       "id": "13388",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-01 19:00:00",
       "left": "JDG",
       "right": "BLG",
@@ -438,11 +483,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-01T14:12:05.463Z",
       "finishedAt": "2026-08-01T14:12:05.463Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79677"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79677",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79677"
     },
     {
       "id": "13389",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-02 15:00:00",
       "left": "TT",
       "right": "WE",
@@ -457,11 +504,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-02T10:19:19.974Z",
       "finishedAt": "2026-08-02T10:19:19.974Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79699"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79699",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79699"
     },
     {
       "id": "13390",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-02 17:00:00",
       "left": "LNG",
       "right": "IG",
@@ -476,11 +525,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-02T12:40:06.621Z",
       "finishedAt": "2026-08-02T12:40:06.621Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79732"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79732",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79732"
     },
     {
       "id": "13391",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-02 19:00:00",
       "left": "TES",
       "right": "JDG",
@@ -495,11 +546,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-08-02T14:13:06.061Z",
       "finishedAt": "2026-08-02T14:13:06.061Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79752"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79752",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79752"
     },
     {
       "id": "13392",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-05 17:00:00",
       "left": "JDG",
       "right": "LGD",
@@ -514,11 +567,13 @@
       "rightScore": 1,
       "scoreUpdatedAt": "2026-08-05T13:22:32.805Z",
       "finishedAt": "2026-08-05T13:22:32.805Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79796"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79796",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79796"
     },
     {
       "id": "13393",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-05 19:00:00",
       "left": "EDG",
       "right": "TES",
@@ -533,11 +588,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-05T15:33:08.577Z",
       "finishedAt": "2026-08-05T15:33:08.577Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79774"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79774",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79774"
     },
     {
       "id": "13394",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-06 15:00:00",
       "left": "LGD",
       "right": "TT",
@@ -552,11 +609,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-06T11:34:32.222Z",
       "finishedAt": "2026-08-06T11:34:32.222Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79825"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79825",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79825"
     },
     {
       "id": "13395",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-06 17:00:00",
       "left": "IG",
       "right": "NIP",
@@ -571,11 +630,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-06T15:27:15.843Z",
       "finishedAt": "2026-08-06T15:27:15.843Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79857"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79857",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79857"
     },
     {
       "id": "13396",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-06 19:00:00",
       "left": "WE",
       "right": "AL",
@@ -590,11 +651,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-08-07T00:28:38.634Z",
       "finishedAt": "2026-08-07T00:28:38.634Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79893"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79893",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79893"
     },
     {
       "id": "13397",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-07 15:00:00",
       "left": "JDG",
       "right": "EDG",
@@ -609,11 +672,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-08-07T09:38:04.357Z",
       "finishedAt": "2026-08-07T09:38:04.357Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79940"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79940",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79940"
     },
     {
       "id": "13398",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-07 17:00:00",
       "left": "WE",
       "right": "TT",
@@ -628,11 +693,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-07T13:21:27.501Z",
       "finishedAt": "2026-08-07T13:21:27.501Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79907"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79907",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79907"
     },
     {
       "id": "13399",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-07 19:00:00",
       "left": "BLG",
       "right": "TES",
@@ -647,11 +714,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-07T15:23:39.053Z",
       "finishedAt": "2026-08-07T15:23:39.053Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79957"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79957",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79957"
     },
     {
       "id": "13400",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-08 15:00:00",
       "left": "WBG",
       "right": "LNG",
@@ -666,11 +735,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-08-08T09:04:59.407Z",
       "finishedAt": "2026-08-08T09:04:59.407Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80005"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80005",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80005"
     },
     {
       "id": "13401",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-08 17:00:00",
       "left": "LGD",
       "right": "AL",
@@ -685,11 +756,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-08T11:43:43.946Z",
       "finishedAt": "2026-08-08T11:43:43.946Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79983"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79983",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=79983"
     },
     {
       "id": "13402",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-08 19:00:00",
       "left": "BLG",
       "right": "EDG",
@@ -704,11 +777,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-08-08T14:19:05.757Z",
       "finishedAt": "2026-08-08T14:19:05.757Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80027"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80027",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80027"
     },
     {
       "id": "13403",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-09 15:00:00",
       "left": "IG",
       "right": "LNG",
@@ -723,11 +798,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-08-09T09:06:24.352Z",
       "finishedAt": "2026-08-09T09:06:24.352Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80049"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80049",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80049"
     },
     {
       "id": "13404",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-09 17:00:00",
       "left": "TT",
       "right": "TES",
@@ -742,11 +819,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-09T11:18:52.936Z",
       "finishedAt": "2026-08-09T11:18:52.936Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80073"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80073",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80073"
     },
     {
       "id": "13405",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-09 19:00:00",
       "left": "JDG",
       "right": "WE",
@@ -761,11 +840,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-08-09T14:01:14.940Z",
       "finishedAt": "2026-08-09T14:01:14.940Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80095"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80095",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80095"
     },
     {
       "id": "13406",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-12 17:00:00",
       "left": "EDG",
       "right": "AL",
@@ -780,11 +861,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-12T12:26:18.006Z",
       "finishedAt": "2026-08-12T12:26:18.006Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80117"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80117",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80117"
     },
     {
       "id": "13407",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-12 19:00:00",
       "left": "BLG",
       "right": "JDG",
@@ -799,11 +882,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-12T15:42:25.934Z",
       "finishedAt": "2026-08-12T15:42:25.934Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80146"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80146",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80146"
     },
     {
       "id": "13408",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-13 15:00:00",
       "left": "WBG",
       "right": "NIP",
@@ -818,11 +903,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-13T10:44:52.395Z",
       "finishedAt": "2026-08-13T10:44:52.395Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80177"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80177",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80177"
     },
     {
       "id": "13409",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-13 17:00:00",
       "left": "TES",
       "right": "LGD",
@@ -837,11 +924,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-13T13:41:59.774Z",
       "finishedAt": "2026-08-13T13:41:59.774Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80205"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80205",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80205"
     },
     {
       "id": "13410",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-13 19:00:00",
       "left": "TT",
       "right": "BLG",
@@ -856,11 +945,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-13T15:37:17.377Z",
       "finishedAt": "2026-08-13T15:37:17.377Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80226"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80226",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80226"
     },
     {
       "id": "13411",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-14 15:00:00",
       "left": "EDG",
       "right": "LGD",
@@ -875,11 +966,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-14T08:52:39.579Z",
       "finishedAt": "2026-08-14T08:52:39.579Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80246"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80246",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80246"
     },
     {
       "id": "13412",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-14 17:00:00",
       "left": "WE",
       "right": "TES",
@@ -894,11 +987,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-08-14T11:26:05.109Z",
       "finishedAt": "2026-08-14T11:26:05.109Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80266"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80266",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80266"
     },
     {
       "id": "13413",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-14 19:00:00",
       "left": "AL",
       "right": "JDG",
@@ -913,11 +1008,13 @@
       "rightScore": 1,
       "scoreUpdatedAt": "2026-08-14T14:32:39.959Z",
       "finishedAt": "2026-08-14T14:32:39.959Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80287"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80287",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80287"
     },
     {
       "id": "13414",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-15 15:00:00",
       "left": "NIP",
       "right": "LNG",
@@ -932,11 +1029,13 @@
       "rightScore": 1,
       "scoreUpdatedAt": "2026-08-15T09:54:07.730Z",
       "finishedAt": "2026-08-15T09:54:07.730Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80317"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80317",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80317"
     },
     {
       "id": "13415",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-15 17:00:00",
       "left": "TT",
       "right": "AL",
@@ -951,11 +1050,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-15T13:05:47.237Z",
       "finishedAt": "2026-08-15T13:05:47.237Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80346"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80346",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80346"
     },
     {
       "id": "13416",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-15 19:00:00",
       "left": "BLG",
       "right": "WE",
@@ -970,11 +1071,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-08-15T15:10:21.989Z",
       "finishedAt": "2026-08-15T15:10:21.989Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80375"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80375",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80375"
     },
     {
       "id": "13417",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-16 15:00:00",
       "left": "LGD",
       "right": "JDG",
@@ -989,11 +1092,13 @@
       "rightScore": 1,
       "scoreUpdatedAt": "2026-08-16T10:08:08.136Z",
       "finishedAt": "2026-08-16T10:08:08.136Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80397"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80397",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80397"
     },
     {
       "id": "13418",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-16 17:00:00",
       "left": "WBG",
       "right": "IG",
@@ -1008,11 +1113,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-16T13:46:07.100Z",
       "finishedAt": "2026-08-16T13:46:07.100Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80425"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80425",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80425"
     },
     {
       "id": "13419",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-16 19:00:00",
       "left": "TES",
       "right": "EDG",
@@ -1027,11 +1134,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-08-16T15:26:10.587Z",
       "finishedAt": "2026-08-16T15:26:10.587Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80455"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80455",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80455"
     },
     {
       "id": "13422",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-19 15:00:00",
       "left": "LNG",
       "right": "WBG",
@@ -1046,11 +1155,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-19T10:20:05.795Z",
       "finishedAt": "2026-08-19T10:20:05.795Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80477"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80477",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80477"
     },
     {
       "id": "13420",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-19 17:00:00",
       "left": "AL",
       "right": "TES",
@@ -1065,11 +1176,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-19T14:32:56.022Z",
       "finishedAt": "2026-08-19T14:32:56.022Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80507"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80507",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80507"
     },
     {
       "id": "13421",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-19 19:00:00",
       "left": "WE",
       "right": "EDG",
@@ -1084,11 +1197,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-19T15:39:22.102Z",
       "finishedAt": "2026-08-19T15:39:22.102Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80536"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80536",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80536"
     },
     {
       "id": "13423",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-20 17:00:00",
       "left": "TT",
       "right": "JDG",
@@ -1103,11 +1218,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-20T12:42:41.406Z",
       "finishedAt": "2026-08-20T12:42:41.406Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80565"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80565",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80565"
     },
     {
       "id": "13424",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-20 19:00:00",
       "left": "LGD",
       "right": "BLG",
@@ -1122,11 +1239,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-20T15:19:53.618Z",
       "finishedAt": "2026-08-20T15:19:53.618Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80585"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80585",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80585"
     },
     {
       "id": "13425",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-21 15:00:00",
       "left": "EDG",
       "right": "TT",
@@ -1141,11 +1260,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-08-21T09:04:57.398Z",
       "finishedAt": "2026-08-21T09:04:57.398Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80614"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80614",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80614"
     },
     {
       "id": "13426",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-21 17:00:00",
       "left": "AL",
       "right": "WE",
@@ -1160,11 +1281,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-21T12:28:41.856Z",
       "finishedAt": "2026-08-21T12:28:41.856Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80635"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80635",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80635"
     },
     {
       "id": "13427",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-21 19:00:00",
       "left": "TES",
       "right": "BLG",
@@ -1179,11 +1302,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-21T14:47:04.866Z",
       "finishedAt": "2026-08-21T14:47:04.866Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80662"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80662",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80662"
     },
     {
       "id": "13428",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-22 15:00:00",
       "left": "WE",
       "right": "LGD",
@@ -1198,11 +1323,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-22T10:00:54.196Z",
       "finishedAt": "2026-08-22T10:00:54.196Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80705"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80705",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80705"
     },
     {
       "id": "13429",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-22 17:00:00",
       "left": "NIP",
       "right": "IG",
@@ -1217,11 +1344,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-08-22T11:58:39.585Z",
       "finishedAt": "2026-08-22T11:58:39.585Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80733"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80733",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80733"
     },
     {
       "id": "13430",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-22 19:00:00",
       "left": "JDG",
       "right": "TES",
@@ -1236,11 +1365,13 @@
       "rightScore": 0,
       "scoreUpdatedAt": "2026-08-22T14:38:38.205Z",
       "finishedAt": "2026-08-22T14:38:38.205Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80707"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80707",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80707"
     },
     {
       "id": "13431",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-23 15:00:00",
       "left": "TT",
       "right": "LGD",
@@ -1255,11 +1386,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-23T09:23:24.012Z",
       "finishedAt": "2026-08-23T09:23:24.012Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80754"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80754",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80754"
     },
     {
       "id": "13432",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-23 17:00:00",
       "left": "EDG",
       "right": "JDG",
@@ -1274,11 +1407,13 @@
       "rightScore": 2,
       "scoreUpdatedAt": "2026-08-23T12:00:49.435Z",
       "finishedAt": "2026-08-23T12:00:49.435Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80776"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80776",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80776"
     },
     {
       "id": "13433",
       "gameId": "237",
+      "tournamentId": "lpl-2026-split3-regular",
       "startTime": "2026-08-23 19:00:00",
       "left": "BLG",
       "right": "AL",
@@ -1293,159 +1428,8 @@
       "rightScore": 1,
       "scoreUpdatedAt": "2026-08-23T16:34:05.192Z",
       "finishedAt": "2026-08-23T16:34:05.192Z",
-      "liveUrl": "https://lpl.qq.com/web202301/stats.shtml?bmid=13433"
-    },
-    {
-      "id": "13492",
-      "gameId": "237",
-      "startTime": "2026-08-28 14:00:00",
-      "left": "EDG",
-      "right": "NIP",
-      "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20230103153103/7c5a8db3be3d7c93114ac47a801d64cb/0",
-      "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152746/c8a8f59fadc0da0bda0c4997e3f62afb/0",
-      "status": "finished",
-      "matchType": "BO5",
-      "stage": "第三赛段骑士之路",
-      "phase": "当天",
-      "group": "",
-      "leftScore": 0,
-      "rightScore": 3,
-      "scoreUpdatedAt": "2026-08-28T13:23:22.871Z",
-      "finishedAt": "2026-08-28T13:23:22.871Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80835"
-    },
-    {
-      "id": "13493",
-      "gameId": "237",
-      "startTime": "2026-08-28 17:00:00",
-      "left": "TT",
-      "right": "IG",
-      "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152930/f1e243799a62f73f37af8f10be9dd977/0",
-      "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152918/562affbb9f99b0e472644f93a19291e7/0",
-      "status": "finished",
-      "matchType": "BO5",
-      "stage": "第三赛段骑士之路",
-      "phase": "当天",
-      "group": "",
-      "leftScore": 0,
-      "rightScore": 3,
-      "scoreUpdatedAt": "2026-08-28T13:23:22.871Z",
-      "finishedAt": "2026-08-28T13:23:22.871Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80804"
-    },
-    {
-      "id": "13494",
-      "gameId": "237",
-      "startTime": "2026-08-29 17:00:00",
-      "left": "TES",
-      "right": "LGD",
-      "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20240920155538/5beb948638f00bcda68fc4942e3f0a51/0",
-      "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103153121/0cef697fa6d0416e672c2fd90f30718c/0",
-      "status": "finished",
-      "matchType": "BO5",
-      "stage": "2026赛季季后赛",
-      "phase": "第一天",
-      "group": "",
-      "leftScore": 2,
-      "rightScore": 3,
-      "scoreUpdatedAt": "2026-08-30T21:19:21.885Z",
-      "finishedAt": "2026-08-30T21:19:21.885Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80866"
-    },
-    {
-      "id": "13495",
-      "gameId": "237",
-      "startTime": "2026-08-30 17:00:00",
-      "left": "JDG",
-      "right": "WE",
-      "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20230921143554/1e5189e914e40bfe18045bccbfc7ef82/0",
-      "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103153050/5c22150153baa973f73adf4909a041ec/0",
-      "status": "finished",
-      "matchType": "BO5",
-      "stage": "2026赛季季后赛",
-      "phase": "第二天",
-      "group": "",
-      "leftScore": 1,
-      "rightScore": 3,
-      "scoreUpdatedAt": "2026-08-30T21:19:21.885Z",
-      "finishedAt": "2026-08-30T21:19:21.885Z",
-      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80908"
-    },
-    {
-      "id": "13497",
-      "gameId": "237",
-      "startTime": "2026-09-03 17:00:00",
-      "left": "BLG",
-      "right": "WE",
-      "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20250618144525/49342dadcecf162e8ac94fad6eb91540/0",
-      "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103153050/5c22150153baa973f73adf4909a041ec/0",
-      "status": "upcoming",
-      "matchType": "BO5",
-      "stage": "2026赛季季后赛",
-      "phase": "第四天",
-      "group": "",
-      "leftScore": null,
-      "rightScore": null,
-      "scoreUpdatedAt": null,
-      "finishedAt": null,
-      "liveUrl": "https://lpl.qq.com/web202301/schedule.html"
-    },
-    {
-      "id": "13496",
-      "gameId": "237",
-      "startTime": "2026-09-04 17:00:00",
-      "left": "AL",
-      "right": "LGD",
-      "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20250618145633/b8741548f37b60a6693cdb6f4949a7fd/0",
-      "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103153121/0cef697fa6d0416e672c2fd90f30718c/0",
-      "status": "upcoming",
-      "matchType": "BO5",
-      "stage": "2026赛季季后赛",
-      "phase": "第三天",
-      "group": "",
-      "leftScore": null,
-      "rightScore": null,
-      "scoreUpdatedAt": null,
-      "finishedAt": null,
-      "liveUrl": "https://lpl.qq.com/web202301/schedule.html"
-    },
-    {
-      "id": "13498",
-      "gameId": "237",
-      "startTime": "2026-09-05 14:00:00",
-      "left": "TES",
-      "right": "IG",
-      "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20240920155538/5beb948638f00bcda68fc4942e3f0a51/0",
-      "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152918/562affbb9f99b0e472644f93a19291e7/0",
-      "status": "upcoming",
-      "matchType": "BO5",
-      "stage": "2026赛季季后赛",
-      "phase": "第五天",
-      "group": "",
-      "leftScore": null,
-      "rightScore": null,
-      "scoreUpdatedAt": null,
-      "finishedAt": null,
-      "liveUrl": "https://lpl.qq.com/web202301/schedule.html"
-    },
-    {
-      "id": "13499",
-      "gameId": "237",
-      "startTime": "2026-09-05 17:00:00",
-      "left": "JDG",
-      "right": "NIP",
-      "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20230921143554/1e5189e914e40bfe18045bccbfc7ef82/0",
-      "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152746/c8a8f59fadc0da0bda0c4997e3f62afb/0",
-      "status": "upcoming",
-      "matchType": "BO5",
-      "stage": "2026赛季季后赛",
-      "phase": "第五天",
-      "group": "",
-      "leftScore": null,
-      "rightScore": null,
-      "scoreUpdatedAt": null,
-      "finishedAt": null,
-      "liveUrl": "https://lpl.qq.com/web202301/schedule.html"
+      "liveUrl": "https://lpl.qq.com/web202301/stats.shtml?bmid=13433",
+      "detailUrl": "https://lpl.qq.com/web202301/stats.shtml?bmid=13433"
     }
   ]
 }

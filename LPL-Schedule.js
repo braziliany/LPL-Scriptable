@@ -3,19 +3,20 @@
 // icon-color: yellow; icon-glyph: trophy;
 
 /**
- * LPL Schedule Widget
- * LPL 赛程组件
+ * LOL Tournament Schedule Widget
+ * LOL 赛事赛程组件
  *
  * 推荐尺寸：中号 / 大号
  * 数据回退顺序：
- * 1. GitHub 仓库中的 data/schedule.json
- * 2. LPL 官方赛事页面
- * 3. Scriptable 本地缓存
+ * 1. GitHub 仓库中的 data/active.json
+ * 2. GitHub 仓库中的 data/schedule.json（兼容 v3.0.0）
+ * 3. LPL 官方赛事页面
+ * 4. Scriptable 本地缓存
  */
 
 const APP = {
   name: "LPL Schedule",
-  version: "3.0.0",
+  version: "3.1.0",
   repository: "https://github.com/braziliany/LPL-Scriptable",
   rawBase: "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
@@ -25,12 +26,31 @@ const SEASON = {
   stage: "第三赛段",
 };
 
+const DEV_RUNTIME = globalThis.__LPL_SCHEDULE_DEV__?.enabled
+  ? globalThis.__LPL_SCHEDULE_DEV__
+  : null;
+const IS_DEV = Boolean(DEV_RUNTIME);
+
+const LEGACY_TOURNAMENT = {
+  id: "lpl-2026-split3",
+  name: "2026 LPL 第三赛段",
+  shortName: "LPL SCHEDULE",
+  season: "2026",
+  region: "CN",
+  stage: "第三赛段",
+  dataSource: "lpl",
+};
+
 let DesignSystem;
 try {
-  DesignSystem = importModule("LPL-Design-System");
+  DesignSystem = importModule(
+    IS_DEV ? DEV_RUNTIME.designSystemModule : "LPL-Design-System"
+  );
 } catch (error) {
   throw new Error(
-    "缺少 LPL-Design-System。请复制并运行仓库中的最新版 Installer.js 完成安装。"
+    IS_DEV
+      ? "缺少 LPL-Design-System-DEV。请重新运行 Installer-Dev.js。"
+      : "缺少 LPL-Design-System。请复制并运行仓库中的最新版 Installer.js 完成安装。"
   );
 }
 const TYPOGRAPHY = DesignSystem.typography;
@@ -40,11 +60,12 @@ const CONFIG = {
   title: "LPL SCHEDULE",
   seasonText: `${SEASON.year} ${SEASON.stage}`,
 
-  // auto：远程 JSON → 官方页面 → 本地缓存
-  // remote：只使用远程 JSON
+  // auto：active.json → v3.0 schedule.json → 官方页面 → 本地缓存
+  // remote：只使用 GitHub 远程 JSON
   // official：只解析官方页面
   dataMode: "auto",
 
+  remoteActiveUrl: `${APP.rawBase}/data/active.json`,
   remoteScheduleUrl: `${APP.rawBase}/data/schedule.json`,
   officialDataUrl:
     "https://lpl.qq.com/web201612/data/LOL_MATCH2_MATCH_HOMEPAGE_BMATCH_LIST.js",
@@ -57,11 +78,23 @@ const CONFIG = {
   // 官方页面动态加载等待时间
   officialPageWaitSeconds: 4,
 
+  // Scriptable 默认网络等待可能超过桌面组件执行预算，所有数据请求均设置双重超时。
+  widgetRemoteTimeoutSeconds: 3,
+  widgetOfficialTimeoutSeconds: 4,
+  widgetAssetTimeoutSeconds: 3,
+  appRemoteTimeoutSeconds: 5,
+  appOfficialTimeoutSeconds: 8,
+  appAssetTimeoutSeconds: 5,
+
   // 从今天起最多向后寻找多少天
   maxSearchDays: 90,
 
   // 缓存有效期（小时）
   cacheHours: 12,
+
+  // 远端赛程更新时间允许的最大滞后与设备时钟偏差
+  remoteMaxAgeHours: 48,
+  remoteFutureSkewHours: 24,
 
   // 实时状态：开赛前 60 分钟显示倒计时；直播时建议 3 分钟后刷新
   countdownMinutes: 60,
@@ -161,9 +194,10 @@ const TEAM_LOGO_SCALES = {
   WBG: 1.43,
 };
 
-const CACHE_FILE = "lpl-schedule-cache.json";
-const SETTINGS_FILE = "lpl-schedule-settings.json";
-const DATA_DIAGNOSTICS_FILE = "lpl-schedule-data-diagnostics.json";
+const STORAGE_NAMESPACE = IS_DEV ? "lpl-schedule-dev" : "lpl-schedule";
+const CACHE_FILE = `${STORAGE_NAMESPACE}-cache.json`;
+const SETTINGS_FILE = `${STORAGE_NAMESPACE}-settings.json`;
+const DATA_DIAGNOSTICS_FILE = `${STORAGE_NAMESPACE}-data-diagnostics.json`;
 const SETTINGS_SCHEMA_VERSION = 2;
 const REFRESH_PROFILES = {
   realtime: {
@@ -223,6 +257,15 @@ function formatDate(date) {
     date.getFullYear(),
     pad2(date.getMonth() + 1),
     pad2(date.getDate()),
+  ].join("-");
+}
+
+function beijingDateString(date = new Date()) {
+  const shifted = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+  return [
+    shifted.getUTCFullYear(),
+    pad2(shifted.getUTCMonth() + 1),
+    pad2(shifted.getUTCDate()),
   ].join("-");
 }
 
@@ -532,7 +575,13 @@ function buildDiagnosticText(
   const attempts = Array.isArray(dataDiagnostics?.attempts)
     ? dataDiagnostics.attempts
         .map((attempt) => {
-          const status = attempt.status === "success" ? "成功" : "失败";
+          const status =
+            {
+              success: "成功",
+              failure: "失败",
+              attempted: "已尝试",
+              skipped: "已跳过",
+            }[attempt.status] || attempt.status;
           return `${attempt.source}=${status}${
             attempt.message ? `（${attempt.message}）` : ""
           }`;
@@ -542,9 +591,14 @@ function buildDiagnosticText(
 
   return [
     `组件版本：${APP.version}`,
+    `运行通道：${IS_DEV ? "DEV" : "正式版"}`,
+    `DEV fixture：${IS_DEV ? devFixtureKey() || "在线模式" : "不适用"}`,
     `设计系统：${DesignSystem.version || "未知"}`,
     `设置结构：v${normalized.schemaVersion}`,
-    `当前赛季：${CONFIG.seasonText}`,
+    `当前赛事：${cache?.tournament?.name || CONFIG.seasonText}`,
+    `赛事短名：${cache?.tournament?.shortName || CONFIG.title}`,
+    `选择日期：${cache?.selectedDate || "由兼容赛程动态选择"}`,
+    `选择原因：${cache?.selectionReason || "无"}`,
     `运行环境：${runtimeLabel}`,
     `数据模式：${normalized.dataMode}`,
     `直播平台：${normalized.livePlatform}`,
@@ -598,7 +652,7 @@ function singleMatchPreviewResult(result) {
 async function presentSingleMatchPreview(settings) {
   applyUserSettings(settings);
   const data = await loadSchedule();
-  const result = singleMatchPreviewResult(findNextMatchDay(data.matches));
+  const result = singleMatchPreviewResult(selectScheduleResult(data));
   await prepareMatchLogos(result.matches);
   const widget = renderMedium(result, `${data.source} · 单场预览`);
   await widget.presentMedium();
@@ -731,6 +785,7 @@ function normalizeMatch(raw) {
   if (!left || !right || left === right) return null;
 
   return {
+    tournamentId: String(raw.tournamentId || ""),
     id: String(raw.id || raw.bMatchId || ""),
     gameId: String(raw.gameId || raw.GameId || ""),
     startTime: `${formatDate(date)} ${pad2(date.getHours())}:${pad2(
@@ -753,6 +808,7 @@ function normalizeMatch(raw) {
     phase: String(raw.phase || ""),
     group: normalizeMatchGroup(raw.group, left, right),
     liveUrl: raw.liveUrl || CONFIG.liveUrl,
+    detailUrl: raw.detailUrl || "",
   };
 }
 
@@ -761,7 +817,7 @@ function normalizeMatch(raw) {
 function logoCacheFileName(team) {
   const safeName =
     normalizeTeamName(team).replace(/[^A-Z0-9_-]/g, "") || "UNKNOWN";
-  return `lpl-team-logo-${safeName}.png`;
+  return `${IS_DEV ? "lpl-team-logo-dev" : "lpl-team-logo"}-${safeName}.png`;
 }
 
 function teamLogoScale(team) {
@@ -785,6 +841,44 @@ function placeholderTeamLogo() {
   return SFSymbol.named("shield.fill").image;
 }
 
+function isWidgetRuntime() {
+  return Boolean(
+    typeof config !== "undefined" && config && config.runsInWidget
+  );
+}
+
+function networkTimeoutSeconds(kind) {
+  const widget = isWidgetRuntime();
+  if (kind === "official") {
+    return widget
+      ? CONFIG.widgetOfficialTimeoutSeconds
+      : CONFIG.appOfficialTimeoutSeconds;
+  }
+  if (kind === "asset") {
+    return widget
+      ? CONFIG.widgetAssetTimeoutSeconds
+      : CONFIG.appAssetTimeoutSeconds;
+  }
+  return widget
+    ? CONFIG.widgetRemoteTimeoutSeconds
+    : CONFIG.appRemoteTimeoutSeconds;
+}
+
+async function withNetworkTimeout(operation, seconds, label) {
+  let timer = null;
+  const timeout = new Promise((_, reject) => {
+    timer = Timer.schedule(seconds, false, () => {
+      reject(new Error(`${label} timeout (${seconds}s)`));
+    });
+  });
+
+  try {
+    return await Promise.race([Promise.resolve().then(operation), timeout]);
+  } finally {
+    if (timer && typeof timer.invalidate === "function") timer.invalidate();
+  }
+}
+
 async function loadTeamLogo(url, team) {
   const fm = FileManager.local();
   const path = fm.joinPath(fm.documentsDirectory(), logoCacheFileName(team));
@@ -797,9 +891,14 @@ async function loadTeamLogo(url, team) {
       return placeholderTeamLogo();
     }
 
+    const timeoutSeconds = networkTimeoutSeconds("asset");
     const request = new Request(url);
-    request.timeoutInterval = 10;
-    const image = await request.loadImage();
+    request.timeoutInterval = timeoutSeconds;
+    const image = await withNetworkTimeout(
+      () => request.loadImage(),
+      timeoutSeconds,
+      `team logo ${team}`
+    );
     fm.writeImage(path, image);
     return normalizeTeamLogoImage(image, team);
   } catch (error) {
@@ -878,7 +977,7 @@ function readCache() {
   }
 }
 
-function writeCache(matches, source) {
+function writeCache(matches, source, route = {}) {
   try {
     const fm = FileManager.local();
     fm.writeString(
@@ -887,6 +986,9 @@ function writeCache(matches, source) {
         {
           updatedAt: new Date().toISOString(),
           source,
+          tournament: route.tournament || LEGACY_TOURNAMENT,
+          selectedDate: route.selectedDate || null,
+          selectionReason: route.selectionReason || "LEGACY_SCHEDULE",
           matches,
         },
         null,
@@ -904,7 +1006,215 @@ function isCacheFresh(payload) {
   return age <= CONFIG.cacheHours * 60 * 60 * 1000;
 }
 
+function cacheAgeMinutes(payload, now = new Date()) {
+  const updatedAt = new Date(payload?.updatedAt || "").getTime();
+  if (!Number.isFinite(updatedAt)) return null;
+  return Math.max(0, Math.floor((now.getTime() - updatedAt) / (60 * 1000)));
+}
+
+function validCacheSnapshot(payload) {
+  if (!payload?.matches?.length || !isCacheFresh(payload)) return null;
+  const matches = payload.matches.map(normalizeMatch).filter(Boolean);
+  return matches.length ? { ...payload, matches } : null;
+}
+
+function cacheAttemptMessage(payload, prefix = "cache accepted") {
+  const age = cacheAgeMinutes(payload);
+  return `${prefix}; source=${payload?.source || "unknown"}; age=${
+    age === null ? "unknown" : `${age}m`
+  }; matches=${payload?.matches?.length || 0}`;
+}
+
+function resultFromCache(payload, source, selectionReason) {
+  return {
+    matches: payload.matches,
+    source,
+    tournament: normalizeTournament(payload.tournament) || LEGACY_TOURNAMENT,
+    selectedDate: payload.selectedDate || null,
+    selectionReason:
+      payload.selectionReason || selectionReason || "CACHE_FALLBACK",
+  };
+}
+
+function logDataStep(message) {
+  console.log(`[data] ${message}`);
+}
+
 // MARK: - 远程 JSON
+
+function normalizeTournament(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const tournament = {
+    id: String(raw.id || "").trim(),
+    name: String(raw.name || "").trim(),
+    shortName: String(raw.shortName || "").trim(),
+    season: String(raw.season || "").trim(),
+    region: String(raw.region || "").trim(),
+    stage: String(raw.stage || "").trim(),
+    startDate: String(raw.startDate || "").trim(),
+    endDate: String(raw.endDate || "").trim(),
+    dataSource: String(raw.dataSource || "").trim(),
+  };
+  if (!tournament.id || !tournament.name || !tournament.shortName) return null;
+  return tournament;
+}
+
+function tournamentTitle(tournament) {
+  return normalizeTournament(tournament)?.shortName || CONFIG.title;
+}
+
+function tournamentFooterText(tournament) {
+  const normalized = normalizeTournament(tournament);
+  if (!normalized) return CONFIG.seasonText;
+  return [normalized.name, normalized.stage]
+    .filter((value, index, values) => value && values.indexOf(value) === index)
+    .join(" · ");
+}
+
+function remoteTimestampFreshnessError(value, now = new Date()) {
+  const nowTime = now.getTime();
+  const updatedTime = new Date(value || "").getTime();
+  if (!Number.isFinite(nowTime) || !Number.isFinite(updatedTime)) {
+    return "更新时间无效";
+  }
+
+  const age = nowTime - updatedTime;
+  if (age < -CONFIG.remoteFutureSkewHours * 60 * 60 * 1000) {
+    return "更新时间明显晚于设备时间";
+  }
+  if (age > CONFIG.remoteMaxAgeHours * 60 * 60 * 1000) {
+    return `更新时间已超过 ${CONFIG.remoteMaxAgeHours} 小时`;
+  }
+  return null;
+}
+
+function activePayloadFreshnessError(payload, matches, now = new Date()) {
+  const tournament = normalizeTournament(payload?.tournament);
+  if (!tournament) return "赛事元数据无效";
+  if (tournament.season !== String(SEASON.year)) {
+    return `赛季不匹配（应为 ${SEASON.year}）`;
+  }
+  if (matches.some((match) => match.tournamentId !== tournament.id)) {
+    return "比赛 tournamentId 与当前赛事不匹配";
+  }
+
+  const timestampError = remoteTimestampFreshnessError(
+    payload?.generatedAt,
+    now
+  );
+  if (timestampError) return timestampError;
+  const sourceTimestampError = remoteTimestampFreshnessError(
+    payload?.sourceUpdatedAt,
+    now
+  );
+  if (sourceTimestampError) return `源数据${sourceTimestampError}`;
+
+  const selectedDate = String(payload?.selectedDate || "");
+  const today = beijingDateString(now);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(selectedDate)) {
+    return "selectedDate 无效";
+  }
+  if (
+    (tournament.startDate && selectedDate < tournament.startDate) ||
+    (tournament.endDate && selectedDate > tournament.endDate)
+  ) {
+    return "selectedDate 超出赛事日期范围";
+  }
+  if (tournament.endDate && tournament.endDate < today) {
+    return "当前赛事已经结束";
+  }
+  if (selectedDate < today) {
+    return "当前赛事没有今天或未来的赛程";
+  }
+  if (matches.some((match) => match.dateString !== selectedDate)) {
+    return "比赛日期与 selectedDate 不匹配";
+  }
+  return null;
+}
+
+function normalizeActivePayload(payload, now = new Date()) {
+  const sourceMatches = Array.isArray(payload?.matches) ? payload.matches : [];
+  const matches = uniqueMatches(
+    sourceMatches.map(normalizeMatch).filter(Boolean)
+  ).sort((a, b) => a.timestamp - b.timestamp);
+  if (!matches.length) {
+    throw new Error("远程 active.json 中没有有效赛程");
+  }
+
+  const freshnessError = activePayloadFreshnessError(payload, matches, now);
+  if (freshnessError) {
+    throw new Error(`远程 active.json 已陈旧：${freshnessError}`);
+  }
+
+  return {
+    matches,
+    tournament: normalizeTournament(payload.tournament),
+    selectedDate: payload.selectedDate,
+    selectionReason: String(payload.selectionReason || "SMART"),
+  };
+}
+
+async function loadRemoteActive() {
+  const separator = CONFIG.remoteActiveUrl.includes("?") ? "&" : "?";
+  const cacheKey = Math.floor(Date.now() / (60 * 1000));
+  const request = new Request(
+    `${CONFIG.remoteActiveUrl}${separator}v=${cacheKey}`
+  );
+  const timeoutSeconds = networkTimeoutSeconds("remote");
+  request.timeoutInterval = timeoutSeconds;
+  request.headers = {
+    "User-Agent": "Scriptable-LPL-Schedule/1.0",
+    "Cache-Control": "no-cache",
+  };
+  return normalizeActivePayload(
+    await withNetworkTimeout(
+      () => request.loadJSON(),
+      timeoutSeconds,
+      "remote active"
+    )
+  );
+}
+
+function remoteScheduleFreshnessError(payload, matches, now = new Date()) {
+  const expectedSeason = `${SEASON.year} LPL ${SEASON.stage}`;
+  if (String(payload?.season || "").trim() !== expectedSeason) {
+    return `赛季不匹配（应为 ${expectedSeason}）`;
+  }
+
+  const timestampError = remoteTimestampFreshnessError(payload?.updatedAt, now);
+  if (timestampError) return timestampError;
+
+  if (now.getFullYear() === SEASON.year) {
+    const todayStart = startOfDay(now).getTime();
+    const hasCurrentOrFutureMatch = matches.some(
+      (match) =>
+        Number.isFinite(match.timestamp) && match.timestamp >= todayStart
+    );
+    if (!hasCurrentOrFutureMatch) {
+      return "当前赛季没有今天或未来的赛程";
+    }
+  }
+
+  return null;
+}
+
+function normalizeRemoteSchedulePayload(payload, now = new Date()) {
+  const sourceMatches = Array.isArray(payload?.matches) ? payload.matches : [];
+  const matches = uniqueMatches(
+    sourceMatches.map(normalizeMatch).filter(Boolean)
+  ).sort((a, b) => a.timestamp - b.timestamp);
+
+  if (!matches.length) {
+    throw new Error("远程 schedule.json 中没有有效赛程");
+  }
+
+  const freshnessError = remoteScheduleFreshnessError(payload, matches, now);
+  if (freshnessError) {
+    throw new Error(`远程 schedule.json 已陈旧：${freshnessError}`);
+  }
+
+  return matches;
+}
 
 async function loadRemoteSchedule() {
   const separator = CONFIG.remoteScheduleUrl.includes("?") ? "&" : "?";
@@ -912,32 +1222,34 @@ async function loadRemoteSchedule() {
   const request = new Request(
     `${CONFIG.remoteScheduleUrl}${separator}v=${cacheKey}`
   );
-  request.timeoutInterval = 15;
+  const timeoutSeconds = networkTimeoutSeconds("remote");
+  request.timeoutInterval = timeoutSeconds;
   request.headers = {
     "User-Agent": "Scriptable-LPL-Schedule/1.0",
     "Cache-Control": "no-cache",
   };
 
-  const payload = await request.loadJSON();
-  const sourceMatches = Array.isArray(payload)
-    ? payload
-    : Array.isArray(payload?.matches)
-      ? payload.matches
-      : [];
-
-  const matches = sourceMatches.map(normalizeMatch).filter(Boolean);
-
-  if (!matches.length) {
-    throw new Error("远程 schedule.json 中没有有效赛程");
-  }
-
-  return uniqueMatches(matches).sort((a, b) => a.timestamp - b.timestamp);
+  return normalizeRemoteSchedulePayload(
+    await withNetworkTimeout(
+      () => request.loadJSON(),
+      timeoutSeconds,
+      "remote schedule"
+    )
+  );
 }
 
 function officialApiStatus(value) {
   if (String(value) === "2") return "live";
   if (String(value) === "3") return "finished";
   return "upcoming";
+}
+
+function isCurrentSeasonStage(stage) {
+  const value = String(stage || "");
+  return (
+    value.includes(SEASON.stage) ||
+    (SEASON.stage === "第三赛段" && /季后赛|资格赛/.test(value))
+  );
 }
 
 function officialMatchUrl(match) {
@@ -968,7 +1280,7 @@ function parseOfficialApiState(payload) {
       (match) =>
         String(match.MatchDate || "").startsWith("2026-") &&
         String(match.GameName || "").includes("2026职业联赛") &&
-        String(match.GameTypeName || "").includes("第三赛段")
+        isCurrentSeasonStage(match.GameTypeName)
     )
     .map((match) => {
       const status = officialApiStatus(match.MatchStatus);
@@ -989,12 +1301,19 @@ async function loadOfficialApiState() {
   const request = new Request(
     `${CONFIG.officialDataUrl}${separator}v=${Date.now()}`
   );
-  request.timeoutInterval = 12;
+  const timeoutSeconds = networkTimeoutSeconds("official");
+  request.timeoutInterval = timeoutSeconds;
   request.headers = {
     "User-Agent": "Scriptable-LPL-Schedule/1.0",
     "Cache-Control": "no-cache",
   };
-  return parseOfficialApiState(await request.loadJSON());
+  return parseOfficialApiState(
+    await withNetworkTimeout(
+      () => request.loadJSON(),
+      timeoutSeconds,
+      "official state"
+    )
+  );
 }
 
 function mergeOfficialState(matches, states, observedAt = new Date()) {
@@ -1043,17 +1362,25 @@ async function sleep(seconds) {
 }
 
 async function loadOfficialPageText() {
-  const webView = new WebView();
-  await webView.loadURL(CONFIG.officialScheduleUrl);
-  await sleep(CONFIG.officialPageWaitSeconds);
-
-  const text = await webView.evaluateJavaScript(`
-    (() => {
-      const body = document.body;
-      if (!body) return "";
-      return body.innerText || "";
-    })()
-  `);
+  const timeoutSeconds = networkTimeoutSeconds("official");
+  const text = await withNetworkTimeout(
+    async () => {
+      const webView = new WebView();
+      await webView.loadURL(CONFIG.officialScheduleUrl);
+      await sleep(
+        isWidgetRuntime() ? 1 : Math.min(CONFIG.officialPageWaitSeconds, 4)
+      );
+      return webView.evaluateJavaScript(`
+      (() => {
+        const body = document.body;
+        if (!body) return "";
+        return body.innerText || "";
+      })()
+    `);
+    },
+    timeoutSeconds,
+    "official page"
+  );
 
   if (!text || text.length < 50) {
     throw new Error("官方页面未返回有效文本");
@@ -1226,21 +1553,327 @@ function parseOfficialSchedule(text) {
 
 // MARK: - 数据加载
 
+const DEV_FIXTURE_KEYS = new Set([
+  "lpl-playoffs",
+  "ewc-priority",
+  "worlds",
+  "stale-remote",
+  "remote-stale",
+  "offline-cache",
+]);
+
+function devFixtureKey() {
+  if (!IS_DEV) return null;
+  const parameter = String(
+    args.queryParameters?.fixture || args.widgetParameter || ""
+  ).trim();
+  const explicitValue = parameter.startsWith("dev:")
+    ? parameter.slice(4)
+    : parameter.match(/(?:^|[;,\s])fixture[=:]([a-z0-9-]+)/i)?.[1] || "";
+  const value = explicitValue || String(DEV_RUNTIME.fixture || "");
+  return DEV_FIXTURE_KEYS.has(value) ? value : null;
+}
+
+function devDataPath(relativePath) {
+  const fm = FileManager.iCloud();
+  const parts = [
+    fm.documentsDirectory(),
+    DEV_RUNTIME.dataDirectory,
+    "data",
+    ...String(relativePath).split("/"),
+  ];
+  return parts
+    .slice(1)
+    .reduce((current, part) => fm.joinPath(current, part), parts[0]);
+}
+
+async function readDevJson(relativePath) {
+  const fm = FileManager.iCloud();
+  const path = devDataPath(relativePath);
+  if (!fm.fileExists(path)) {
+    throw new Error(
+      `DEV 数据文件不存在：${relativePath}，请重新运行 Installer-Dev.js`
+    );
+  }
+  if (!fm.isFileDownloaded(path)) {
+    const timeoutSeconds = networkTimeoutSeconds("remote");
+    await withNetworkTimeout(
+      () => fm.downloadFileFromiCloud(path),
+      timeoutSeconds,
+      `DEV iCloud ${relativePath}`
+    );
+  }
+  return JSON.parse(fm.readString(path));
+}
+
+function devFailureAttempt(source, error) {
+  return {
+    source,
+    status: "failure",
+    message: String(error?.message || error).slice(0, 160),
+  };
+}
+
+function devActiveResult(active, now, source, selectionReason = null) {
+  const route = normalizeActivePayload(active, now);
+  return {
+    ...route,
+    source,
+    selectionReason: selectionReason || route.selectionReason,
+  };
+}
+
+async function loadDevSchedule() {
+  const fixture = devFixtureKey();
+  const attempts = [];
+  const cacheAtStart = readCache();
+  const guaranteedCache = validCacheSnapshot(cacheAtStart);
+
+  if (fixture === "offline-cache") {
+    attempts.push({
+      source: "DEV remote",
+      status: "failure",
+      message: "remote failed/timeout: fixture simulated offline",
+    });
+    attempts.push({
+      source: "DEV official",
+      status: "failure",
+      message: "official failed/timeout: fixture simulated offline",
+    });
+    if (!guaranteedCache) {
+      attempts.push({
+        source: "DEV local cache",
+        status: "failure",
+        message: cacheAtStart?.matches?.length
+          ? cacheAttemptMessage(cacheAtStart, "cache expired")
+          : "cache missing",
+      });
+      writeDataDiagnostics("dev:offline-cache", "无", attempts);
+      throw new Error(
+        "DEV 有效缓存不可用；请重新运行 Installer-Dev 或先运行任一成功 fixture"
+      );
+    }
+    const result = resultFromCache(
+      guaranteedCache,
+      "DEV local cache",
+      "DEV_OFFLINE_CACHE_FIXTURE"
+    );
+    result.selectionReason = "DEV_OFFLINE_CACHE_FIXTURE";
+    attempts.push({
+      source: "DEV local cache",
+      status: "success",
+      message: cacheAttemptMessage(guaranteedCache),
+    });
+    writeDataDiagnostics("dev:offline-cache", result.source, attempts);
+    logDataStep("remote failed/timeout: fixture simulated offline");
+    logDataStep("official failed/timeout: fixture simulated offline");
+    logDataStep(cacheAttemptMessage(guaranteedCache));
+    logDataStep(`final source: ${result.source}`);
+    return result;
+  }
+
+  if (fixture) {
+    const fixturePayload = await readDevJson(`fixtures/${fixture}.json`);
+    const fixtureNow = new Date(fixturePayload.now);
+
+    if (fixture === "stale-remote" || fixture === "remote-stale") {
+      const diagnosticMode = `dev:${fixture}`;
+      const remoteSource = "DEV remote active fixture";
+      console.log(`[${diagnosticMode}] remote source: ${remoteSource}`);
+      try {
+        devActiveResult(fixturePayload.active, fixtureNow, remoteSource);
+        throw new Error("stale fixture 未触发新鲜度失败");
+      } catch (error) {
+        const rejectionReason = String(error?.message || error);
+        console.log(
+          `[${diagnosticMode}] rejection reason: stale — ${rejectionReason}`
+        );
+        attempts.push({
+          ...devFailureAttempt(remoteSource, error),
+          message: `remote rejected: stale — ${rejectionReason}`.slice(0, 160),
+        });
+      }
+      console.log(`[${diagnosticMode}] official fallback start`);
+      attempts.push({
+        source: "LPL 官方页面",
+        status: "attempted",
+        message: "official attempted",
+      });
+      try {
+        const matches = parseOfficialSchedule(await loadOfficialPageText());
+        const result = {
+          matches,
+          source: "DEV LPL 官方页面",
+          tournament: LEGACY_TOURNAMENT,
+          selectedDate: null,
+          selectionReason: "DEV_REMOTE_STALE_OFFICIAL_FALLBACK",
+        };
+        console.log(`[${diagnosticMode}] official fallback result: accepted`);
+        attempts.push({
+          source: "LPL 官方页面",
+          status: "success",
+          message: "official accepted",
+        });
+        writeCache(matches, result.source, result);
+        writeDataDiagnostics(diagnosticMode, result.source, attempts);
+        console.log(`[${diagnosticMode}] final source: ${result.source}`);
+        return result;
+      } catch (error) {
+        console.log(
+          `[${diagnosticMode}] official fallback result: rejected — ${error}`
+        );
+        attempts.push(devFailureAttempt("LPL 官方页面", error));
+        if (guaranteedCache) {
+          const result = resultFromCache(
+            guaranteedCache,
+            "DEV local cache",
+            "DEV_REMOTE_STALE_CACHE_FALLBACK"
+          );
+          result.selectionReason = "DEV_REMOTE_STALE_CACHE_FALLBACK";
+          attempts.push({
+            source: "DEV local cache",
+            status: "success",
+            message: cacheAttemptMessage(guaranteedCache),
+          });
+          writeDataDiagnostics(diagnosticMode, result.source, attempts);
+          logDataStep(cacheAttemptMessage(guaranteedCache));
+          console.log(`[${diagnosticMode}] final source: ${result.source}`);
+          return result;
+        }
+        writeDataDiagnostics(diagnosticMode, "无", attempts);
+        console.log(`[${diagnosticMode}] final source: none`);
+        throw error;
+      }
+    }
+
+    const result = devActiveResult(
+      fixturePayload.active,
+      fixtureNow,
+      `DEV ${fixture} fixture`
+    );
+    attempts.push({ source: result.source, status: "success" });
+    writeCache(result.matches, result.source, result);
+    writeDataDiagnostics(`dev:${fixture}`, result.source, attempts);
+    return result;
+  }
+
+  try {
+    const result = devActiveResult(
+      await readDevJson("active.json"),
+      new Date(),
+      "DEV 工作区 active"
+    );
+    attempts.push({ source: result.source, status: "success" });
+    if (
+      result.tournament?.dataSource === "lpl" &&
+      shouldRefreshOfficialState(result.matches)
+    ) {
+      try {
+        result.matches = mergeOfficialState(
+          result.matches,
+          await loadOfficialApiState()
+        );
+        result.source = "DEV 工作区 active + 官方状态";
+        attempts.push({ source: "官方状态接口", status: "success" });
+      } catch (error) {
+        attempts.push(devFailureAttempt("官方状态接口", error));
+      }
+    }
+    writeCache(result.matches, result.source, result);
+    writeDataDiagnostics("dev", result.source, attempts);
+    return result;
+  } catch (error) {
+    attempts.push(devFailureAttempt("DEV 工作区 active", error));
+  }
+
+  try {
+    const matches = normalizeRemoteSchedulePayload(
+      await readDevJson("schedule.json")
+    );
+    const result = {
+      matches,
+      source: "DEV 工作区兼容赛程",
+      tournament: LEGACY_TOURNAMENT,
+      selectedDate: null,
+      selectionReason: "DEV_LEGACY_SCHEDULE",
+    };
+    attempts.push({ source: result.source, status: "success" });
+    writeCache(matches, result.source, result);
+    writeDataDiagnostics("dev", result.source, attempts);
+    return result;
+  } catch (error) {
+    attempts.push(devFailureAttempt("DEV 工作区兼容赛程", error));
+  }
+
+  try {
+    const matches = parseOfficialSchedule(await loadOfficialPageText());
+    const result = {
+      matches,
+      source: "DEV 官方页面",
+      tournament: LEGACY_TOURNAMENT,
+      selectedDate: null,
+      selectionReason: "DEV_OFFICIAL_FALLBACK",
+    };
+    attempts.push({ source: result.source, status: "success" });
+    writeCache(matches, result.source, result);
+    writeDataDiagnostics("dev", result.source, attempts);
+    return result;
+  } catch (error) {
+    attempts.push(devFailureAttempt("DEV 官方页面", error));
+  }
+
+  if (guaranteedCache) {
+    const result = resultFromCache(
+      guaranteedCache,
+      "DEV local cache",
+      "DEV_CACHE_FALLBACK"
+    );
+    attempts.push({
+      source: result.source,
+      status: "success",
+      message: cacheAttemptMessage(guaranteedCache),
+    });
+    writeDataDiagnostics("dev", result.source, attempts);
+    logDataStep(cacheAttemptMessage(guaranteedCache));
+    logDataStep(`final source: ${result.source}`);
+    return result;
+  }
+
+  attempts.push({
+    source: "DEV local cache",
+    status: "failure",
+    message: cacheAtStart?.matches?.length
+      ? cacheAttemptMessage(cacheAtStart, "cache expired")
+      : "cache missing",
+  });
+  writeDataDiagnostics("dev", "无", attempts);
+  throw new Error("DEV 工作区数据、官方页面和 DEV 缓存均不可用");
+}
+
 async function loadSchedule() {
+  if (IS_DEV && devFixtureKey()) return loadDevSchedule();
   const mode = String(CONFIG.dataMode).toLowerCase();
   const cached = readCache();
+  const guaranteedCache = validCacheSnapshot(cached);
+  const protectWidgetCache = Boolean(
+    mode === "auto" && isWidgetRuntime() && guaranteedCache
+  );
   const errors = [];
   const attempts = [];
 
   if (mode === "auto" || mode === "remote") {
     try {
-      let matches = await loadRemoteSchedule();
-      let source = "GitHub";
-      attempts.push({ source: "GitHub", status: "success" });
-      if (shouldRefreshOfficialState(matches)) {
+      const route = await loadRemoteActive();
+      let matches = route.matches;
+      let source = "GitHub Active";
+      attempts.push({ source: "GitHub Active", status: "success" });
+      if (
+        route.tournament?.dataSource === "lpl" &&
+        shouldRefreshOfficialState(matches)
+      ) {
         try {
           matches = mergeOfficialState(matches, await loadOfficialApiState());
-          source = "GitHub + 官方状态";
+          source = "GitHub Active + 官方状态";
           attempts.push({ source: "官方状态接口", status: "success" });
         } catch (error) {
           attempts.push({
@@ -1250,32 +1883,84 @@ async function loadSchedule() {
           });
         }
       }
-      writeCache(matches, source);
+      const result = { ...route, matches, source };
+      writeCache(matches, source, result);
       writeDataDiagnostics(mode, source, attempts);
-      return { matches, source };
+      return result;
     } catch (error) {
       const message = String(error.message || error).slice(0, 160);
-      errors.push(`GitHub：${message}`);
+      errors.push(`GitHub Active：${message}`);
       attempts.push({
-        source: "GitHub",
+        source: "GitHub Active",
         status: "failure",
         message,
       });
-      if (mode === "remote") {
-        writeDataDiagnostics(mode, "无", attempts);
-        throw error;
+      logDataStep(`remote failed/timeout: ${message}`);
+    }
+
+    if (!protectWidgetCache) {
+      try {
+        let matches = await loadRemoteSchedule();
+        let source = "GitHub Legacy";
+        attempts.push({ source: "GitHub Legacy", status: "success" });
+        if (shouldRefreshOfficialState(matches)) {
+          try {
+            matches = mergeOfficialState(matches, await loadOfficialApiState());
+            source = "GitHub Legacy + 官方状态";
+            attempts.push({ source: "官方状态接口", status: "success" });
+          } catch (error) {
+            attempts.push({
+              source: "官方状态接口",
+              status: "failure",
+              message: String(error.message || error).slice(0, 160),
+            });
+          }
+        }
+        const result = {
+          matches,
+          source,
+          tournament: LEGACY_TOURNAMENT,
+          selectedDate: null,
+          selectionReason: "LEGACY_SCHEDULE",
+        };
+        writeCache(matches, source, result);
+        writeDataDiagnostics(mode, source, attempts);
+        return result;
+      } catch (error) {
+        const message = String(error.message || error).slice(0, 160);
+        errors.push(`GitHub Legacy：${message}`);
+        attempts.push({
+          source: "GitHub Legacy",
+          status: "failure",
+          message,
+        });
+        logDataStep(`remote legacy failed/timeout: ${message}`);
+        if (mode === "remote") {
+          writeDataDiagnostics(mode, "无", attempts);
+          throw new Error(errors.join("\n"));
+        }
       }
     }
   }
 
   if (mode === "auto" || mode === "official") {
+    logDataStep("official fallback start");
     try {
       const text = await loadOfficialPageText();
       const matches = parseOfficialSchedule(text);
       attempts.push({ source: "官方页面", status: "success" });
-      writeCache(matches, "official");
+      const result = {
+        matches,
+        source: "官方页面",
+        tournament: LEGACY_TOURNAMENT,
+        selectedDate: null,
+        selectionReason: "OFFICIAL_FALLBACK",
+      };
+      writeCache(matches, "官方页面", result);
       writeDataDiagnostics(mode, "官方页面", attempts);
-      return { matches, source: "官方页面" };
+      logDataStep("official fallback result: accepted");
+      logDataStep("final source: 官方页面");
+      return result;
     } catch (error) {
       const message = String(error.message || error).slice(0, 160);
       errors.push(`官方页面：${message}`);
@@ -1284,6 +1969,7 @@ async function loadSchedule() {
         status: "failure",
         message,
       });
+      logDataStep(`official failed/timeout: ${message}`);
       if (mode === "official") {
         writeDataDiagnostics(mode, "无", attempts);
         throw error;
@@ -1291,27 +1977,32 @@ async function loadSchedule() {
     }
   }
 
-  if (cached?.matches?.length) {
-    const source = isCacheFresh(cached) ? "本地缓存" : "过期缓存";
+  if (guaranteedCache) {
+    const source = "本地缓存";
     attempts.push({
       source: "本地缓存",
       status: "success",
-      message: source === "本地缓存" ? "有效" : "已过期",
+      message: cacheAttemptMessage(guaranteedCache),
     });
     writeDataDiagnostics(mode, source, attempts);
-    return {
-      matches: cached.matches.map(normalizeMatch).filter(Boolean),
-      source,
-    };
+    logDataStep(cacheAttemptMessage(guaranteedCache));
+    logDataStep(`final source: ${IS_DEV ? "DEV local cache" : source}`);
+    return resultFromCache(guaranteedCache, source, "CACHE_FALLBACK");
   }
 
   attempts.push({
     source: "本地缓存",
     status: "failure",
-    message: "无可用缓存",
+    message: cached?.matches?.length
+      ? cacheAttemptMessage(cached, "cache expired")
+      : "cache missing",
   });
   writeDataDiagnostics(mode, "无", attempts);
-  throw new Error(errors.join("\n") || "没有可用的赛程数据");
+  throw new Error(
+    `${errors.join("\n") || "全部网络源不可用"}\n本地缓存：${
+      cached?.matches?.length ? "已过期" : "不存在"
+    }`
+  );
 }
 
 function sortMatchesByTime(matches) {
@@ -1373,6 +2064,33 @@ function findNextMatchDay(matches, now = new Date()) {
   throw new Error(`未来 ${CONFIG.maxSearchDays} 天没有找到比赛`);
 }
 
+function selectScheduleResult(data, now = new Date()) {
+  let result;
+  if (data?.selectedDate && data?.matches?.length) {
+    const selectedStart = new Date(`${data.selectedDate}T00:00:00Z`).getTime();
+    const todayStart = new Date(
+      `${beijingDateString(now)}T00:00:00Z`
+    ).getTime();
+    const offset =
+      Number.isFinite(selectedStart) && Number.isFinite(todayStart)
+        ? Math.round((selectedStart - todayStart) / (24 * 60 * 60 * 1000))
+        : 0;
+    result = {
+      dateString: data.selectedDate,
+      matches: sortMatchesByTime(data.matches),
+      offset,
+    };
+  } else {
+    result = findNextMatchDay(data.matches, now);
+  }
+
+  return {
+    ...result,
+    tournament: normalizeTournament(data?.tournament) || LEGACY_TOURNAMENT,
+    selectionReason: data?.selectionReason || "LEGACY_SCHEDULE",
+  };
+}
+
 // MARK: - 样式
 
 function applyBackground(widget) {
@@ -1395,7 +2113,7 @@ function addHeader(widget, result, dense = false) {
 
   row.addSpacer(dense ? 8 : LAYOUT.headerGap);
 
-  const title = row.addText(CONFIG.title);
+  const title = row.addText(tournamentTitle(result.tournament));
   title.font = Font.mediumSystemFont(dense ? 15 : TYPOGRAPHY.header);
   title.textColor = new Color(CONFIG.theme.white);
   title.minimumScaleFactor = 0.72;
@@ -1618,7 +2336,9 @@ function resolveMatchUrl(
   if (livePlatform === "bilibili") {
     return CONFIG.bilibiliLiveUrl;
   }
-  return match.liveUrl || CONFIG.liveUrl;
+  return effectiveMatchStatus(match, now) === "live"
+    ? match.liveUrl || match.detailUrl || CONFIG.liveUrl
+    : match.detailUrl || match.liveUrl || CONFIG.liveUrl;
 }
 
 function addTeamLogo(stack, image, size, opacity = 1) {
@@ -1734,14 +2454,22 @@ function addFooter(widget, source, result, dense = false) {
   row.centerAlignContent();
 
   const left = row.addText(
-    result.offset === 0 ? "今日赛程" : `${weekdayText(result.dateString)}赛程`
+    IS_DEV
+      ? `DEV · v${APP.version}`
+      : result.offset === 0
+        ? "今日赛程"
+        : `${weekdayText(result.dateString)}赛程`
   );
   left.font = Font.mediumSystemFont(dense ? 9 : 10);
   left.textColor = new Color(CONFIG.theme.muted);
 
   row.addSpacer();
 
-  const right = row.addText(`${CONFIG.seasonText} · ${source}`);
+  const right = row.addText(
+    IS_DEV
+      ? tournamentFooterText(result.tournament)
+      : `${tournamentFooterText(result.tournament)} · ${source}`
+  );
   right.font = Font.mediumSystemFont(dense ? 9 : 10);
   right.textColor = new Color(CONFIG.theme.muted);
 }
@@ -1829,7 +2557,9 @@ function renderSmall(result) {
 
   widget.addSpacer(10);
 
-  const date = widget.addText(displayMonthDay(result.dateString));
+  const date = widget.addText(
+    `${IS_DEV ? "DEV · " : ""}${displayMonthDay(result.dateString)}`
+  );
   date.font = Font.boldSystemFont(18);
   date.textColor = new Color(CONFIG.theme.white);
   date.url = settingsUrl();
@@ -1928,7 +2658,7 @@ function renderError(error) {
 
 async function buildWidget() {
   const data = await loadSchedule();
-  const result = findNextMatchDay(data.matches);
+  const result = selectScheduleResult(data);
   await prepareMatchLogos(result.matches);
 
   if (config.widgetFamily === "small") {

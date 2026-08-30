@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/braziliany/LPL-Scriptable/data/tournaments.schema.json",
+  "title": "Tournament Router Tournaments",
+  "type": "array",
+  "items": { "$ref": "#/$defs/tournament" },
+  "$defs": {
+    "tournament": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "shortName",
+        "season",
+        "region",
+        "stage",
+        "startDate",
+        "endDate",
+        "priority",
+        "enabled",
+        "schedulePath"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "shortName": { "type": "string", "minLength": 1 },
+        "season": { "type": "string", "minLength": 1 },
+        "region": { "type": "string", "minLength": 1 },
+        "stage": { "type": "string", "minLength": 1 },
+        "startDate": {
+          "type": "string",
+          "pattern": "^20\\d{2}-\\d{2}-\\d{2}$"
+        },
+        "endDate": {
+          "type": "string",
+          "pattern": "^20\\d{2}-\\d{2}-\\d{2}$"
+        },
+        "priority": { "type": "integer" },
+        "enabled": { "type": "boolean" },
+        "schedulePath": { "type": "string", "minLength": 1 },
+        "dataSource": { "enum": ["lpl", "manual"] }
+      }
+    }
+  }
+}

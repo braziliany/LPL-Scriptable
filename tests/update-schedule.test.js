@@ -3,6 +3,7 @@ const {
   buildMatchUrl,
   inferMatchGroup,
   inferMatchGroupForStage,
+  isSeasonStage,
   normalizeLogoUrl,
   normalizeStatus,
   normalizeUpdatedAt,
@@ -30,6 +31,10 @@ assert.equal(inferMatchGroup("NIP", "WBG"), "涅槃组");
 assert.equal(inferMatchGroup("TT", "WBG"), "");
 assert.equal(inferMatchGroupForStage("第三赛段组内赛", "TT", "EDG"), "登峰组");
 assert.equal(inferMatchGroupForStage("第三赛段骑士之路", "TT", "WBG"), "");
+assert.equal(isSeasonStage("第三赛段组内赛"), true);
+assert.equal(isSeasonStage("2026赛季季后赛"), true);
+assert.equal(isSeasonStage("资格赛"), true);
+assert.equal(isSeasonStage("第二赛段组内赛"), false);
 assert.equal(
   normalizeUpdatedAt("2026-07-26 16:45:05"),
   "2026-07-26T16:45:05+08:00"
@@ -191,6 +196,24 @@ assert.equal(playoffSchedule.matches[0].stage, "第三赛段淘汰赛");
 assert.equal(playoffSchedule.matches[0].phase, "败者组决赛");
 assert.equal(playoffSchedule.matches[0].group, "");
 assert.equal(playoffSchedule.matches[0].matchType, "BO5");
+
+const renamedPlayoffSchedule = transformSchedule(
+  {
+    ...fixture,
+    msg: [
+      {
+        ...fixture.msg[0],
+        GameTypeName: "2026赛季季后赛",
+        GameModeName: "BO5",
+      },
+    ],
+  },
+  teamFixture,
+  null,
+  observedAt
+);
+assert.equal(renamedPlayoffSchedule.matches.length, 1);
+assert.equal(renamedPlayoffSchedule.matches[0].stage, "2026赛季季后赛");
 
 assert.throws(
   () => transformSchedule({ status: "0", msg: [] }),

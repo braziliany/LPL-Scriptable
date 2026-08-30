@@ -41,12 +41,12 @@ jobs:
 
       - name: Commit updated schedule
         run: |
-          if git diff --quiet -- data/schedule.json; then
+          if git diff --quiet -- data/schedule.json data/schedules data/active.json; then
             echo "Schedule is already up to date."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/schedule.json
+          git add data/schedule.json data/schedules data/active.json
           git commit -m "Update LPL schedule"
           git push
