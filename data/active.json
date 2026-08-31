@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-30T21:19:21.913Z",
-  "sourceUpdatedAt": "2026-08-30T19:40:07.000Z",
+  "generatedAt": "2026-08-31T05:23:06.245Z",
+  "sourceUpdatedAt": "2026-08-31T03:45:05.000Z",
   "tournament": {
     "id": "lpl-2026-split3-playoffs",
     "name": "2026 LPL 第三赛段",
@@ -30,7 +30,7 @@
       "status": "upcoming",
       "matchType": "BO5",
       "stage": "2026赛季季后赛",
-      "phase": "第四天",
+      "phase": "第三天",
       "group": "",
       "leftScore": null,
       "rightScore": null,
