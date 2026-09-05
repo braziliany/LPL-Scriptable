@@ -12,13 +12,27 @@ const source = fs
     "globalThis.__networkTestApi = { loadSchedule, CACHE_FILE };"
   );
 const cachePath = "/documents/lpl-schedule-cache.json";
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function beijingDateOffset(days) {
+  const shifted = new Date(Date.now() + 8 * 60 * 60 * 1000 + days * DAY_MS);
+  return [
+    shifted.getUTCFullYear(),
+    String(shifted.getUTCMonth() + 1).padStart(2, "0"),
+    String(shifted.getUTCDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+const fixtureDate = beijingDateOffset(1);
+const tournamentStartDate = beijingDateOffset(-30);
+const tournamentEndDate = beijingDateOffset(30);
 
 function match(id = "cache-match") {
   return {
     id,
     gameId: id,
     tournamentId: "lpl-2026-split3-playoffs",
-    startTime: "2026-09-01 18:00:00",
+    startTime: `${fixtureDate} 18:00:00`,
     left: "BLG",
     right: "TES",
     leftLogo: "",
@@ -44,18 +58,20 @@ function cache(ageHours = 0, id = "cache-match") {
       season: "2026",
       region: "CN",
       stage: "季后赛",
-      startDate: "2026-08-28",
-      endDate: "2026-09-13",
+      startDate: tournamentStartDate,
+      endDate: tournamentEndDate,
       dataSource: "lpl",
     },
-    selectedDate: "2026-09-01",
+    selectedDate: fixtureDate,
     selectionReason: "CACHE_SEED",
     matches: [match(id)],
   };
 }
 
-function remoteActive() {
-  const updatedAt = new Date().toISOString();
+function remoteActive({ ageHours = 0, season = "2026" } = {}) {
+  const updatedAt = new Date(
+    Date.now() - ageHours * 60 * 60 * 1000
+  ).toISOString();
   return {
     generatedAt: updatedAt,
     sourceUpdatedAt: updatedAt,
@@ -63,14 +79,14 @@ function remoteActive() {
       id: "lpl-2026-split3-playoffs",
       name: "2026 LPL 第三赛段",
       shortName: "LPL PLAYOFFS",
-      season: "2026",
+      season,
       region: "CN",
       stage: "季后赛",
-      startDate: "2026-08-28",
-      endDate: "2026-12-31",
+      startDate: tournamentStartDate,
+      endDate: tournamentEndDate,
       dataSource: "manual",
     },
-    selectedDate: "2026-09-01",
+    selectedDate: fixtureDate,
     selectionReason: "SMART_TODAY_MATCHES",
     matches: [match("remote-match")],
   };
@@ -79,6 +95,14 @@ function remoteActive() {
 function never() {
   return new Promise(() => {});
 }
+
+const officialPageText = [
+  "2026 LPL 第三赛段官方赛程",
+  "BLG",
+  `${fixtureDate} 18:00`,
+  "TES",
+  "比赛时间以官方公布为准",
+].join("\n");
 
 function createRuntime({ cached, remote, official }) {
   const files = new Map();
@@ -112,13 +136,24 @@ function createRuntime({ cached, remote, official }) {
       loadJSON() {
         if (remote === "never") return never();
         if (remote === "fail") return Promise.reject(new Error("offline"));
+        if (remote === "stale") {
+          return Promise.resolve(remoteActive({ ageHours: 72 }));
+        }
+        if (remote === "wrong-season") {
+          return Promise.resolve(remoteActive({ season: "2025" }));
+        }
         return Promise.resolve(remoteActive());
       }
     },
     WebView: class {
       loadURL() {
         if (official === "never") return never();
+        if (official === "success") return Promise.resolve();
         return Promise.reject(new Error("official offline"));
+      }
+
+      evaluateJavaScript() {
+        return Promise.resolve(officialPageText);
       }
     },
     Timer: {
@@ -156,6 +191,25 @@ async function expectCache(runtime) {
 }
 
 async function main() {
+  const timeoutToOfficial = createRuntime({
+    cached: cache(),
+    remote: "never",
+    official: "success",
+  });
+  const officialResult = await timeoutToOfficial.api.loadSchedule();
+  assert.equal(officialResult.source, "官方页面");
+  assert.equal(officialResult.matches.length, 1);
+  const officialDiagnostics = JSON.parse(
+    timeoutToOfficial.files.get("/documents/lpl-schedule-data-diagnostics.json")
+  );
+  assert.deepEqual(
+    officialDiagnostics.attempts.map(({ source, status }) => [source, status]),
+    [
+      ["GitHub Active", "failure"],
+      ["官方页面", "success"],
+    ]
+  );
+
   const remoteNever = createRuntime({
     cached: cache(),
     remote: "never",
@@ -212,6 +266,22 @@ async function main() {
   const refreshedCache = JSON.parse(recovered.files.get(cachePath));
   assert.equal(refreshedCache.source, "GitHub Active");
   assert.equal(refreshedCache.matches[0].id, "remote-match");
+
+  const staleRemote = createRuntime({
+    cached: cache(),
+    remote: "stale",
+    official: "fail",
+  });
+  const staleDiagnostics = await expectCache(staleRemote);
+  assert.match(staleDiagnostics.attempts[0].message, /超过 48 小时/);
+
+  const wrongSeasonRemote = createRuntime({
+    cached: cache(),
+    remote: "wrong-season",
+    official: "fail",
+  });
+  const wrongSeasonDiagnostics = await expectCache(wrongSeasonRemote);
+  assert.match(wrongSeasonDiagnostics.attempts[0].message, /赛季不匹配/);
 
   assert.equal(recovered.api.CACHE_FILE, "lpl-schedule-cache.json");
   assert.notEqual(recovered.api.CACHE_FILE, "lpl-schedule-dev-cache.json");
