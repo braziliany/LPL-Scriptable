@@ -1,6 +1,6 @@
 {
   "tournamentId": "lpl-2026-split3-playoffs",
-  "updatedAt": "2026-09-06T08:05:05+08:00",
+  "updatedAt": "2026-09-06T11:30:06+08:00",
   "source": "https://lpl.qq.com/web201612/data/LOL_MATCH2_MATCH_HOMEPAGE_BMATCH_LIST.js",
   "matches": [
     {
@@ -130,6 +130,27 @@
       "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=80983"
     },
     {
+      "id": "13498",
+      "gameId": "237",
+      "tournamentId": "lpl-2026-split3-playoffs",
+      "startTime": "2026-09-05 14:00:00",
+      "left": "TES",
+      "right": "IG",
+      "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20240920155538/5beb948638f00bcda68fc4942e3f0a51/0",
+      "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152918/562affbb9f99b0e472644f93a19291e7/0",
+      "status": "finished",
+      "matchType": "BO5",
+      "stage": "2026赛季季后赛",
+      "phase": "第五天",
+      "group": "",
+      "leftScore": 2,
+      "rightScore": 3,
+      "scoreUpdatedAt": "2026-09-06T05:05:01.540Z",
+      "finishedAt": "2026-09-06T05:05:01.540Z",
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=81041",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=81041"
+    },
+    {
       "id": "13499",
       "gameId": "237",
       "tournamentId": "lpl-2026-split3-playoffs",
@@ -147,8 +168,8 @@
       "rightScore": 3,
       "scoreUpdatedAt": "2026-09-05T15:36:51.657Z",
       "finishedAt": "2026-09-05T15:36:51.657Z",
-      "liveUrl": "https://lpl.qq.com/web202301/stats.shtml?bmid=13499",
-      "detailUrl": "https://lpl.qq.com/web202301/stats.shtml?bmid=13499"
+      "liveUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=81073",
+      "detailUrl": "https://lpl.qq.com/web202301/video_detail.shtml?nid=81073"
     },
     {
       "id": "13500",
