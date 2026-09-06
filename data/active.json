@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-06T09:19:09.896Z",
-  "sourceUpdatedAt": "2026-09-06T09:00:07.000Z",
+  "generatedAt": "2026-09-06T12:55:04.933Z",
+  "sourceUpdatedAt": "2026-09-06T12:30:07.000Z",
   "tournament": {
     "id": "lpl-2026-split3-playoffs",
     "name": "2026 LPL 第三赛段",
@@ -27,17 +27,17 @@
       "right": "WE",
       "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152918/562affbb9f99b0e472644f93a19291e7/0",
       "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103153050/5c22150153baa973f73adf4909a041ec/0",
-      "status": "live",
+      "status": "finished",
       "matchType": "BO5",
       "stage": "2026赛季季后赛",
       "phase": "第六天",
       "group": "",
-      "leftScore": 2,
+      "leftScore": 3,
       "rightScore": 1,
-      "scoreUpdatedAt": "2026-09-06T09:19:09.884Z",
-      "finishedAt": null,
-      "liveUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13500",
-      "detailUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13500"
+      "scoreUpdatedAt": "2026-09-06T12:55:04.922Z",
+      "finishedAt": "2026-09-06T12:55:04.922Z",
+      "liveUrl": "https://lpl.qq.com/web202301/stats.shtml?bmid=13500",
+      "detailUrl": "https://lpl.qq.com/web202301/stats.shtml?bmid=13500"
     },
     {
       "id": "13501",
@@ -48,17 +48,17 @@
       "right": "LGD",
       "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152746/c8a8f59fadc0da0bda0c4997e3f62afb/0",
       "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103153121/0cef697fa6d0416e672c2fd90f30718c/0",
-      "status": "upcoming",
+      "status": "live",
       "matchType": "BO5",
       "stage": "2026赛季季后赛",
       "phase": "第六天",
       "group": "",
-      "leftScore": null,
-      "rightScore": null,
-      "scoreUpdatedAt": null,
+      "leftScore": 1,
+      "rightScore": 2,
+      "scoreUpdatedAt": "2026-09-06T12:55:04.922Z",
       "finishedAt": null,
-      "liveUrl": "https://lpl.qq.com/web202301/schedule.html",
-      "detailUrl": "https://lpl.qq.com/web202301/schedule.html"
+      "liveUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13501",
+      "detailUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13501"
     }
   ]
 }
