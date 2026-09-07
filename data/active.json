@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-07T10:34:03.084Z",
-  "sourceUpdatedAt": "2026-09-07T09:45:05.000Z",
+  "generatedAt": "2026-09-07T16:00:52.091Z",
+  "sourceUpdatedAt": "2026-09-07T12:00:07.000Z",
   "tournament": {
     "id": "lpl-2026-split3-playoffs",
     "name": "2026 LPL 第三赛段",
@@ -15,29 +15,29 @@
     "schedulePath": "data/schedules/lpl-2026-split3-playoffs.json",
     "dataSource": "lpl"
   },
-  "selectedDate": "2026-09-07",
+  "selectedDate": "2026-09-08",
   "selectionReason": "SMART_TODAY_MATCHES",
   "matches": [
     {
-      "id": "13502",
+      "id": "13503",
       "gameId": "237",
       "tournamentId": "lpl-2026-split3-playoffs",
-      "startTime": "2026-09-07 17:00:00",
-      "left": "AL",
-      "right": "BLG",
-      "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20250618145633/b8741548f37b60a6693cdb6f4949a7fd/0",
-      "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20250618144525/49342dadcecf162e8ac94fad6eb91540/0",
-      "status": "live",
+      "startTime": "2026-09-08 17:00:00",
+      "left": "LGD",
+      "right": "IG",
+      "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20230103153121/0cef697fa6d0416e672c2fd90f30718c/0",
+      "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152918/562affbb9f99b0e472644f93a19291e7/0",
+      "status": "upcoming",
       "matchType": "BO5",
       "stage": "2026赛季季后赛",
-      "phase": "第七天",
+      "phase": "第八天",
       "group": "",
-      "leftScore": 0,
-      "rightScore": 1,
-      "scoreUpdatedAt": "2026-09-07T10:34:03.072Z",
+      "leftScore": null,
+      "rightScore": null,
+      "scoreUpdatedAt": null,
       "finishedAt": null,
-      "liveUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13502",
-      "detailUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13502"
+      "liveUrl": "https://lpl.qq.com/web202301/schedule.html",
+      "detailUrl": "https://lpl.qq.com/web202301/schedule.html"
     }
   ]
 }
