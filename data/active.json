@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-11T09:47:18.528Z",
-  "sourceUpdatedAt": "2026-09-11T09:00:07.000Z",
+  "generatedAt": "2026-09-11T17:20:06.088Z",
+  "sourceUpdatedAt": "2026-09-11T16:00:07.000Z",
   "tournament": {
     "id": "lpl-2026-split3-playoffs",
     "name": "2026 LPL 第三赛段",
@@ -16,7 +16,7 @@
     "dataSource": "lpl"
   },
   "selectedDate": "2026-09-12",
-  "selectionReason": "SMART_NEAREST_FUTURE",
+  "selectionReason": "SMART_TODAY_MATCHES",
   "matches": [
     {
       "id": "13504",
