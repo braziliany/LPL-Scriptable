@@ -1,6 +1,6 @@
 {
   "season": "2026 LPL 第三赛段",
-  "updatedAt": "2026-09-12T18:45:05+08:00",
+  "updatedAt": "2026-09-12T22:10:06+08:00",
   "source": "https://lpl.qq.com/web201612/data/LOL_MATCH2_MATCH_HOMEPAGE_BMATCH_LIST.js",
   "matches": [
     {
@@ -1536,11 +1536,30 @@
       "stage": "2026赛季季后赛",
       "phase": "第九天",
       "group": "",
-      "leftScore": 1,
-      "rightScore": 1,
-      "scoreUpdatedAt": "2026-09-12T11:38:36.980Z",
+      "leftScore": 3,
+      "rightScore": 2,
+      "scoreUpdatedAt": "2026-09-12T14:20:59.095Z",
       "finishedAt": null,
       "liveUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13504"
+    },
+    {
+      "id": "13505",
+      "gameId": "237",
+      "startTime": "2026-09-13 17:00:00",
+      "left": "BLG",
+      "right": "AL",
+      "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20250618144525/49342dadcecf162e8ac94fad6eb91540/0",
+      "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20250618145633/b8741548f37b60a6693cdb6f4949a7fd/0",
+      "status": "upcoming",
+      "matchType": "BO5",
+      "stage": "2026赛季季后赛",
+      "phase": "第十天",
+      "group": "",
+      "leftScore": null,
+      "rightScore": null,
+      "scoreUpdatedAt": null,
+      "finishedAt": null,
+      "liveUrl": "https://lpl.qq.com/web202301/schedule.html"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-12T11:38:36.989Z",
-  "sourceUpdatedAt": "2026-09-12T10:45:05.000Z",
+  "generatedAt": "2026-09-12T14:20:59.106Z",
+  "sourceUpdatedAt": "2026-09-12T14:10:06.000Z",
   "tournament": {
     "id": "lpl-2026-split3-playoffs",
     "name": "2026 LPL 第三赛段",
@@ -32,9 +32,9 @@
       "stage": "2026赛季季后赛",
       "phase": "第九天",
       "group": "",
-      "leftScore": 1,
-      "rightScore": 1,
-      "scoreUpdatedAt": "2026-09-12T11:38:36.980Z",
+      "leftScore": 3,
+      "rightScore": 2,
+      "scoreUpdatedAt": "2026-09-12T14:20:59.095Z",
       "finishedAt": null,
       "liveUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13504",
       "detailUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13504"
