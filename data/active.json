@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-16T12:03:10.755Z",
+  "generatedAt": "2026-09-16T16:42:30.917Z",
   "sourceUpdatedAt": "2026-09-16T09:00:07.000Z",
   "tournament": {
     "id": "lpl-2026-regional-finals",
@@ -16,7 +16,7 @@
     "dataSource": "lpl"
   },
   "selectedDate": "2026-09-17",
-  "selectionReason": "SMART_NEAREST_FUTURE",
+  "selectionReason": "SMART_TODAY_MATCHES",
   "matches": [
     {
       "id": "13506",
