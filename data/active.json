@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-17T14:50:52.699Z",
-  "sourceUpdatedAt": "2026-09-17T13:15:05.000Z",
+  "generatedAt": "2026-09-17T18:37:03.099Z",
+  "sourceUpdatedAt": "2026-09-17T16:00:07.000Z",
   "tournament": {
     "id": "lpl-2026-regional-finals",
     "name": "2026 LPL 全球总决赛资格赛",
@@ -15,29 +15,29 @@
     "schedulePath": "data/schedules/lpl-2026-regional-finals.json",
     "dataSource": "lpl"
   },
-  "selectedDate": "2026-09-17",
+  "selectedDate": "2026-09-18",
   "selectionReason": "SMART_TODAY_MATCHES",
   "matches": [
     {
-      "id": "13506",
+      "id": "13507",
       "gameId": "237",
       "tournamentId": "lpl-2026-regional-finals",
-      "startTime": "2026-09-17 17:00:00",
-      "left": "TES",
-      "right": "IG",
-      "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20240920155538/5beb948638f00bcda68fc4942e3f0a51/0",
-      "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152918/562affbb9f99b0e472644f93a19291e7/0",
-      "status": "finished",
+      "startTime": "2026-09-18 17:00:00",
+      "left": "WE",
+      "right": "JDG",
+      "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20230103153050/5c22150153baa973f73adf4909a041ec/0",
+      "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230921143554/1e5189e914e40bfe18045bccbfc7ef82/0",
+      "status": "upcoming",
       "matchType": "BO5",
       "stage": "资格赛",
-      "phase": "第一天",
+      "phase": "第二天",
       "group": "",
-      "leftScore": 3,
-      "rightScore": 1,
-      "scoreUpdatedAt": "2026-09-17T14:50:52.687Z",
-      "finishedAt": "2026-09-17T14:50:52.687Z",
-      "liveUrl": "https://lpl.qq.com/web202301/stats.shtml?bmid=13506",
-      "detailUrl": "https://lpl.qq.com/web202301/stats.shtml?bmid=13506"
+      "leftScore": null,
+      "rightScore": null,
+      "scoreUpdatedAt": null,
+      "finishedAt": null,
+      "liveUrl": "https://lpl.qq.com/web202301/schedule.html",
+      "detailUrl": "https://lpl.qq.com/web202301/schedule.html"
     }
   ]
 }
