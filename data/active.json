@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-17T10:02:46.957Z",
-  "sourceUpdatedAt": "2026-09-17T09:55:05.000Z",
+  "generatedAt": "2026-09-17T14:50:52.699Z",
+  "sourceUpdatedAt": "2026-09-17T13:15:05.000Z",
   "tournament": {
     "id": "lpl-2026-regional-finals",
     "name": "2026 LPL 全球总决赛资格赛",
@@ -27,17 +27,17 @@
       "right": "IG",
       "leftLogo": "https://img.crawler.qq.com/lolwebvideo/20240920155538/5beb948638f00bcda68fc4942e3f0a51/0",
       "rightLogo": "https://img.crawler.qq.com/lolwebvideo/20230103152918/562affbb9f99b0e472644f93a19291e7/0",
-      "status": "live",
+      "status": "finished",
       "matchType": "BO5",
       "stage": "资格赛",
       "phase": "第一天",
       "group": "",
-      "leftScore": 0,
+      "leftScore": 3,
       "rightScore": 1,
-      "scoreUpdatedAt": "2026-09-17T10:02:46.947Z",
-      "finishedAt": null,
-      "liveUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13506",
-      "detailUrl": "https://lpl.qq.com/web202301/live.html?bgid=237&bmid=13506"
+      "scoreUpdatedAt": "2026-09-17T14:50:52.687Z",
+      "finishedAt": "2026-09-17T14:50:52.687Z",
+      "liveUrl": "https://lpl.qq.com/web202301/stats.shtml?bmid=13506",
+      "detailUrl": "https://lpl.qq.com/web202301/stats.shtml?bmid=13506"
     }
   ]
 }
