@@ -34,6 +34,17 @@
         { "type": "null" }
       ]
     },
+    "nextTournament": {
+      "oneOf": [
+        {
+          "$ref": "https://github.com/braziliany/LPL-Scriptable/data/tournaments.schema.json#/$defs/tournament"
+        },
+        { "type": "null" }
+      ]
+    },
+    "businessState": {
+      "enum": ["MATCHES", "TOURNAMENT_FINISHED", "NO_UPCOMING"]
+    },
     "selectedDate": {
       "oneOf": [
         {
@@ -50,5 +61,40 @@
         "$ref": "https://github.com/braziliany/LPL-Scriptable/data/match.schema.json"
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "businessState": { "const": "MATCHES" } },
+        "required": ["businessState"]
+      },
+      "then": {
+        "properties": {
+          "matches": { "type": "array", "minItems": 1 },
+          "selectedDate": { "type": "string" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "businessState": { "enum": ["TOURNAMENT_FINISHED", "NO_UPCOMING"] }
+        },
+        "required": ["businessState"]
+      },
+      "then": {
+        "properties": {
+          "matches": { "type": "array", "maxItems": 0 },
+          "selectedDate": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "businessState": { "const": "TOURNAMENT_FINISHED" } },
+        "required": ["businessState"]
+      },
+      "then": { "properties": { "tournament": { "type": "object" } } }
+    }
+  ]
 }

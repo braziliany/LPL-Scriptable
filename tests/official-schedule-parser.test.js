@@ -609,7 +609,7 @@ const diagnosticText = context.__testApi.buildDiagnosticText(
   "medium",
   new Date("2026-07-30T10:09:00+08:00")
 );
-assert.match(diagnosticText, /组件版本：3\.1\.0/);
+assert.match(diagnosticText, /组件版本：3\.1\.1/);
 assert.match(diagnosticText, /设计系统：3\.1\.0/);
 assert.match(diagnosticText, /设置结构：v2/);
 assert.match(diagnosticText, /当前赛事：2026 英雄联盟全球总决赛/);

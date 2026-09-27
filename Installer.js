@@ -10,7 +10,7 @@
  */
 
 const CONFIG = {
-  version: "3.1.0",
+  version: "3.1.1",
   season: "2026 LOL 赛事 SMART",
   changelogUrl:
     "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/CHANGELOG.md",
@@ -57,6 +57,13 @@ function compareVersions(left, right) {
   return 0;
 }
 
+function mainScriptNames(fm, directory) {
+  const existing = ["LPL Schedule 2026", "LPL Schedule"].filter((name) =>
+    fm.fileExists(fm.joinPath(directory, `${name}.js`))
+  );
+  return existing.length ? existing : ["LPL Schedule 2026"];
+}
+
 function extractReleaseNotes(changelog, version) {
   const lines = String(changelog || "").split(/\r?\n/);
   const heading = `## ${version} `;
@@ -97,15 +104,23 @@ async function installDownloads(downloads) {
   const fm = FileManager.iCloud();
   const directory = fm.documentsDirectory();
   const backups = [];
+  const installed = [];
 
   try {
     for (const resource of downloads) {
-      const path = fm.joinPath(directory, `${resource.scriptName}.js`);
-      backups.push({
-        path,
-        content: await readExistingFile(fm, path),
-      });
-      fm.writeString(path, resource.content);
+      const names =
+        resource.scriptName === "LPL Schedule 2026"
+          ? mainScriptNames(fm, directory)
+          : [resource.scriptName];
+      for (const name of names) {
+        const path = fm.joinPath(directory, `${name}.js`);
+        backups.push({
+          path,
+          content: await readExistingFile(fm, path),
+        });
+        fm.writeString(path, resource.content);
+        installed.push(name);
+      }
     }
   } catch (error) {
     // 写入中断时恢复安装前状态。
@@ -119,7 +134,7 @@ async function installDownloads(downloads) {
     throw error;
   }
 
-  return downloads.map((resource) => resource.scriptName);
+  return installed;
 }
 
 async function main() {
@@ -133,12 +148,19 @@ async function main() {
       extractVersion(mainResource?.content) || CONFIG.version;
 
     const fm = FileManager.iCloud();
-    const localMainPath = fm.joinPath(
-      fm.documentsDirectory(),
-      "LPL Schedule 2026.js"
+    const installedNames = mainScriptNames(fm, fm.documentsDirectory());
+    const installedVersions = await Promise.all(
+      installedNames.map(async (name) =>
+        extractVersion(
+          await readExistingFile(
+            fm,
+            fm.joinPath(fm.documentsDirectory(), `${name}.js`)
+          )
+        )
+      )
     );
-    const localContent = await readExistingFile(fm, localMainPath);
-    const localVersion = extractVersion(localContent);
+    const localVersion =
+      installedVersions.filter(Boolean).sort(compareVersions)[0] || null;
     const comparison = localVersion
       ? compareVersions(localVersion, remoteVersion)
       : -1;
@@ -163,6 +185,7 @@ async function main() {
       : "安装 LPL Schedule";
     alert.message = [
       `本地：${localVersion || "未安装"}`,
+      `将更新：${installedNames.join("、")}`,
       `远端：${remoteVersion}`,
       `赛季：${CONFIG.season}`,
       releaseNotes ? `\n更新内容：\n${releaseNotes}` : "",

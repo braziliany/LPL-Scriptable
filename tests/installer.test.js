@@ -11,6 +11,8 @@ const source = fs.readFileSync(installerPath, "utf8").replace(
       compareVersions,
       extractReleaseNotes,
       extractVersion,
+      mainScriptNames,
+      installDownloads,
     };`
 );
 const context = {};
@@ -19,6 +21,39 @@ vm.runInNewContext(source, context, { filename: installerPath });
 const resources = JSON.parse(
   JSON.stringify(context.__installerTestApi.CONFIG.resources)
 );
+const files = new Map([
+  ["/icloud/LPL Schedule.js", "old manually named script"],
+  ["/icloud/LPL Schedule 2026.js", "old installed script"],
+]);
+const fileManager = {
+  documentsDirectory: () => "/icloud",
+  joinPath: (directory, name) => `${directory}/${name}`,
+  fileExists: (target) => files.has(target),
+  isFileDownloaded: () => true,
+  readString: (target) => files.get(target),
+  writeString: (target, content) => files.set(target, content),
+};
+context.FileManager = { iCloud: () => fileManager };
+assert.deepEqual(
+  Array.from(
+    context.__installerTestApi.mainScriptNames(fileManager, "/icloud")
+  ),
+  ["LPL Schedule 2026", "LPL Schedule"]
+);
+async function verifyAliasUpdate() {
+  const installed = await context.__installerTestApi.installDownloads([
+    { scriptName: "LPL Schedule 2026", content: "new production script" },
+  ]);
+  assert.deepEqual(Array.from(installed), [
+    "LPL Schedule 2026",
+    "LPL Schedule",
+  ]);
+  assert.equal(files.get("/icloud/LPL Schedule.js"), "new production script");
+  assert.equal(
+    files.get("/icloud/LPL Schedule 2026.js"),
+    "new production script"
+  );
+}
 assert.equal(context.__installerTestApi.CONFIG.season, "2026 LOL 赛事 SMART");
 assert.deepEqual(
   resources.map((resource) => resource.scriptName),
@@ -44,4 +79,4 @@ assert.equal(
   "- 版本检测\n- 更新说明"
 );
 
-console.log("installer: ok");
+verifyAliasUpdate().then(() => console.log("installer: ok"));

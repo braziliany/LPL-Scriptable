@@ -32,20 +32,33 @@ function readProjectVersions(root = ROOT) {
 }
 
 function assertVersionConsistency(versions, expectedVersion = null) {
-  const unique = [...new Set(Object.values(versions))];
-  if (unique.length !== 1) {
+  const appVersions = [versions.package, versions.installer, versions.widget];
+  const unique = [...new Set(appVersions)];
+  const designSystem = String(versions.designSystem || "");
+  const appVersion = unique[0];
+  const appParts = String(appVersion || "")
+    .split(".")
+    .map(Number);
+  const designParts = designSystem.split(".").map(Number);
+  const designSystemCompatible =
+    designParts.length === 3 &&
+    designParts.every(Number.isInteger) &&
+    designParts[0] === appParts[0] &&
+    (designParts[1] < appParts[1] ||
+      (designParts[1] === appParts[1] && designParts[2] <= appParts[2]));
+  if (unique.length !== 1 || !designSystemCompatible) {
     throw new Error(
       `项目版本不一致：${Object.entries(versions)
         .map(([name, version]) => `${name}=${version}`)
         .join(", ")}`
     );
   }
-  if (expectedVersion && unique[0] !== expectedVersion) {
+  if (expectedVersion && appVersion !== expectedVersion) {
     throw new Error(
-      `标签版本 ${expectedVersion} 与项目版本 ${unique[0]} 不一致`
+      `标签版本 ${expectedVersion} 与项目版本 ${appVersion} 不一致`
     );
   }
-  return unique[0];
+  return appVersion;
 }
 
 if (require.main === module) {

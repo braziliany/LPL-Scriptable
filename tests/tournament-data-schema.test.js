@@ -33,6 +33,24 @@ for (const tournament of tournaments) {
   assertValid(scheduleSchema, schedule, tournament.schedulePath);
 }
 assertValid(activeSchema, active, "active.json");
+const validateActive = ajv.compile(activeSchema);
+assert.equal(
+  validateActive({
+    ...active,
+    businessState: "MATCHES",
+    matches: [],
+    selectedDate: null,
+  }),
+  false
+);
+assert.equal(
+  validateActive({
+    ...active,
+    businessState: "TOURNAMENT_FINISHED",
+    selectedDate: "2026-09-05",
+  }),
+  false
+);
 assert.equal(
   active.matches.every((match) => match.tournamentId),
   true

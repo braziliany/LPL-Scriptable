@@ -26,11 +26,14 @@ const context = {
 };
 vm.runInNewContext(source, context, { filename: "LPL-Schedule.js" });
 
-const route = context.__releaseTestApi.normalizeActivePayload(active);
+const route = context.__releaseTestApi.normalizeActivePayload(
+  active,
+  new Date(active.generatedAt)
+);
 assert.equal(route.tournament.id, active.tournament.id);
 assert.equal(route.selectedDate, active.selectedDate);
 assert.equal(route.selectionReason, active.selectionReason);
-assert.equal(route.matches.length > 0, true);
+assert.equal(route.businessState, active.businessState || "MATCHES");
 assert.equal(
   route.matches.every(
     (match) => match.left && match.right && match.leftLogo && match.rightLogo
@@ -39,7 +42,10 @@ assert.equal(
 );
 
 const snapshots = ["small", "medium", "large"].map((family) => {
-  const result = context.__releaseTestApi.selectScheduleResult(route);
+  const result = context.__releaseTestApi.selectScheduleResult(
+    route,
+    new Date(active.generatedAt)
+  );
   return {
     family,
     tournamentId: result.tournament.id,
