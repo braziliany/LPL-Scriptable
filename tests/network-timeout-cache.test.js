@@ -9,7 +9,7 @@ const source = fs
   .readFileSync(path.join(root, "LPL-Schedule.js"), "utf8")
   .replace(
     "await main();",
-    "globalThis.__networkTestApi = { loadSchedule, CACHE_FILE };"
+    "globalThis.__networkTestApi = { loadSchedule, CACHE_FILE, inspectCache, buildDiagnosticText };"
   );
 const cachePath = "/documents/lpl-schedule-cache.json";
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -65,6 +65,21 @@ function cache(ageHours = 0, id = "cache-match") {
     selectedDate: fixtureDate,
     selectionReason: "CACHE_SEED",
     matches: [match(id)],
+  };
+}
+
+function emptyCache(ageHours = 0) {
+  return {
+    ...cache(ageHours),
+    source: "Installer-Dev 工作区种子",
+    nextTournament: null,
+    businessState: "TOURNAMENT_FINISHED",
+    selectedDate: null,
+    matches: [],
+    tournament: {
+      ...cache(ageHours).tournament,
+      endDate: beijingDateOffset(-1),
+    },
   };
 }
 
@@ -191,6 +206,37 @@ async function expectCache(runtime) {
 }
 
 async function main() {
+  const empty = createRuntime({
+    cached: emptyCache(),
+    remote: "fail",
+    official: "fail",
+  });
+  assert.equal(empty.api.inspectCache().status, "EMPTY_VALID");
+  assert.match(
+    empty.api.buildDiagnosticText(null, empty.api.inspectCache()),
+    /缓存状态：EMPTY_VALID/
+  );
+  const emptyResult = await empty.api.loadSchedule();
+  assert.equal(emptyResult.businessState, "TOURNAMENT_FINISHED");
+  assert.equal(emptyResult.matches.length, 0);
+
+  const missing = createRuntime({ remote: "fail", official: "fail" });
+  assert.equal(missing.api.inspectCache().status, "MISSING");
+
+  const expiredState = createRuntime({
+    cached: emptyCache(13),
+    remote: "fail",
+    official: "fail",
+  });
+  assert.equal(expiredState.api.inspectCache().status, "EXPIRED");
+
+  const invalid = createRuntime({
+    cached: { updatedAt: new Date().toISOString(), matches: [] },
+    remote: "fail",
+    official: "fail",
+  });
+  assert.equal(invalid.api.inspectCache().status, "INVALID");
+
   const timeoutToOfficial = createRuntime({
     cached: cache(),
     remote: "never",
@@ -253,7 +299,7 @@ async function main() {
     remote: "fail",
     official: "fail",
   });
-  await assert.rejects(expired.api.loadSchedule(), /本地缓存：已过期/);
+  await assert.rejects(expired.api.loadSchedule(), /本地缓存：EXPIRED/);
 
   const recovered = createRuntime({
     cached: cache(),

@@ -236,6 +236,8 @@ for (const [name, fixture] of Object.entries(fixtures)) {
 }
 
 const devRuntimeLogs = [];
+let devRemoteMode = "success";
+let devOfficialMode = "success";
 const devMainContext = {
   console: {
     log(message) {
@@ -264,6 +266,7 @@ devMainContext.Request = class {
   }
 
   async loadJSON() {
+    if (devRemoteMode === "fail") throw new Error("DEV remote offline");
     return onlineActive;
   }
 };
@@ -274,19 +277,29 @@ const iCloudFiles = new Map(
   ])
 );
 const localFiles = new Map();
-const fileManager = (files, documents) => ({
+const iCloudDirectories = new Set([
+  "/icloud",
+  `/icloud/${DEV_DATA_DIRECTORY}`,
+  `/icloud/${DEV_DATA_DIRECTORY}/data`,
+  `/icloud/${DEV_DATA_DIRECTORY}/data/fixtures`,
+]);
+const localDirectories = new Set(["/local"]);
+const fileManager = (files, documents, directories) => ({
   documentsDirectory: () => documents,
   joinPath: (directory, name) => `${directory}/${name}`,
-  fileExists: (file) => files.has(file),
+  fileExists: (file) => files.has(file) || directories.has(file),
   isFileDownloaded: () => true,
   async downloadFileFromiCloud() {},
+  createDirectory: (directory) => directories.add(directory),
+  remove: (file) => files.delete(file),
   readString: (file) => files.get(file),
   writeString: (file, content) => files.set(file, content),
 });
 devMainContext.FileManager = {
-  iCloud: () => fileManager(iCloudFiles, "/icloud"),
-  local: () => fileManager(localFiles, "/local"),
+  iCloud: () => fileManager(iCloudFiles, "/icloud", iCloudDirectories),
+  local: () => fileManager(localFiles, "/local", localDirectories),
 };
+installerContext.FileManager = devMainContext.FileManager;
 devMainContext.Timer = {
   schedule(seconds, repeat, callback) {
     assert.equal(seconds >= 0, true);
@@ -298,6 +311,7 @@ devMainContext.Timer = {
 devMainContext.WebView = class {
   async loadURL(url) {
     assert.match(url, /^https:\/\//);
+    if (devOfficialMode === "fail") throw new Error("DEV official offline");
   }
 
   async evaluateJavaScript() {
@@ -316,6 +330,8 @@ vm.runInNewContext(
       devActiveResult,
       loadDevSchedule,
       loadSchedule,
+      inspectCache,
+      buildDiagnosticText,
       logoCacheFileName,
       matchSubtitle,
       tournamentFooterText,
@@ -356,6 +372,49 @@ assert.equal(
 );
 
 async function verifyRuntimeFixtures() {
+  await installerContext.__devInstallerTestApi.installBundle();
+  const seededCache = JSON.parse(
+    localFiles.get("/local/lpl-schedule-dev-cache.json")
+  );
+  assert.equal(seededCache.businessState, devActive.businessState);
+  assert.deepEqual(seededCache.nextTournament, devActive.nextTournament);
+  assert.equal(
+    devMainContext.__devRuntimeTestApi.inspectCache().status,
+    "EMPTY_VALID"
+  );
+  assert.match(
+    devMainContext.__devRuntimeTestApi.buildDiagnosticText(
+      null,
+      devMainContext.__devRuntimeTestApi.inspectCache()
+    ),
+    /缓存状态：EMPTY_VALID/
+  );
+
+  devRemoteMode = "fail";
+  devOfficialMode = "fail";
+  devMainContext.config.runsInWidget = false;
+  devMainContext.args.widgetParameter = "";
+  const seedFallback = await devMainContext.__devRuntimeTestApi.loadSchedule();
+  assert.equal(seedFallback.source, "DEV local cache");
+  assert.equal(seedFallback.matches.length, 0);
+  assert.equal(seedFallback.businessState, "TOURNAMENT_FINISHED");
+  const seedDiagnostics = JSON.parse(
+    localFiles.get("/local/lpl-schedule-dev-data-diagnostics.json")
+  );
+  assert.deepEqual(
+    seedDiagnostics.attempts.map(({ source, status }) => [source, status]),
+    [
+      ["GitHub Active", "failure"],
+      ["GitHub Legacy", "failure"],
+      ["官方页面", "failure"],
+      ["DEV local cache", "success"],
+    ]
+  );
+  assert.match(seedDiagnostics.attempts[3].message, /EMPTY_VALID/);
+
+  devRemoteMode = "success";
+  devOfficialMode = "success";
+  devMainContext.config.runsInWidget = true;
   devMainContext.args.widgetParameter = "";
   const onlineResult = await devMainContext.__devRuntimeTestApi.loadSchedule();
   assert.equal(onlineResult.source, "GitHub Active");

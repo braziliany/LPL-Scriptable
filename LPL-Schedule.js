@@ -545,24 +545,33 @@ async function chooseThemeMode(current) {
 
 function buildDiagnosticText(
   settings,
-  cache,
+  cacheInput,
   widgetFamily = "unknown",
   now = new Date(),
   dataDiagnostics = null
 ) {
   const normalized = normalizeUserSettings(settings);
+  const cacheState =
+    cacheInput && typeof cacheInput.status === "string"
+      ? cacheInput
+      : classifyCachePayload(cacheInput, now);
+  const cache = cacheState.payload;
   const cacheTime = cache?.updatedAt
     ? new Date(cache.updatedAt).getTime()
     : NaN;
   const cacheAgeMinutes = Number.isFinite(cacheTime)
     ? Math.max(0, Math.floor((now.getTime() - cacheTime) / (60 * 1000)))
     : null;
-  const cacheStatus =
-    cacheAgeMinutes === null
-      ? "无缓存"
-      : cacheAgeMinutes <= normalized.cacheHours * 60
-        ? `有效（${cacheAgeMinutes} 分钟前）`
-        : `已过期（${cacheAgeMinutes} 分钟前）`;
+  const cacheStatusLabels = {
+    VALID: "VALID",
+    EMPTY_VALID: "EMPTY_VALID",
+    MISSING: "MISSING",
+    EXPIRED: "EXPIRED",
+    INVALID: "INVALID",
+  };
+  const cacheStatus = `${cacheStatusLabels[cacheState.status] || "INVALID"}${
+    cacheAgeMinutes === null ? "" : `（${cacheAgeMinutes} 分钟前）`
+  }${cacheState.reason ? ` · ${cacheState.reason}` : ""}`;
   const familyLabels = {
     small: "小号组件",
     medium: "中号组件",
@@ -628,7 +637,7 @@ async function presentDiagnostics(settings) {
   try {
     text = buildDiagnosticText(
       settings,
-      readCache(),
+      inspectCache(),
       args.queryParameters?.family || config.widgetFamily || "app",
       new Date(),
       readDataDiagnostics()
@@ -1058,19 +1067,17 @@ function writeDataDiagnostics(mode, selectedSource, attempts) {
   }
 }
 
-function readCache() {
+function readCacheFile() {
   try {
     const fm = FileManager.local();
     const path = cachePath();
-    if (!fm.fileExists(path)) return null;
+    if (!fm.fileExists(path)) return { exists: false, payload: null };
 
     const payload = JSON.parse(fm.readString(path));
-    if (!payload || !Array.isArray(payload.matches)) return null;
-
-    return payload;
+    return { exists: true, payload };
   } catch (error) {
     console.warn(`读取缓存失败：${error}`);
-    return null;
+    return { exists: true, payload: null, error };
   }
 }
 
@@ -1099,9 +1106,9 @@ function writeCache(matches, source, route = {}) {
   }
 }
 
-function isCacheFresh(payload) {
+function isCacheFresh(payload, now = new Date()) {
   if (!payload?.updatedAt) return false;
-  const age = Date.now() - new Date(payload.updatedAt).getTime();
+  const age = now.getTime() - new Date(payload.updatedAt).getTime();
   return age <= CONFIG.cacheHours * 60 * 60 * 1000;
 }
 
@@ -1111,25 +1118,101 @@ function cacheAgeMinutes(payload, now = new Date()) {
   return Math.max(0, Math.floor((now.getTime() - updatedAt) / (60 * 1000)));
 }
 
-function validCacheSnapshot(payload) {
-  if (!Array.isArray(payload?.matches) || !isCacheFresh(payload)) return null;
-  const matches = payload.matches.map(normalizeMatch).filter(Boolean);
-  if (matches.length) return { ...payload, matches };
+function classifyCachePayload(
+  payload,
+  now = new Date(),
+  exists = Boolean(payload)
+) {
+  if (!exists) {
+    return { status: "MISSING", payload: null, reason: "cache file missing" };
+  }
   if (
-    payload.matches.length === 0 &&
+    !payload ||
+    typeof payload !== "object" ||
+    !Array.isArray(payload.matches) ||
+    !Number.isFinite(new Date(payload.updatedAt || "").getTime())
+  ) {
+    return {
+      status: "INVALID",
+      payload: payload || null,
+      reason: "cache schema invalid",
+    };
+  }
+  const matches = payload.matches.map(normalizeMatch).filter(Boolean);
+  if (matches.length !== payload.matches.length) {
+    return { status: "INVALID", payload, reason: "cache match schema invalid" };
+  }
+  const normalized = { ...payload, matches };
+  const businessState = normalizeBusinessState(payload.businessState, matches);
+  if (matches.length && businessState !== "MATCHES") {
+    return {
+      status: "INVALID",
+      payload,
+      reason: "cache business state invalid",
+    };
+  }
+  if (matches.length) {
+    if (!isCacheFresh(payload, now)) {
+      return {
+        status: "EXPIRED",
+        payload: normalized,
+        reason: "cache TTL expired",
+      };
+    }
+    return { status: "VALID", payload: normalized, reason: "cache valid" };
+  }
+  const tournament = normalizeTournament(payload.tournament);
+  const nextTournament = normalizeTournament(payload.nextTournament);
+  const today = beijingDateString(now);
+  const transitionMetadataValid =
+    (!payload.tournament || tournament) &&
+    (!tournament || tournament.season === String(SEASON.year)) &&
+    (!payload.nextTournament || nextTournament) &&
+    (!nextTournament ||
+      (nextTournament.season === String(SEASON.year) &&
+        nextTournament.startDate > today));
+  const emptyTransitionValid =
     ["TOURNAMENT_FINISHED", "NO_UPCOMING"].includes(payload.businessState) &&
     payload.selectedDate === null &&
+    transitionMetadataValid &&
     (payload.businessState === "NO_UPCOMING" ||
-      normalizeTournament(payload.tournament))
-  ) {
-    return { ...payload, matches };
+      (tournament && tournament.endDate < today));
+  if (!emptyTransitionValid) {
+    return {
+      status: "INVALID",
+      payload,
+      reason: "empty cache transition invalid",
+    };
   }
-  return null;
+  if (!isCacheFresh(payload, now)) {
+    return {
+      status: "EXPIRED",
+      payload: normalized,
+      reason: "cache TTL expired",
+    };
+  }
+  return {
+    status: "EMPTY_VALID",
+    payload: normalized,
+    reason: "valid tournament transition",
+  };
 }
 
-function cacheAttemptMessage(payload, prefix = "cache accepted") {
+function inspectCache(now = new Date()) {
+  const file = readCacheFile();
+  if (file.error) {
+    return { status: "INVALID", payload: null, reason: "cache JSON invalid" };
+  }
+  return classifyCachePayload(file.payload, now, file.exists);
+}
+
+function cacheAttemptMessage(
+  payload,
+  prefix = "cache accepted",
+  status = null
+) {
   const age = cacheAgeMinutes(payload);
-  return `${prefix}; source=${payload?.source || "unknown"}; age=${
+  return `${prefix}${status ? ` (${status})` : ""}; source=${payload?.source || "unknown"}; age=${
     age === null ? "unknown" : `${age}m`
   }; matches=${payload?.matches?.length || 0}`;
 }
@@ -1811,8 +1894,11 @@ function devActiveResult(active, now, source, selectionReason = null) {
 async function loadDevSchedule() {
   const fixture = devFixtureKey();
   const attempts = [];
-  const cacheAtStart = readCache();
-  const guaranteedCache = validCacheSnapshot(cacheAtStart);
+  const cacheState = inspectCache();
+  const cacheAtStart = cacheState.payload;
+  const guaranteedCache = ["VALID", "EMPTY_VALID"].includes(cacheState.status)
+    ? cacheAtStart
+    : null;
 
   if (fixture === "offline-cache") {
     attempts.push({
@@ -1829,9 +1915,7 @@ async function loadDevSchedule() {
       attempts.push({
         source: "DEV local cache",
         status: "failure",
-        message: cacheAtStart?.matches?.length
-          ? cacheAttemptMessage(cacheAtStart, "cache expired")
-          : "cache missing",
+        message: `cache ${cacheState.status}: ${cacheState.reason}`,
       });
       writeDataDiagnostics("dev:offline-cache", "无", attempts);
       throw new Error(
@@ -1847,12 +1931,18 @@ async function loadDevSchedule() {
     attempts.push({
       source: "DEV local cache",
       status: "success",
-      message: cacheAttemptMessage(guaranteedCache),
+      message: cacheAttemptMessage(
+        guaranteedCache,
+        "cache accepted",
+        cacheState.status
+      ),
     });
     writeDataDiagnostics("dev:offline-cache", result.source, attempts);
     logDataStep("remote failed/timeout: fixture simulated offline");
     logDataStep("official failed/timeout: fixture simulated offline");
-    logDataStep(cacheAttemptMessage(guaranteedCache));
+    logDataStep(
+      cacheAttemptMessage(guaranteedCache, "cache accepted", cacheState.status)
+    );
     logDataStep(`final source: ${result.source}`);
     return result;
   }
@@ -1918,10 +2008,20 @@ async function loadDevSchedule() {
           attempts.push({
             source: "DEV local cache",
             status: "success",
-            message: cacheAttemptMessage(guaranteedCache),
+            message: cacheAttemptMessage(
+              guaranteedCache,
+              "cache accepted",
+              cacheState.status
+            ),
           });
           writeDataDiagnostics(diagnosticMode, result.source, attempts);
-          logDataStep(cacheAttemptMessage(guaranteedCache));
+          logDataStep(
+            cacheAttemptMessage(
+              guaranteedCache,
+              "cache accepted",
+              cacheState.status
+            )
+          );
           console.log(`[${diagnosticMode}] final source: ${result.source}`);
           return result;
         }
@@ -2016,10 +2116,16 @@ async function loadDevSchedule() {
     attempts.push({
       source: result.source,
       status: "success",
-      message: cacheAttemptMessage(guaranteedCache),
+      message: cacheAttemptMessage(
+        guaranteedCache,
+        "cache accepted",
+        cacheState.status
+      ),
     });
     writeDataDiagnostics("dev", result.source, attempts);
-    logDataStep(cacheAttemptMessage(guaranteedCache));
+    logDataStep(
+      cacheAttemptMessage(guaranteedCache, "cache accepted", cacheState.status)
+    );
     logDataStep(`final source: ${result.source}`);
     return result;
   }
@@ -2027,9 +2133,7 @@ async function loadDevSchedule() {
   attempts.push({
     source: "DEV local cache",
     status: "failure",
-    message: cacheAtStart?.matches?.length
-      ? cacheAttemptMessage(cacheAtStart, "cache expired")
-      : "cache missing",
+    message: `cache ${cacheState.status}: ${cacheState.reason}`,
   });
   writeDataDiagnostics("dev", "无", attempts);
   throw new Error("DEV 工作区数据、官方页面和 DEV 缓存均不可用");
@@ -2038,8 +2142,11 @@ async function loadDevSchedule() {
 async function loadSchedule() {
   if (IS_DEV && devFixtureKey()) return loadDevSchedule();
   const mode = String(CONFIG.dataMode).toLowerCase();
-  const cached = readCache();
-  const guaranteedCache = validCacheSnapshot(cached);
+  const cacheState = inspectCache();
+  const cached = cacheState.payload;
+  const guaranteedCache = ["VALID", "EMPTY_VALID"].includes(cacheState.status)
+    ? cached
+    : null;
   const protectWidgetCache = Boolean(
     mode === "auto" && isWidgetRuntime() && guaranteedCache
   );
@@ -2164,30 +2271,32 @@ async function loadSchedule() {
   }
 
   if (guaranteedCache) {
-    const source = "本地缓存";
+    const source = IS_DEV ? "DEV local cache" : "本地缓存";
     attempts.push({
-      source: "本地缓存",
+      source,
       status: "success",
-      message: cacheAttemptMessage(guaranteedCache),
+      message: cacheAttemptMessage(
+        guaranteedCache,
+        "cache accepted",
+        cacheState.status
+      ),
     });
     writeDataDiagnostics(mode, source, attempts);
-    logDataStep(cacheAttemptMessage(guaranteedCache));
-    logDataStep(`final source: ${IS_DEV ? "DEV local cache" : source}`);
+    logDataStep(
+      cacheAttemptMessage(guaranteedCache, "cache accepted", cacheState.status)
+    );
+    logDataStep(`final source: ${source}`);
     return resultFromCache(guaranteedCache, source, "CACHE_FALLBACK");
   }
 
   attempts.push({
     source: "本地缓存",
     status: "failure",
-    message: cached?.matches?.length
-      ? cacheAttemptMessage(cached, "cache expired")
-      : "cache missing",
+    message: `cache ${cacheState.status}: ${cacheState.reason}`,
   });
   writeDataDiagnostics(mode, "无", attempts);
   throw new Error(
-    `${errors.join("\n") || "全部网络源不可用"}\n本地缓存：${
-      cached?.matches?.length ? "已过期" : "不存在"
-    }`
+    `${errors.join("\n") || "全部网络源不可用"}\n本地缓存：${cacheState.status}`
   );
 }
 
