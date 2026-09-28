@@ -96,6 +96,29 @@ function buildFixtureBundle() {
     },
   });
 
+  function scoreFinishedFixture(matchType, leftScore, rightScore) {
+    const now = "2026-09-05T10:00:00.000Z";
+    const match = {
+      ...fixtureMatch(
+        playoffs.id,
+        "2026-09-05 17:00:00",
+        "BLG",
+        "TES",
+        matchType,
+        "季后赛"
+      ),
+      status: "live",
+      leftScore,
+      rightScore,
+    };
+    const route = selectTournament({
+      now,
+      tournaments: [playoffs],
+      schedules: { [playoffs.id]: schedule(playoffs.id, now, [match]) },
+    });
+    return { now, active: activeFromRoute(route, now) };
+  }
+
   const ewc = byId.get("ewc-2026");
   const lplOverlap = {
     ...playoffs,
@@ -175,6 +198,8 @@ function buildFixtureBundle() {
       now: playoffNow,
       active: activeFromRoute(playoffRoute, playoffNow),
     },
+    "bo5-score-finished.json": scoreFinishedFixture("BO5", 3, 2),
+    "bo3-score-finished.json": scoreFinishedFixture("BO3", 2, 1),
     "ewc-priority.json": {
       now: ewcNow,
       routerSelectionReason: ewcRouterSelectionReason,

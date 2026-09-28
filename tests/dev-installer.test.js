@@ -432,6 +432,44 @@ async function verifyRuntimeFixtures() {
     assert.match(result.source, /DEV/);
   }
 
+  for (const [fixtureKey, matchType, leftScore, rightScore] of [
+    ["bo5-score-finished", "BO5", 3, 2],
+    ["bo3-score-finished", "BO3", 2, 1],
+  ]) {
+    const fixture = fixtures[`${fixtureKey}.json`];
+    assert.equal(fixture.active.matches.length, 1);
+    assert.equal(fixture.active.matches[0].status, "live");
+    devMainContext.args.widgetParameter = `dev:${fixtureKey}`;
+    assert.equal(
+      devMainContext.__devRuntimeTestApi.devFixtureKey(),
+      fixtureKey
+    );
+    const result = await devMainContext.__devRuntimeTestApi.loadDevSchedule();
+    const match = result.matches[0];
+    assert.equal(match.matchType, matchType);
+    assert.equal(match.status, "live");
+    assert.equal(match.leftScore, leftScore);
+    assert.equal(match.rightScore, rightScore);
+    assert.equal(match.effectiveStatus, "finished");
+    assert.equal(
+      devMainContext.__devRuntimeTestApi.matchSubtitle(
+        match,
+        new Date(fixture.now)
+      ),
+      `淘汰赛 · 已结束 · ${matchType}`
+    );
+    const diagnostics = devMainContext.__devRuntimeTestApi.buildDiagnosticText(
+      null,
+      devMainContext.__devRuntimeTestApi.inspectCache()
+    );
+    assert.match(
+      diagnostics,
+      new RegExp(
+        `${matchType} · upstream=LIVE · score=${leftScore}:${rightScore} · effectiveStatus=FINISHED · reason=SERIES_SCORE_THRESHOLD`
+      )
+    );
+  }
+
   devMainContext.args.widgetParameter = "dev:worlds";
   const worldsResult =
     await devMainContext.__devRuntimeTestApi.loadDevSchedule();

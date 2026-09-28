@@ -588,6 +588,15 @@ function buildDiagnosticText(
       )
     ),
   ];
+  const devScoreDerivations = IS_DEV
+    ? (Array.isArray(cache?.matches) ? cache.matches : [])
+        .map((match) => {
+          const effective = deriveEffectiveMatchStatus(match, now);
+          if (effective.reason !== "SERIES_SCORE_THRESHOLD") return null;
+          return `${match.matchType} · upstream=${String(match.status).toUpperCase()} · score=${match.leftScore}:${match.rightScore} · effectiveStatus=${effective.status.toUpperCase()} · reason=${effective.reason}`;
+        })
+        .filter(Boolean)
+    : [];
   const attempts = Array.isArray(dataDiagnostics?.attempts)
     ? dataDiagnostics.attempts
         .map((attempt) => {
@@ -629,6 +638,9 @@ function buildDiagnosticText(
     `读取时间：${dataDiagnostics?.updatedAt || "无"}`,
     `读取路径：${attempts}`,
     `状态诊断：${statusDiagnostics.join(", ") || "无"}`,
+    ...(IS_DEV
+      ? [`比分状态推导：${devScoreDerivations.join("；") || "无"}`]
+      : []),
   ].join("\n");
 }
 
@@ -841,7 +853,11 @@ function deriveEffectiveMatchStatus(match, now = new Date()) {
       if (leftScore >= winsRequired && rightScore >= winsRequired) {
         diagnostics.push("AMBIGUOUS_SERIES_SCORE");
       } else if (Math.max(leftScore, rightScore) >= winsRequired) {
-        return { status: "finished", diagnostics };
+        return {
+          status: "finished",
+          diagnostics,
+          reason: "SERIES_SCORE_THRESHOLD",
+        };
       }
     }
   }
@@ -1823,6 +1839,8 @@ function parseOfficialSchedule(text) {
 
 const DEV_FIXTURE_KEYS = new Set([
   "lpl-playoffs",
+  "bo5-score-finished",
+  "bo3-score-finished",
   "ewc-priority",
   "worlds",
   "stale-remote",

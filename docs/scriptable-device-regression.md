@@ -32,6 +32,8 @@
 fixture 模式额外读取：
 
 - `LPL-Schedule-DEV/data/fixtures/lpl-playoffs.json`
+- `LPL-Schedule-DEV/data/fixtures/bo5-score-finished.json`
+- `LPL-Schedule-DEV/data/fixtures/bo3-score-finished.json`
 - `LPL-Schedule-DEV/data/fixtures/ewc-priority.json`
 - `LPL-Schedule-DEV/data/fixtures/worlds.json`
 - `LPL-Schedule-DEV/data/fixtures/remote-stale.json`
@@ -51,7 +53,7 @@ DEV 安装器只写入以下 namespace：
 - 诊断：`lpl-schedule-dev-data-diagnostics.json`
 - Logo：`lpl-team-logo-dev-*.png`
 
-正式版的脚本、`LPL-Design-System`、设置、缓存、诊断和 Logo 文件均不会被读取或覆盖。中号和大号 DEV 组件页脚显示 `DEV · v3.1.0`；小号组件日期前显示 `DEV ·`。
+正式版的脚本、`LPL-Design-System`、设置、缓存、诊断和 Logo 文件均不会被读取或覆盖。中号和大号 DEV 组件页脚显示 `DEV · v3.1.1`；小号组件日期前显示 `DEV ·`。
 
 ## 生成 DEV 安装包
 
@@ -68,7 +70,7 @@ npm run dev:installer
 - 当前 `LPL-Design-System.js`
 - 当前 `data/active.json`
 - 当前 `data/schedule.json`
-- 五种 DEV 验收路径所需 fixture
+- 七种 DEV 验收路径所需 fixture
 
 安装器不发起 GitHub 请求。生成的 DEV 主脚本使用 `dev-local://LPL-Schedule-DEV` 占位 URL，并在数据加载入口强制走 iCloud DEV 数据通道。
 
@@ -104,6 +106,8 @@ npm run dev:installer
 | --- | --- |
 | 留空 | 不启用 fixture，使用正常在线数据链与 DEV 独立缓存 |
 | `dev:lpl-playoffs` | 标题为 `LPL PLAYOFFS`，展示 LPL 季后赛 |
+| `dev:bo5-score-finished` | 上游仍为 `live`，但 BO5 比分为 3:2；组件显示“已结束”，诊断显示 `SERIES_SCORE_THRESHOLD` |
+| `dev:bo3-score-finished` | 上游仍为 `live`，但 BO3 比分为 2:1；组件显示“已结束”，诊断显示 `SERIES_SCORE_THRESHOLD` |
 | `dev:ewc-priority` | LPL 与 EWC 同日，选择高 priority 的 `EWC 2026` |
 | `dev:worlds` | 标题为 `WORLDS 2026` |
 | `dev:remote-stale` | stale active 校验失败，转入内嵌官方页面回退 fixture |
@@ -123,7 +127,7 @@ npm run dev:installer
 ## 真机验收清单
 
 1. 正式中号组件外观和数据保持不变。
-2. DEV 中号组件页脚明确显示 `DEV · v3.1.0`。
+2. DEV 中号组件页脚明确显示 `DEV · v3.1.1`。
 3. 留空参数时显示当前工作区 active 赛事。
 4. 按需验证全部显式 fixture 参数；留空必须显示“在线模式”。
 5. 分别预览小号、中号和大号 DEV 组件。
