@@ -1,5 +1,14 @@
 # 更新日志
 
+## 3.1.1 · 2026-09-28
+
+- BO1/BO3/BO5 比分达到胜场阈值时，即使上游状态仍为进行中，也显示已结束；异常比分保留诊断。
+- 赛事已结束或暂无近期比赛时显示正常赛历空窗，并可提示已配置的下一赛事；数据源全部失败仍显示获取失败。
+- 安装器覆盖已有的 `LPL Schedule` 与 `LPL Schedule 2026` 脚本名，避免旧组件绑定脚本停留在 3.0.0。
+- 修正 DEV Installer 空赛程种子缓存契约；诊断页与加载器统一报告 `VALID / EMPTY_VALID / MISSING / EXPIRED / INVALID`。
+- iPhone 真机验收通过：Small/Medium/Large 赛事空窗与下一赛事，以及 Medium BO5 3:2、BO3 2:1 从上游 LIVE 推导已结束。
+- 组件版本为 3.1.1；未改动的设计系统继续使用独立版本 3.1.0。
+
 ## 3.1.0 · 2026-08-31
 
 - 新增集中式 Tournament 元数据、标准化分赛事赛程和 SMART Tournament Router。

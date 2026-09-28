@@ -50,9 +50,31 @@ function comparePriority(left, right) {
   );
 }
 
-function selection(tournament, date, matches, reason) {
+function enabledTournaments(tournaments) {
+  return tournaments.filter((tournament) => tournament?.enabled === true);
+}
+
+function nextTournamentAfter(tournaments, today, excludeId = null) {
+  return (
+    enabledTournaments(tournaments)
+      .filter(
+        (tournament) =>
+          tournament.id !== excludeId && tournament.startDate > today
+      )
+      .sort(
+        (left, right) =>
+          left.startDate.localeCompare(right.startDate) ||
+          Number(right.priority) - Number(left.priority) ||
+          left.id.localeCompare(right.id)
+      )[0] || null
+  );
+}
+
+function selection(tournament, date, matches, reason, tournaments, today) {
   return {
     activeTournament: tournament,
+    nextTournament: nextTournamentAfter(tournaments, today, tournament.id),
+    businessState: "MATCHES",
     selectedDate: date,
     matches: [...matches].sort((left, right) =>
       left.startTime.localeCompare(right.startTime)
@@ -67,8 +89,8 @@ function selectTournament({
   schedules = {},
 }) {
   const today = beijingDateString(now);
-  const enabled = tournaments.filter(
-    (tournament) => tournament?.enabled === true && tournament.endDate >= today
+  const enabled = enabledTournaments(tournaments).filter(
+    (tournament) => tournament.endDate >= today
   );
 
   const candidates = enabled.map((tournament) => ({
@@ -93,7 +115,9 @@ function selectTournament({
       winner.matches,
       todayCandidates.length > 1
         ? "SMART_TODAY_PRIORITY"
-        : "SMART_TODAY_MATCHES"
+        : "SMART_TODAY_MATCHES",
+      tournaments,
+      today
     );
   }
 
@@ -130,15 +154,70 @@ function selectTournament({
       winner.tournament,
       winner.nextDate,
       winner.matches,
-      tied.length > 1 ? "SMART_NEAREST_FUTURE_PRIORITY" : "SMART_NEAREST_FUTURE"
+      tied.length > 1
+        ? "SMART_NEAREST_FUTURE_PRIORITY"
+        : "SMART_NEAREST_FUTURE",
+      tournaments,
+      today
     );
+  }
+
+  const currentTournament = enabled
+    .filter(
+      (tournament) =>
+        tournament.startDate <= today && tournament.endDate >= today
+    )
+    .sort(
+      (left, right) =>
+        Number(right.priority) - Number(left.priority) ||
+        left.id.localeCompare(right.id)
+    )[0];
+  const finishedTournament = enabledTournaments(tournaments)
+    .filter((tournament) => tournament.endDate < today)
+    .sort(
+      (left, right) =>
+        right.endDate.localeCompare(left.endDate) ||
+        Number(right.priority) - Number(left.priority) ||
+        left.id.localeCompare(right.id)
+    )[0];
+
+  if (currentTournament) {
+    return {
+      activeTournament: currentTournament,
+      nextTournament: nextTournamentAfter(
+        tournaments,
+        today,
+        currentTournament.id
+      ),
+      businessState: "NO_UPCOMING",
+      selectedDate: null,
+      matches: [],
+      selectionReason: "SMART_NO_UPCOMING_MATCHES",
+    };
+  }
+
+  if (finishedTournament) {
+    return {
+      activeTournament: finishedTournament,
+      nextTournament: nextTournamentAfter(
+        tournaments,
+        today,
+        finishedTournament.id
+      ),
+      businessState: "TOURNAMENT_FINISHED",
+      selectedDate: null,
+      matches: [],
+      selectionReason: "SMART_TOURNAMENT_FINISHED",
+    };
   }
 
   return {
     activeTournament: null,
+    nextTournament: nextTournamentAfter(tournaments, today),
+    businessState: "NO_UPCOMING",
     selectedDate: null,
     matches: [],
-    selectionReason: "SMART_NO_AVAILABLE_MATCHES",
+    selectionReason: "SMART_NO_UPCOMING_MATCHES",
   };
 }
 

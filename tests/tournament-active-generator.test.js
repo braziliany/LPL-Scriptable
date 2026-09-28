@@ -47,6 +47,25 @@ assert.equal(active.tournament.id, tournament.id);
 assert.equal(active.selectedDate, "2026-10-20");
 assert.equal(active.generatedAt, "2026-10-20T02:00:00.000Z");
 assert.equal(active.sourceUpdatedAt, "2026-10-19T08:00:00.000Z");
+assert.equal(active.businessState, "MATCHES");
+
+const between = buildActive(
+  new Date("2026-09-22T02:00:00.000Z"),
+  [
+    {
+      ...tournament,
+      id: "playoffs",
+      startDate: "2026-08-28",
+      endDate: "2026-09-13",
+    },
+    tournament,
+  ],
+  {}
+);
+assert.equal(between.businessState, "TOURNAMENT_FINISHED");
+assert.equal(between.tournament.id, "playoffs");
+assert.equal(between.nextTournament.id, tournament.id);
+assert.deepEqual(between.matches, []);
 
 const split = splitLegacySchedule({
   updatedAt: "2026-08-31T03:40:07+08:00",

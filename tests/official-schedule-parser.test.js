@@ -165,6 +165,7 @@ assert.deepEqual(
 
 const now = new Date(2026, 6, 26, 16, 30);
 const upcoming = {
+  startTime: "2026-07-26 17:00:00",
   dateString: "2026-07-26",
   timestamp: new Date(2026, 6, 26, 17, 0).getTime(),
   time: "17:00",
@@ -609,14 +610,14 @@ const diagnosticText = context.__testApi.buildDiagnosticText(
   "medium",
   new Date("2026-07-30T10:09:00+08:00")
 );
-assert.match(diagnosticText, /组件版本：3\.1\.0/);
+assert.match(diagnosticText, /组件版本：3\.1\.1/);
 assert.match(diagnosticText, /设计系统：3\.1\.0/);
 assert.match(diagnosticText, /设置结构：v2/);
 assert.match(diagnosticText, /当前赛事：2026 英雄联盟全球总决赛/);
 assert.match(diagnosticText, /赛事短名：WORLDS 2026/);
 assert.match(diagnosticText, /选择原因：SMART_TODAY_MATCHES/);
 assert.match(diagnosticText, /运行环境：中号组件/);
-assert.match(diagnosticText, /缓存状态：有效（9 分钟前）/);
+assert.match(diagnosticText, /缓存状态：VALID（9 分钟前）/);
 assert.match(diagnosticText, /缓存比赛：2 场/);
 const fallbackDiagnosticText = context.__testApi.buildDiagnosticText(
   null,

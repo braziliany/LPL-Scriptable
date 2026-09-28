@@ -22,12 +22,21 @@ assert.equal(
   }),
   "2.2.0"
 );
+assert.equal(
+  assertVersionConsistency({
+    package: "3.1.1",
+    installer: "3.1.1",
+    designSystem: "3.1.0",
+    widget: "3.1.1",
+  }),
+  "3.1.1"
+);
 assert.throws(
   () =>
     assertVersionConsistency({
       package: "2.2.0",
       installer: "2.2.0",
-      designSystem: "2.1.0",
+      designSystem: "2.3.0",
       widget: "2.2.0",
     }),
   /项目版本不一致/

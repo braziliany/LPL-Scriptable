@@ -1,6 +1,6 @@
 # LOL Tournament Schedule 2026 · Scriptable
 
-一个自动选择当前 LOL 赛事的 Scriptable 赛程小组件。v3.1.0 在保留现有深蓝倒计时卡片 UI 的基础上，通过 Tournament Router 在 LPL、MSI、EWC、LPL 资格赛与 Worlds 之间选择当前比赛日。
+一个自动选择当前 LOL 赛事的 Scriptable 赛程小组件。v3.1.1 在保留现有深蓝倒计时卡片 UI 的基础上，修正 BO 系列赛比分与正常赛历空窗的状态语义。
 
 ## 主要功能
 
@@ -17,6 +17,8 @@
 - 比赛副标题显示第三赛段所属的登峰组或涅槃组
 - 进入骑士之路和淘汰赛后自动切换为实际赛事阶段，不再显示组别
 - 未开始显示时间，进行中显示 `LIVE`，结束后显示比分
+- BO1/BO3/BO5 达到获胜局数后立即显示已结束，即使官方状态仍滞后为进行中
+- 已知赛程结束后的正常空窗显示赛事已结束及下一赛事，不误报为赛程获取失败
 - 中号和大号自动显示当天全部比赛，中号在 3 场时自动使用紧凑布局
 - 中号三场使用真机优化的密集间距，避免标题和页脚被系统裁切
 - 可高亮关注队伍
@@ -83,6 +85,8 @@ braziliany/LPL-Scriptable
    - `LPL Schedule 2026`
    - `LPL Schedule Installer`
 7. 以后只需运行 `LPL Schedule Installer` 完成全量更新
+
+安装器会更新已有的 `LPL Schedule 2026` 和 `LPL Schedule` 脚本；若两个名称同时存在，两者都会覆盖为同一正式源码，不会新建重复脚本。桌面组件仍绑定原脚本名。若诊断仍显示 3.0.0，先确认组件绑定的是哪一个脚本，再从 GitHub Raw 重新复制最新版 `Installer.js` 并运行。
 
 > 如果手机里只有旧版安装器，必须从 GitHub 重新复制一次最新 `Installer.js`。旧安装器不会自动更新自身，因此只会安装主脚本。
 
@@ -195,29 +199,30 @@ npm run check
 
 ## 发布版本
 
-发布前需要同步修改以下四处版本号：
+发布前需要同步修改以下三处组件版本号：
 
 - `package.json`
 - `Installer.js`
-- `LPL-Design-System.js`
 - `LPL-Schedule.js`
+
+`LPL-Design-System.js` 使用独立版本号；仅当设计系统实际变更时更新，目前保持 3.1.0。版本检查要求它与组件同主版本且不高于组件版本。
 
 本地检查并预览 Release Notes：
 
 ```bash
 npm run check
-npm run version:check -- 3.1.0
-npm run release:notes -- v3.1.0
+npm run version:check -- 3.1.1
+npm run release:notes -- v3.1.1
 ```
 
 确认无误后创建并推送标签：
 
 ```bash
-git tag v3.1.0
-git push origin v3.1.0
+git tag v3.1.1
+git push origin v3.1.1
 ```
 
-`Publish release` 工作流会再次执行完整质量检查，验证标签与四处版本号一致，从 `CHANGELOG.md` 提取对应更新说明，并创建 GitHub Release。Release 会附带：
+`Publish release` 工作流会再次执行完整质量检查，验证标签与组件版本号一致，并校验设计系统兼容性，从 `CHANGELOG.md` 提取对应更新说明，并创建 GitHub Release。Release 会附带：
 
 - `Installer.js`
 - `LPL-Schedule.js`

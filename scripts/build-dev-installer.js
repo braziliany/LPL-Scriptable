@@ -58,6 +58,8 @@ function activeFromRoute(route, now) {
     generatedAt,
     sourceUpdatedAt: generatedAt,
     tournament: route.activeTournament,
+    nextTournament: route.nextTournament,
+    businessState: route.businessState,
     selectedDate: route.selectedDate,
     selectionReason: route.selectionReason,
     matches: route.matches,
@@ -93,6 +95,29 @@ function buildFixtureBundle() {
       [playoffs.id]: schedule(playoffs.id, playoffNow, playoffMatches),
     },
   });
+
+  function scoreFinishedFixture(matchType, leftScore, rightScore) {
+    const now = "2026-09-05T10:00:00.000Z";
+    const match = {
+      ...fixtureMatch(
+        playoffs.id,
+        "2026-09-05 17:00:00",
+        "BLG",
+        "TES",
+        matchType,
+        "季后赛"
+      ),
+      status: "live",
+      leftScore,
+      rightScore,
+    };
+    const route = selectTournament({
+      now,
+      tournaments: [playoffs],
+      schedules: { [playoffs.id]: schedule(playoffs.id, now, [match]) },
+    });
+    return { now, active: activeFromRoute(route, now) };
+  }
 
   const ewc = byId.get("ewc-2026");
   const lplOverlap = {
@@ -173,6 +198,8 @@ function buildFixtureBundle() {
       now: playoffNow,
       active: activeFromRoute(playoffRoute, playoffNow),
     },
+    "bo5-score-finished.json": scoreFinishedFixture("BO5", 3, 2),
+    "bo3-score-finished.json": scoreFinishedFixture("BO3", 2, 1),
     "ewc-priority.json": {
       now: ewcNow,
       routerSelectionReason: ewcRouterSelectionReason,
@@ -310,6 +337,8 @@ async function installBundle() {
       updatedAt: new Date().toISOString(),
       source: "Installer-Dev 工作区种子",
       tournament: active.tournament,
+      nextTournament: active.nextTournament || null,
+      businessState: active.businessState || (active.matches.length ? "MATCHES" : "NO_UPCOMING"),
       selectedDate: active.selectedDate,
       selectionReason: "DEV_INSTALLER_SEED_CACHE",
       matches: active.matches,

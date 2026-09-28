@@ -77,12 +77,29 @@ result = route(
 assert.equal(result.activeTournament.id, playoffs.id);
 
 result = route(
+  "2026-09-22T02:00:00Z",
+  [playoffs, worlds],
+  schedules(match(playoffs.id, "2026-09-05 17:00:00"))
+);
+assert.equal(result.businessState, "TOURNAMENT_FINISHED");
+assert.equal(result.activeTournament.id, playoffs.id);
+assert.equal(result.nextTournament.id, worlds.id);
+assert.equal(result.matches.length, 0);
+assert.equal(result.selectedDate, null);
+
+result = route("2026-08-30T02:00:00Z", [playoffs, worlds], schedules());
+assert.equal(result.businessState, "NO_UPCOMING");
+assert.equal(result.activeTournament.id, playoffs.id);
+assert.equal(result.nextTournament.id, worlds.id);
+
+result = route(
   "2026-08-29T02:00:00Z",
   [{ ...playoffs, enabled: false }],
   schedules(match(playoffs.id, "2026-08-29 17:00:00"))
 );
 assert.equal(result.activeTournament, null);
-assert.equal(result.selectionReason, "SMART_NO_AVAILABLE_MATCHES");
+assert.equal(result.selectionReason, "SMART_NO_UPCOMING_MATCHES");
+assert.equal(result.businessState, "NO_UPCOMING");
 
 const sameDay = "2026-07-18 17:00:00";
 result = route(

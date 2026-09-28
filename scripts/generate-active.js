@@ -37,6 +37,8 @@ function buildActive(now, tournaments, schedules) {
       ? sourceUpdatedAt.toISOString()
       : null,
     tournament: result.activeTournament,
+    nextTournament: result.nextTournament,
+    businessState: result.businessState,
     selectedDate: result.selectedDate,
     selectionReason: result.selectionReason,
     matches: result.matches,
