@@ -24,12 +24,12 @@ assert.equal(
 );
 assert.equal(
   assertVersionConsistency({
-    package: "3.1.1",
-    installer: "3.1.1",
+    package: "3.1.2",
+    installer: "3.1.2",
     designSystem: "3.1.0",
-    widget: "3.1.1",
+    widget: "3.1.2",
   }),
-  "3.1.1"
+  "3.1.2"
 );
 assert.throws(
   () =>

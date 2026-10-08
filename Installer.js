@@ -10,7 +10,7 @@
  */
 
 const CONFIG = {
-  version: "3.1.1",
+  version: "3.1.2",
   season: "2026 LOL 赛事 SMART",
   changelogUrl:
     "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/CHANGELOG.md",
@@ -25,7 +25,7 @@ const CONFIG = {
       scriptName: "LPL Schedule 2026",
       sourceUrl:
         "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/LPL-Schedule.js",
-      marker: 'importModule("LPL-Design-System")',
+      marker: "LOL Tournament Schedule Widget",
     },
     {
       scriptName: "LPL Schedule Installer",
@@ -81,14 +81,67 @@ function extractReleaseNotes(changelog, version) {
 async function downloadText(url) {
   const request = new Request(url);
   request.timeoutInterval = 20;
-  return request.loadString();
+  const content = await request.loadString();
+  if (request.response?.statusCode !== 200) {
+    throw new Error(
+      `下载失败：HTTP ${request.response?.statusCode || "unknown"}`
+    );
+  }
+  const headers = request.response.headers || {};
+  const contentType = Object.entries(headers).find(
+    ([name]) => name.toLowerCase() === "content-type"
+  )?.[1];
+  if (contentType && /html|json/i.test(String(contentType))) {
+    throw new Error(`下载内容类型无效：${contentType}`);
+  }
+  return content;
+}
+
+function validateResourceContent(resource, content) {
+  const reject = (reason) => {
+    throw new Error(`${resource.scriptName} 下载内容校验失败：${reason}`);
+  };
+  if (typeof content !== "string" || !content.includes(resource.marker)) {
+    reject("资源标识不匹配");
+  }
+  if (/^\s*</.test(content)) reject("响应不是 JavaScript");
+  if (/globalThis\.__LPL_SCHEDULE_DEV__\s*=/.test(content)) {
+    reject("不允许 DEV bootstrap");
+  }
+  if (resource.scriptName === "LPL-Design-System") {
+    if (!/const\s+version\s*=\s*["']\d+\.\d+\.\d+["']/.test(content)) {
+      reject("设计系统版本缺失");
+    }
+    if (!/module\.exports\s*=\s*\{/.test(content)) reject("模块导出缺失");
+    return;
+  }
+  if (
+    !/^\/\/ Variables used by Scriptable\.\r?\n\/\/ These must be at the very top of the file\. Do not edit\.\r?\n\/\/ icon-color: [^\r\n]+; icon-glyph: [^\r\n]+;/.test(
+      content
+    )
+  ) {
+    reject("Scriptable metadata 缺失");
+  }
+  if (!extractVersion(content)) reject("版本缺失");
+  if (resource.scriptName === "LPL Schedule 2026") {
+    if (!/const\s+APP\s*=\s*\{\s*name:\s*["']LPL Schedule["']/.test(content)) {
+      reject("主脚本身份不匹配");
+    }
+    if (
+      !/\bimportModule\s*\(\s*(?:IS_DEV\s*\?\s*DEV_RUNTIME\.designSystemModule\s*:\s*)?["']LPL-Design-System["']\s*\)/.test(
+        content
+      )
+    ) {
+      reject("正式 Design System 导入缺失");
+    }
+  } else if (!/const\s+CONFIG\s*=\s*\{\s*version:/.test(content)) {
+    reject("安装器配置缺失");
+  }
 }
 
 async function downloadResource(resource) {
   const content = await downloadText(resource.sourceUrl);
-  if (!content.includes(resource.marker)) {
-    throw new Error(`${resource.scriptName} 下载内容校验失败`);
-  }
+  validateResourceContent(resource, content);
   return { ...resource, content };
 }
 

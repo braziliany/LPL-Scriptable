@@ -107,6 +107,26 @@ function remoteActive({ ageHours = 0, season = "2026" } = {}) {
   };
 }
 
+function remoteFinishedActive() {
+  const active = remoteActive();
+  active.businessState = "TOURNAMENT_FINISHED";
+  active.selectedDate = null;
+  active.selectionReason = "SMART_TOURNAMENT_FINISHED";
+  active.matches = [];
+  active.tournament.endDate = beijingDateOffset(-1);
+  active.nextTournament = {
+    ...active.tournament,
+    id: "worlds-2026",
+    name: "2026 英雄联盟全球总决赛",
+    shortName: "WORLDS 2026",
+    region: "international",
+    stage: "瑞士轮",
+    startDate: beijingDateOffset(10),
+    endDate: beijingDateOffset(30),
+  };
+  return active;
+}
+
 function never() {
   return new Promise(() => {});
 }
@@ -151,12 +171,15 @@ function createRuntime({ cached, remote, official }) {
       loadJSON() {
         if (remote === "never") return never();
         if (remote === "fail") return Promise.reject(new Error("offline"));
+        if (remote === "http") return Promise.reject(new Error("HTTP 503"));
         if (remote === "stale") {
           return Promise.resolve(remoteActive({ ageHours: 72 }));
         }
         if (remote === "wrong-season") {
           return Promise.resolve(remoteActive({ season: "2025" }));
         }
+        if (remote === "finished")
+          return Promise.resolve(remoteFinishedActive());
         return Promise.resolve(remoteActive());
       }
     },
@@ -172,8 +195,8 @@ function createRuntime({ cached, remote, official }) {
       }
     },
     Timer: {
-      schedule(seconds, _repeats, callback) {
-        const handle = setTimeout(callback, seconds);
+      schedule(milliseconds, _repeats, callback) {
+        const handle = setTimeout(callback, milliseconds / 1000);
         return { invalidate: () => clearTimeout(handle) };
       },
     },
@@ -206,6 +229,17 @@ async function expectCache(runtime) {
 }
 
 async function main() {
+  const finishedOnline = createRuntime({
+    remote: "finished",
+    official: "fail",
+  });
+  const finishedResult = await finishedOnline.api.loadSchedule();
+  assert.equal(finishedResult.source, "GitHub Active");
+  assert.equal(finishedResult.businessState, "TOURNAMENT_FINISHED");
+  assert.equal(finishedResult.matches.length, 0);
+  assert.equal(finishedOnline.api.inspectCache().status, "EMPTY_VALID");
+  assert.equal(finishedOnline.requestCount(), 1);
+
   const empty = createRuntime({
     cached: emptyCache(),
     remote: "fail",
@@ -263,6 +297,29 @@ async function main() {
   });
   await expectCache(remoteNever);
   assert.equal(remoteNever.requestCount(), 1);
+  assert.equal(
+    remoteNever.logs.some((line) =>
+      /remote failed: remote active timeout \(3s\)/.test(line)
+    ),
+    true
+  );
+
+  const httpError = createRuntime({
+    cached: cache(),
+    remote: "http",
+    official: "fail",
+  });
+  await expectCache(httpError);
+  assert.equal(
+    httpError.logs.some((line) => line.includes("remote failed: HTTP 503")),
+    true
+  );
+  assert.equal(
+    httpError.logs.some((line) =>
+      line.includes("remote failed/timeout: HTTP 503")
+    ),
+    false
+  );
 
   const officialNever = createRuntime({
     cached: cache(),
@@ -286,8 +343,8 @@ async function main() {
   assert.match(diagnostics.attempts[2].message, /cache accepted/);
   assert.equal(
     [
-      "remote failed/timeout",
-      "official failed/timeout",
+      "remote failed:",
+      "official failed:",
       "cache accepted",
       "final source: 本地缓存",
     ].every((entry) => allFail.logs.some((line) => line.includes(entry))),

@@ -29,6 +29,9 @@ jobs:
       - name: Run quality checks
         run: npm run check
 
+      - name: Validate production installer downloads
+        run: npm run installer:check-production
+
       - name: Validate tag version
         shell: bash
         run: node scripts/check-version.js "${GITHUB_REF_NAME#v}"

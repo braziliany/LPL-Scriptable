@@ -53,7 +53,7 @@ DEV 安装器只写入以下 namespace：
 - 诊断：`lpl-schedule-dev-data-diagnostics.json`
 - Logo：`lpl-team-logo-dev-*.png`
 
-正式版的脚本、`LPL-Design-System`、设置、缓存、诊断和 Logo 文件均不会被读取或覆盖。中号和大号 DEV 组件页脚显示 `DEV · v3.1.1`；小号组件日期前显示 `DEV ·`。
+正式版的脚本、`LPL-Design-System`、设置、缓存、诊断和 Logo 文件均不会被读取或覆盖。中号和大号 DEV 组件页脚显示 `DEV · v3.1.2`；小号组件日期前显示 `DEV ·`。
 
 ## 生成 DEV 安装包
 
@@ -127,7 +127,7 @@ npm run dev:installer
 ## 真机验收清单
 
 1. 正式中号组件外观和数据保持不变。
-2. DEV 中号组件页脚明确显示 `DEV · v3.1.1`。
+2. DEV 中号组件页脚明确显示 `DEV · v3.1.2`。
 3. 留空参数时显示当前工作区 active 赛事。
 4. 按需验证全部显式 fixture 参数；留空必须显示“在线模式”。
 5. 分别预览小号、中号和大号 DEV 组件。

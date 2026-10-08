@@ -62,8 +62,8 @@ const context = {
     }
   },
   Timer: {
-    schedule(seconds, _repeats, callback) {
-      const handle = setTimeout(callback, seconds);
+    schedule(milliseconds, _repeats, callback) {
+      const handle = setTimeout(callback, milliseconds / 1000);
       return { invalidate: () => clearTimeout(handle) };
     },
   },

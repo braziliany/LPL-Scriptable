@@ -1,6 +1,6 @@
 # LOL Tournament Schedule 2026 · Scriptable
 
-一个自动选择当前 LOL 赛事的 Scriptable 赛程小组件。v3.1.1 在保留现有深蓝倒计时卡片 UI 的基础上，修正 BO 系列赛比分与正常赛历空窗的状态语义。
+一个自动选择当前 LOL 赛事的 Scriptable 赛程小组件。v3.1.2 修复正式安装器校验与 Scriptable 网络计时单位；保留现有深蓝倒计时卡片 UI。
 
 ## 主要功能
 
@@ -211,15 +211,15 @@ npm run check
 
 ```bash
 npm run check
-npm run version:check -- 3.1.1
-npm run release:notes -- v3.1.1
+npm run version:check -- 3.1.2
+npm run release:notes -- v3.1.2
 ```
 
 确认无误后创建并推送标签：
 
 ```bash
-git tag v3.1.1
-git push origin v3.1.1
+git tag v3.1.2
+git push origin v3.1.2
 ```
 
 `Publish release` 工作流会再次执行完整质量检查，验证标签与组件版本号一致，并校验设计系统兼容性，从 `CHANGELOG.md` 提取对应更新说明，并创建 GitHub Release。Release 会附带：

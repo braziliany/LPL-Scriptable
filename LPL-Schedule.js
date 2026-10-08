@@ -16,7 +16,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "3.1.1",
+  version: "3.1.2",
   repository: "https://github.com/braziliany/LPL-Scriptable",
   rawBase: "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
@@ -989,7 +989,7 @@ function networkTimeoutSeconds(kind) {
 async function withNetworkTimeout(operation, seconds, label) {
   let timer = null;
   const timeout = new Promise((_, reject) => {
-    timer = Timer.schedule(seconds, false, () => {
+    timer = Timer.schedule(seconds * 1000, false, () => {
       reject(new Error(`${label} timeout (${seconds}s)`));
     });
   });
@@ -1642,7 +1642,9 @@ function shouldRefreshOfficialState(matches, now = new Date()) {
 // MARK: - 官方页面解析
 
 async function sleep(seconds) {
-  await new Promise((resolve) => Timer.schedule(seconds, false, resolve));
+  await new Promise((resolve) =>
+    Timer.schedule(seconds * 1000, false, resolve)
+  );
 }
 
 async function loadOfficialPageText() {
@@ -1651,16 +1653,21 @@ async function loadOfficialPageText() {
     async () => {
       const webView = new WebView();
       await webView.loadURL(CONFIG.officialScheduleUrl);
+      logDataStep("official page loaded");
       await sleep(
         isWidgetRuntime() ? 1 : Math.min(CONFIG.officialPageWaitSeconds, 4)
       );
-      return webView.evaluateJavaScript(`
+      const pageText = await webView.evaluateJavaScript(`
       (() => {
         const body = document.body;
         if (!body) return "";
         return body.innerText || "";
       })()
     `);
+      logDataStep(
+        `official page text ready (${String(pageText || "").length} chars)`
+      );
+      return pageText;
     },
     timeoutSeconds,
     "official page"
@@ -1994,6 +2001,7 @@ async function loadDevSchedule() {
       });
       try {
         const matches = parseOfficialSchedule(await loadOfficialPageText());
+        logDataStep(`official page parsed (${matches.length} matches)`);
         const result = {
           matches,
           source: "DEV LPL 官方页面",
@@ -2206,7 +2214,7 @@ async function loadSchedule() {
         status: "failure",
         message,
       });
-      logDataStep(`remote failed/timeout: ${message}`);
+      logDataStep(`remote failed: ${message}`);
     }
 
     if (!protectWidgetCache) {
@@ -2245,7 +2253,7 @@ async function loadSchedule() {
           status: "failure",
           message,
         });
-        logDataStep(`remote legacy failed/timeout: ${message}`);
+        logDataStep(`remote legacy failed: ${message}`);
         if (mode === "remote") {
           writeDataDiagnostics(mode, "无", attempts);
           throw new Error(errors.join("\n"));
@@ -2259,6 +2267,7 @@ async function loadSchedule() {
     try {
       const text = await loadOfficialPageText();
       const matches = parseOfficialSchedule(text);
+      logDataStep(`official page parsed (${matches.length} matches)`);
       attempts.push({ source: "官方页面", status: "success" });
       const result = {
         matches,
@@ -2280,7 +2289,7 @@ async function loadSchedule() {
         status: "failure",
         message,
       });
-      logDataStep(`official failed/timeout: ${message}`);
+      logDataStep(`official failed: ${message}`);
       if (mode === "official") {
         writeDataDiagnostics(mode, "无", attempts);
         throw error;
