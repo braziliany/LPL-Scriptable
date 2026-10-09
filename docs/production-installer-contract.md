@@ -1,6 +1,6 @@
 # Production Installer contract：v3.1.1 blocker
 
-状态：v3.1.2 修复候选，等待 iPhone 正式安装验收；本分支提交后仍不合并、Tag 或 Release。
+状态：v3.1.2 正式 Installer-RC 覆盖安装、正式组件渲染、GitHub Active 与赛事空窗真机验收已通过；DEV 官方回退专项验收由用户决定跳过，记录为 WAIVED。
 
 ## 已复现的根因
 
@@ -63,4 +63,4 @@ RC 内嵌当前工作区的 v3.1.2 正式主脚本与设计系统，并使用与
 在 Wi-Fi 与蜂窝网络下分别手动运行正式组件，确认 GitHub Active 成功，当前 0 场 `TOURNAMENT_FINISHED` 进入正常赛事空窗，不出现毫秒级误超时。若返回 HTTP、解析或数据校验错误，应按原始错误记录，而不是统一视作 timeout。
 
 官方路径使用 DEV 隔离验收：从同一 Outbox 导入 `Installer-Dev-v3.1.2.js`，运行后给 `LPL Schedule DEV` 设置 `dev:stale-remote`，观察 stale remote 拒绝、官方页面加载、解析和最终来源。该 fixture 不写正式缓存。蜂窝网络上曾观测 WebView 页面加载约 14.8 秒；原定应用内 8 秒预算保持不变，这种情况允许显示真实的官方超时，不把“页面加载成功”等同于“解析成功”。
-本轮不发布。真机 PASS 后再合并与发布 v3.1.2，保留不可变的 v3.1.1 Tag 和 Release。
+正式发布仍须通过合并后自动检查、线上资源校验和 Release workflow；保留不可变的 v3.1.1 Tag 和 Release。

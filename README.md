@@ -218,7 +218,7 @@ npm run release:notes -- v3.1.2
 确认无误后创建并推送标签：
 
 ```bash
-git tag v3.1.2
+git tag -a v3.1.2 -m "LPL Schedule v3.1.2"
 git push origin v3.1.2
 ```
 
