@@ -824,6 +824,82 @@ function bestOfValue(matchType) {
   return bestOf % 2 === 1 ? bestOf : null;
 }
 
+const WORLDS_2026_SOURCE = {
+  url: "https://lolesports.com/en-US/leagues/worlds",
+  leagueId: "98767975604431411",
+  tournamentId: "115660540725177488",
+};
+
+function hasUnresolvedParticipants(match) {
+  return (
+    match?.participants?.left?.kind === "placeholder" ||
+    match?.participants?.right?.kind === "placeholder"
+  );
+}
+
+function normalizeParticipants(raw, left, right) {
+  if (raw.participants === undefined) return left !== right ? {} : null;
+  const value = raw.participants;
+  const source = value?.source;
+  const exactKeys = (object, keys) =>
+    object &&
+    typeof object === "object" &&
+    !Array.isArray(object) &&
+    Object.keys(object).length === keys.length &&
+    keys.every((key) => Object.prototype.hasOwnProperty.call(object, key));
+  if (
+    !exactKeys(value, ["version", "source", "left", "right"]) ||
+    value.version !== 1 ||
+    !exactKeys(source, [
+      "provider",
+      "url",
+      "leagueId",
+      "tournamentId",
+      "matchId",
+    ]) ||
+    raw.tournamentId !== "worlds-2026" ||
+    typeof raw.id !== "string" ||
+    !/^[1-9]\d*$/.test(raw.id) ||
+    source.provider !== "riot-lolesports" ||
+    source.url !== WORLDS_2026_SOURCE.url ||
+    source.leagueId !== WORLDS_2026_SOURCE.leagueId ||
+    source.tournamentId !== WORLDS_2026_SOURCE.tournamentId ||
+    source.matchId !== raw.id ||
+    raw.detailUrl !== source.url
+  )
+    return null;
+  for (const [side, name] of [
+    ["left", left],
+    ["right", right],
+  ]) {
+    const identity = value[side];
+    if (!exactKeys(identity, ["kind", "id"]) || typeof identity.id !== "string")
+      return null;
+    if (identity.kind === "placeholder") {
+      if (identity.id !== "0" || name !== "TBD" || raw[side] !== "TBD")
+        return null;
+    } else if (identity.kind === "team") {
+      if (!/^[1-9]\d*$/.test(identity.id) || name === "TBD") return null;
+    } else return null;
+  }
+  if (hasUnresolvedParticipants({ participants: value })) {
+    if (
+      raw.status !== "upcoming" ||
+      raw.leftScore !== null ||
+      raw.rightScore !== null
+    )
+      return null;
+  } else if (value.left.id === value.right.id) return null;
+  return {
+    participants: {
+      version: 1,
+      source: { ...source },
+      left: { ...value.left },
+      right: { ...value.right },
+    },
+  };
+}
+
 function deriveEffectiveMatchStatus(match, now = new Date()) {
   const upstreamStatus = normalizeStatus(match?.status);
   const diagnostics = [];
@@ -868,6 +944,13 @@ function deriveEffectiveMatchStatus(match, now = new Date()) {
   if (upstreamStatus === "live") {
     return { status: "live", diagnostics };
   }
+  if (upstreamStatus === "upcoming" && hasUnresolvedParticipants(match)) {
+    return {
+      status: "upcoming",
+      diagnostics,
+      reason: "UNRESOLVED_PARTICIPANTS",
+    };
+  }
   if (
     upstreamStatus === "upcoming" &&
     Number.isFinite(match?.timestamp) &&
@@ -880,6 +963,7 @@ function deriveEffectiveMatchStatus(match, now = new Date()) {
 }
 
 function normalizeMatch(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const startTime =
     raw.startTime ||
     raw.start_time ||
@@ -898,9 +982,17 @@ function normalizeMatch(raw) {
     raw.right || raw.rightTeam || raw.teamB || raw.away || ""
   );
 
-  if (!left || !right || left === right) return null;
+  if (!left || !right) return null;
+  if (
+    raw.participants !== undefined &&
+    (typeof raw.left !== "string" || typeof raw.right !== "string")
+  )
+    return null;
+  const participants = normalizeParticipants(raw, left, right);
+  if (!participants) return null;
 
   const match = {
+    ...participants,
     tournamentId: String(raw.tournamentId || ""),
     id: String(raw.id || raw.bMatchId || ""),
     gameId: String(raw.gameId || raw.GameId || ""),
@@ -936,10 +1028,12 @@ function normalizeMatch(raw) {
 
 // MARK: - 缓存
 
-function logoCacheFileName(team) {
+function logoCacheFileName(team, participant = null) {
   const safeName =
     normalizeTeamName(team).replace(/[^A-Z0-9_-]/g, "") || "UNKNOWN";
-  return `${IS_DEV ? "lpl-team-logo-dev" : "lpl-team-logo"}-${safeName}.png`;
+  const identityName =
+    participant?.kind === "team" ? `riot-${participant.id}` : safeName;
+  return `${IS_DEV ? "lpl-team-logo-dev" : "lpl-team-logo"}-${identityName}.png`;
 }
 
 function teamLogoScale(team) {
@@ -1001,9 +1095,13 @@ async function withNetworkTimeout(operation, seconds, label) {
   }
 }
 
-async function loadTeamLogo(url, team) {
+async function loadTeamLogo(url, team, participant = null) {
+  if (participant?.kind === "placeholder") return placeholderTeamLogo();
   const fm = FileManager.local();
-  const path = fm.joinPath(fm.documentsDirectory(), logoCacheFileName(team));
+  const path = fm.joinPath(
+    fm.documentsDirectory(),
+    logoCacheFileName(team, participant)
+  );
 
   try {
     if (fm.fileExists(path)) {
@@ -1033,8 +1131,8 @@ async function prepareMatchLogos(matches) {
   await Promise.all(
     matches.map(async (match) => {
       [match.leftLogoImage, match.rightLogoImage] = await Promise.all([
-        loadTeamLogo(match.leftLogo, match.left),
-        loadTeamLogo(match.rightLogo, match.right),
+        loadTeamLogo(match.leftLogo, match.left, match.participants?.left),
+        loadTeamLogo(match.rightLogo, match.right, match.participants?.right),
       ]);
     })
   );
@@ -1850,6 +1948,7 @@ const DEV_FIXTURE_KEYS = new Set([
   "bo3-score-finished",
   "ewc-priority",
   "worlds",
+  "worlds-reviewed",
   "stale-remote",
   "remote-stale",
   "offline-cache",
@@ -1916,6 +2015,95 @@ function devActiveResult(active, now, source, selectionReason = null) {
   };
 }
 
+function normalizeReviewedWorlds(payload, now = new Date()) {
+  if (
+    !payload ||
+    payload.schemaVersion !== 1 ||
+    payload.classification !== "PARTIAL_OBSERVED"
+  )
+    throw new Error("DEV Worlds 快照必须标明部分已观察赛程");
+  if (
+    payload.sourceUrl !== WORLDS_2026_SOURCE.url ||
+    !/^[a-f0-9]{64}$/.test(payload.bodySha256 || "")
+  )
+    throw new Error("DEV Worlds 官方来源证据无效");
+  if (remoteTimestampFreshnessError(payload.observedAt, now))
+    throw new Error("DEV Worlds 审核快照过期，请重新核对官方页面");
+  const start = String(payload.coverageStart || "");
+  const end = String(payload.coverageEnd || "");
+  if (
+    !/^2026-\d{2}-\d{2}$/.test(start) ||
+    !/^2026-\d{2}-\d{2}$/.test(end) ||
+    start < "2026-10-15" ||
+    end > "2026-11-15" ||
+    start > end
+  )
+    throw new Error("DEV Worlds 观察范围无效");
+  const rawMatches = payload.matches;
+  if (
+    !Array.isArray(rawMatches) ||
+    !rawMatches.length ||
+    rawMatches.length > 200
+  )
+    throw new Error("DEV Worlds 已观察比赛集合无效");
+  const ids = new Set();
+  const matches = rawMatches
+    .map((raw) => {
+      if (ids.has(raw?.id)) throw new Error("DEV Worlds 比赛 ID 重复");
+      ids.add(raw?.id);
+      const match = normalizeMatch(raw);
+      if (
+        !match ||
+        !match.participants ||
+        match.tournamentId !== "worlds-2026" ||
+        match.dateString < start ||
+        match.dateString > end ||
+        !["BO1", "BO3", "BO5"].includes(match.matchType) ||
+        !["upcoming", "live", "finished", "postponed", "cancelled"].includes(
+          raw.status
+        ) ||
+        (raw.status === "finished" &&
+          (!Number.isInteger(raw.leftScore) ||
+            !Number.isInteger(raw.rightScore)))
+      )
+        throw new Error("DEV Worlds 比赛身份、范围或状态无效");
+      if (
+        ["upcoming", "live"].includes(raw.status) &&
+        now.getTime() > match.timestamp + 6 * 60 * 60 * 1000
+      )
+        return null;
+      return match;
+    })
+    .filter(Boolean);
+  if (!matches.length)
+    throw new Error(
+      "DEV Worlds 审核快照没有仍可显示的比赛，请重新核对官方页面"
+    );
+  const observedDay = new Date(
+    new Date(payload.observedAt).getTime() + 8 * 60 * 60 * 1000
+  )
+    .toISOString()
+    .slice(5, 10)
+    .replace("-", "/");
+  return {
+    matches: matches.sort((a, b) => a.timestamp - b.timestamp),
+    source: "DEV 官方页面人工审核快照",
+    tournament: {
+      id: "worlds-2026",
+      name: "Worlds 2026",
+      shortName: "WORLDS · 部分",
+      season: "2026",
+      region: "INTL",
+      stage: "已观察 · 非完整",
+      startDate: "2026-10-15",
+      endDate: "2026-11-14",
+      dataSource: "reviewed-local",
+    },
+    coverageLabel: `仅 ${start.slice(5).replace("-", "/")}–${end.slice(5).replace("-", "/")} 已观察${payload.reviewedAt ? ` · ${observedDay}更新` : ""}`,
+    selectionReason: "DEV_WORLDS_PARTIAL_OBSERVED",
+  };
+}
+
 async function loadDevSchedule() {
   const fixture = devFixtureKey();
   const attempts = [];
@@ -1924,6 +2112,19 @@ async function loadDevSchedule() {
   const guaranteedCache = ["VALID", "EMPTY_VALID"].includes(cacheState.status)
     ? cacheAtStart
     : null;
+
+  if (fixture === "worlds-reviewed") {
+    const result = normalizeReviewedWorlds(
+      await readDevJson("worlds-reviewed.json"),
+      new Date()
+    );
+    const selected = selectScheduleResult(result);
+    if (selected.businessState !== "MATCHES")
+      throw new Error("DEV Worlds 已观察快照没有近期比赛，请重新审核");
+    attempts.push({ source: result.source, status: "success" });
+    writeDataDiagnostics("dev:worlds-reviewed", result.source, attempts);
+    return result;
+  }
 
   if (fixture === "offline-cache") {
     attempts.push({
@@ -2399,6 +2600,7 @@ function selectScheduleResult(data, now = new Date()) {
       matches: [],
       dateString: null,
       offset: null,
+      coverageLabel: data?.coverageLabel || null,
     };
   }
   let result;
@@ -2434,6 +2636,7 @@ function selectScheduleResult(data, now = new Date()) {
         matches: [],
         dateString: null,
         offset: null,
+        coverageLabel: data?.coverageLabel || null,
       };
     }
   }
@@ -2444,6 +2647,7 @@ function selectScheduleResult(data, now = new Date()) {
     tournament: normalizeTournament(data?.tournament) || LEGACY_TOURNAMENT,
     nextTournament: normalizeTournament(data?.nextTournament),
     selectionReason: data?.selectionReason || "LEGACY_SCHEDULE",
+    coverageLabel: data?.coverageLabel || null,
   };
 }
 
@@ -2817,7 +3021,9 @@ function addFooter(widget, source, result, dense = false) {
 
   const left = row.addText(
     IS_DEV
-      ? `DEV · v${APP.version}`
+      ? result.coverageLabel
+        ? "DEV · 部分"
+        : `DEV · v${APP.version}`
       : result.offset === 0
         ? "今日赛程"
         : `${weekdayText(result.dateString)}赛程`
@@ -2828,9 +3034,11 @@ function addFooter(widget, source, result, dense = false) {
   row.addSpacer();
 
   const right = row.addText(
-    IS_DEV
-      ? tournamentFooterText(result.tournament)
-      : `${tournamentFooterText(result.tournament)} · ${source}`
+    IS_DEV && result.coverageLabel
+      ? result.coverageLabel
+      : IS_DEV
+        ? tournamentFooterText(result.tournament)
+        : `${tournamentFooterText(result.tournament)} · ${source}`
   );
   right.font = Font.mediumSystemFont(dense ? 9 : 10);
   right.textColor = new Color(CONFIG.theme.muted);
@@ -2920,7 +3128,7 @@ function renderSmall(result) {
   widget.addSpacer(10);
 
   const date = widget.addText(
-    `${IS_DEV ? "DEV · " : ""}${displayMonthDay(result.dateString)}`
+    `${IS_DEV ? (result.coverageLabel ? "DEV·部分 " : "DEV · ") : ""}${displayMonthDay(result.dateString)}`
   );
   date.font = Font.boldSystemFont(18);
   date.textColor = new Color(CONFIG.theme.white);
@@ -3031,7 +3239,9 @@ function renderTransition(result, source) {
 }
 
 function renderError(error) {
+  const reviewedUnavailable = IS_DEV && devFixtureKey() === "worlds-reviewed";
   const widget = new ListWidget();
+  if (reviewedUnavailable) widget.url = WORLDS_2026_SOURCE.url;
   widget.setPadding(16, 16, 14, 16);
   applyBackground(widget);
 
@@ -3046,19 +3256,25 @@ function renderError(error) {
 
   top.addSpacer(12);
 
-  const title = top.addText(CONFIG.title);
+  const title = top.addText(reviewedUnavailable ? "WORLDS 2026" : CONFIG.title);
   title.font = Font.mediumSystemFont(18);
   title.textColor = new Color(CONFIG.theme.white);
 
   widget.addSpacer(18);
 
-  const heading = widget.addText("赛程获取失败");
+  const heading = widget.addText(
+    reviewedUnavailable ? "赛程暂不可用" : "赛程获取失败"
+  );
   heading.font = Font.boldSystemFont(20);
   heading.textColor = new Color(CONFIG.theme.white);
 
   widget.addSpacer(6);
 
-  const message = widget.addText(String(error?.message || error));
+  const message = widget.addText(
+    reviewedUnavailable
+      ? "审核快照不可用或已过期。点按查看官方赛程。"
+      : String(error?.message || error)
+  );
   message.font = Font.mediumSystemFont(11);
   message.textColor = new Color(CONFIG.theme.secondary);
   message.lineLimit = 6;

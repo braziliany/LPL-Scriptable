@@ -157,7 +157,12 @@ assert.doesNotMatch(
   installedBundle.scripts["LPL Schedule DEV.js"],
   /dev-local:\/\/LPL-Schedule-DEV/
 );
-assert.match(installerSource, /lpl-schedule-dev-cache\.json/);
+assert.doesNotMatch(
+  installerSource.slice(
+    installerSource.indexOf("async function installBundle()")
+  ),
+  /local\.writeString\(/
+);
 assert.doesNotMatch(installerSource, /LPL Schedule Installer/);
 assert.equal(
   currentBundle.scripts["LPL Schedule DEV.js"],
@@ -373,31 +378,27 @@ assert.equal(
 
 async function verifyRuntimeFixtures() {
   await installerContext.__devInstallerTestApi.installBundle();
-  const seededCache = JSON.parse(
-    localFiles.get("/local/lpl-schedule-dev-cache.json")
-  );
-  assert.equal(seededCache.businessState, devActive.businessState);
-  assert.deepEqual(seededCache.nextTournament, devActive.nextTournament);
+  assert.equal(localFiles.has("/local/lpl-schedule-dev-cache.json"), false);
   assert.equal(
     devMainContext.__devRuntimeTestApi.inspectCache().status,
-    "EMPTY_VALID"
+    "MISSING"
   );
   assert.match(
     devMainContext.__devRuntimeTestApi.buildDiagnosticText(
       null,
       devMainContext.__devRuntimeTestApi.inspectCache()
     ),
-    /缓存状态：EMPTY_VALID/
+    /缓存状态：MISSING/
   );
 
   devRemoteMode = "fail";
   devOfficialMode = "fail";
   devMainContext.config.runsInWidget = false;
   devMainContext.args.widgetParameter = "";
-  const seedFallback = await devMainContext.__devRuntimeTestApi.loadSchedule();
-  assert.equal(seedFallback.source, "DEV local cache");
-  assert.equal(seedFallback.matches.length, 0);
-  assert.equal(seedFallback.businessState, "TOURNAMENT_FINISHED");
+  await assert.rejects(
+    devMainContext.__devRuntimeTestApi.loadSchedule(),
+    /本地缓存：MISSING/
+  );
   const seedDiagnostics = JSON.parse(
     localFiles.get("/local/lpl-schedule-dev-data-diagnostics.json")
   );
@@ -407,10 +408,10 @@ async function verifyRuntimeFixtures() {
       ["GitHub Active", "failure"],
       ["GitHub Legacy", "failure"],
       ["官方页面", "failure"],
-      ["DEV local cache", "success"],
+      ["本地缓存", "failure"],
     ]
   );
-  assert.match(seedDiagnostics.attempts[3].message, /EMPTY_VALID/);
+  assert.match(seedDiagnostics.attempts[3].message, /MISSING/);
 
   devRemoteMode = "success";
   devOfficialMode = "success";
@@ -487,7 +488,6 @@ async function verifyRuntimeFixtures() {
     ),
     "2026 全球总决赛 · 瑞士轮"
   );
-
   const freshClone = JSON.parse(
     JSON.stringify(fixtures["stale-remote.json"].active)
   );
