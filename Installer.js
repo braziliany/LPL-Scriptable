@@ -10,7 +10,7 @@
  */
 
 const CONFIG = {
-  version: "3.1.2",
+  version: "3.1.3",
   season: "2026 LOL 赛事 SMART",
   changelogUrl:
     "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/CHANGELOG.md",

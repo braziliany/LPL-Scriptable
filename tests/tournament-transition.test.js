@@ -3,6 +3,15 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const designSystem = require("../LPL-Design-System");
+const now = new Date("2026-09-22T02:00:00Z");
+const RuntimeDate = class extends Date {
+  constructor(...args) {
+    super(...(args.length ? args : [now]));
+  }
+  static now() {
+    return now.getTime();
+  }
+};
 
 const source = fs
   .readFileSync(path.join(__dirname, "..", "LPL-Schedule.js"), "utf8")
@@ -10,7 +19,12 @@ const source = fs
     /await main\(\);\s*$/,
     "globalThis.testApi = { normalizeActivePayload, selectScheduleResult, transitionText, renderTransition, renderError };"
   );
-const context = { console, Set, importModule: () => designSystem };
+const context = {
+  console,
+  Set,
+  Date: RuntimeDate,
+  importModule: () => designSystem,
+};
 vm.runInNewContext(source, context);
 const {
   normalizeActivePayload,
@@ -19,7 +33,6 @@ const {
   renderTransition,
   renderError,
 } = context.testApi;
-const now = new Date("2026-09-22T02:00:00Z");
 const tournament = {
   id: "lpl-playoffs",
   name: "2026 LPL 第三赛段",

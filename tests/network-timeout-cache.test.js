@@ -13,9 +13,20 @@ const source = fs
   );
 const cachePath = "/documents/lpl-schedule-cache.json";
 const DAY_MS = 24 * 60 * 60 * 1000;
+const FIXED_NOW = new Date("2026-08-10T08:00:00Z");
+const RuntimeDate = class extends Date {
+  constructor(...args) {
+    super(...(args.length ? args : [FIXED_NOW]));
+  }
+  static now() {
+    return FIXED_NOW.getTime();
+  }
+};
 
 function beijingDateOffset(days) {
-  const shifted = new Date(Date.now() + 8 * 60 * 60 * 1000 + days * DAY_MS);
+  const shifted = new Date(
+    FIXED_NOW.getTime() + 8 * 60 * 60 * 1000 + days * DAY_MS
+  );
   return [
     shifted.getUTCFullYear(),
     String(shifted.getUTCMonth() + 1).padStart(2, "0"),
@@ -49,7 +60,9 @@ function match(id = "cache-match") {
 
 function cache(ageHours = 0, id = "cache-match") {
   return {
-    updatedAt: new Date(Date.now() - ageHours * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(
+      FIXED_NOW.getTime() - ageHours * 60 * 60 * 1000
+    ).toISOString(),
     source: "cached source",
     tournament: {
       id: "lpl-2026-split3-playoffs",
@@ -85,7 +98,7 @@ function emptyCache(ageHours = 0) {
 
 function remoteActive({ ageHours = 0, season = "2026" } = {}) {
   const updatedAt = new Date(
-    Date.now() - ageHours * 60 * 60 * 1000
+    FIXED_NOW.getTime() - ageHours * 60 * 60 * 1000
   ).toISOString();
   return {
     generatedAt: updatedAt,
@@ -159,6 +172,7 @@ function createRuntime({ cached, remote, official }) {
       error: console.error,
     },
     Set,
+    Date: RuntimeDate,
     config: { runsInWidget: true, widgetFamily: "medium" },
     importModule: () => designSystem,
     FileManager: { local: () => fileManager },

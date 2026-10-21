@@ -39,10 +39,20 @@ const officialPageText = [
   "NIP",
   "比赛时间以官方公布为准",
 ].join("\n");
+const fixedNow = new Date("2026-08-28T02:00:00Z");
+const RuntimeDate = class extends Date {
+  constructor(...args) {
+    super(...(args.length ? args : [fixedNow]));
+  }
+  static now() {
+    return fixedNow.getTime();
+  }
+};
 
 const context = {
   console,
   Set,
+  Date: RuntimeDate,
   importModule: () => designSystem,
   FileManager: { local: () => fileManager },
   Request: class {

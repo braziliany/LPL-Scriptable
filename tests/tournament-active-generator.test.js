@@ -23,6 +23,12 @@ const tournament = {
 const schedule = {
   tournamentId: tournament.id,
   updatedAt: "2026-10-19T16:00:00+08:00",
+  classification: "PARTIAL_OBSERVED",
+  sourceAuthorization: "VERIFIED",
+  coverageVerified: true,
+  sourceUrl: "https://lolesports.com/en-US/leagues/worlds",
+  coverageStart: "2026-10-20",
+  coverageEnd: "2026-10-20",
   matches: [
     {
       tournamentId: tournament.id,
@@ -48,6 +54,12 @@ assert.equal(active.selectedDate, "2026-10-20");
 assert.equal(active.generatedAt, "2026-10-20T02:00:00.000Z");
 assert.equal(active.sourceUpdatedAt, "2026-10-19T08:00:00.000Z");
 assert.equal(active.businessState, "MATCHES");
+assert.equal(active.classification, "PARTIAL_OBSERVED");
+assert.equal(active.sourceAuthorization, "VERIFIED");
+assert.equal(active.coverageVerified, true);
+assert.equal(active.sourceUrl, schedule.sourceUrl);
+assert.equal(active.coverageStart, schedule.coverageStart);
+assert.equal(active.coverageEnd, schedule.coverageEnd);
 
 const between = buildActive(
   new Date("2026-09-22T02:00:00.000Z"),

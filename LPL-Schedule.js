@@ -7,16 +7,17 @@
  * LOL 赛事赛程组件
  *
  * 推荐尺寸：中号 / 大号
- * 数据回退顺序：
+ * LPL 赛事数据回退顺序：
  * 1. GitHub 仓库中的 data/active.json
  * 2. GitHub 仓库中的 data/schedule.json（兼容 v3.0.0）
  * 3. LPL 官方赛事页面
  * 4. Scriptable 本地缓存
+ * Worlds 赛事窗口仅接受经验证的正式 Worlds Active 或其有效缓存。
  */
 
 const APP = {
   name: "LPL Schedule",
-  version: "3.1.2",
+  version: "3.1.3",
   repository: "https://github.com/braziliany/LPL-Scriptable",
   rawBase: "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
@@ -299,6 +300,26 @@ function parseLocalDateTime(value) {
     Number(match[5]),
     Number(match[6] || 0)
   );
+}
+
+function parseWorldsBeijingTime(value) {
+  const match = String(value || "").match(
+    /^(2026-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/
+  );
+  if (!match) return null;
+  const timestamp = Date.parse(`${match[1]}T${match[2]}+08:00`);
+  if (
+    !Number.isFinite(timestamp) ||
+    new Date(timestamp + 8 * 60 * 60 * 1000).toISOString().slice(0, 19) !==
+      `${match[1]}T${match[2]}`
+  )
+    return null;
+  return {
+    startTime: `${match[1]} ${match[2]}`,
+    dateString: match[1],
+    time: match[2].slice(0, 5),
+    timestamp,
+  };
 }
 
 function displayMonthDay(dateString) {
@@ -829,6 +850,15 @@ const WORLDS_2026_SOURCE = {
   leagueId: "98767975604431411",
   tournamentId: "115660540725177488",
 };
+const WORLDS_2026_WINDOW = {
+  start: "2026-10-15",
+  end: "2026-11-14",
+};
+
+function inWorlds2026Window(now = new Date()) {
+  const today = beijingDateString(now);
+  return today >= WORLDS_2026_WINDOW.start && today <= WORLDS_2026_WINDOW.end;
+}
 
 function hasUnresolvedParticipants(match) {
   return (
@@ -972,7 +1002,14 @@ function normalizeMatch(raw) {
     raw.dateTime ||
     "";
 
-  const date = parseLocalDateTime(startTime);
+  const worldsTime =
+    raw.tournamentId === "worlds-2026"
+      ? parseWorldsBeijingTime(startTime)
+      : null;
+  if (raw.tournamentId === "worlds-2026" && !worldsTime) return null;
+  const date = worldsTime
+    ? new Date(worldsTime.timestamp)
+    : parseLocalDateTime(startTime);
   if (!date) return null;
 
   const left = normalizeTeamName(
@@ -996,12 +1033,13 @@ function normalizeMatch(raw) {
     tournamentId: String(raw.tournamentId || ""),
     id: String(raw.id || raw.bMatchId || ""),
     gameId: String(raw.gameId || raw.GameId || ""),
-    startTime: `${formatDate(date)} ${pad2(date.getHours())}:${pad2(
-      date.getMinutes()
-    )}:00`,
-    dateString: formatDate(date),
-    timestamp: date.getTime(),
-    time: `${pad2(date.getHours())}:${pad2(date.getMinutes())}`,
+    startTime:
+      worldsTime?.startTime ||
+      `${formatDate(date)} ${pad2(date.getHours())}:${pad2(date.getMinutes())}:00`,
+    dateString: worldsTime?.dateString || formatDate(date),
+    timestamp: worldsTime?.timestamp || date.getTime(),
+    time:
+      worldsTime?.time || `${pad2(date.getHours())}:${pad2(date.getMinutes())}`,
     left,
     right,
     leftLogo: String(raw.leftLogo || ""),
@@ -1209,6 +1247,14 @@ function writeCache(matches, source, route = {}) {
           businessState: route.businessState || "MATCHES",
           selectedDate: route.selectedDate || null,
           selectionReason: route.selectionReason || "LEGACY_SCHEDULE",
+          classification: route.classification || null,
+          sourceAuthorization: route.sourceAuthorization || null,
+          coverageVerified: route.coverageVerified === true,
+          sourceUrl: route.sourceUrl || null,
+          sourceUpdatedAt: route.sourceUpdatedAt || null,
+          coverageStart: route.coverageStart || null,
+          coverageEnd: route.coverageEnd || null,
+          coverageLabel: route.coverageLabel || null,
           matches,
         },
         null,
@@ -1344,6 +1390,14 @@ function resultFromCache(payload, source, selectionReason) {
     selectedDate: payload.selectedDate || null,
     selectionReason:
       payload.selectionReason || selectionReason || "CACHE_FALLBACK",
+    classification: payload.classification || null,
+    sourceAuthorization: payload.sourceAuthorization || null,
+    coverageVerified: payload.coverageVerified === true,
+    sourceUrl: payload.sourceUrl || null,
+    sourceUpdatedAt: payload.sourceUpdatedAt || null,
+    coverageStart: payload.coverageStart || null,
+    coverageEnd: payload.coverageEnd || null,
+    coverageLabel: payload.coverageLabel || null,
   };
 }
 
@@ -1518,9 +1572,32 @@ function activePayloadFreshnessError(payload, matches, now = new Date()) {
 
 function normalizeActivePayload(payload, now = new Date()) {
   const sourceMatches = Array.isArray(payload?.matches) ? payload.matches : [];
+  const worlds = payload?.tournament?.id === "worlds-2026";
+  if (
+    worlds &&
+    sourceMatches.some(
+      (raw) =>
+        !["upcoming", "live", "finished", "postponed", "cancelled"].includes(
+          raw?.status
+        ) ||
+        !["BO1", "BO3", "BO5"].includes(raw?.matchType) ||
+        [raw.leftScore, raw.rightScore].some(
+          (score) =>
+            score !== null &&
+            score !== undefined &&
+            (!Number.isInteger(score) || score < 0)
+        ) ||
+        (raw.status === "finished" &&
+          (!Number.isInteger(raw.leftScore) ||
+            !Number.isInteger(raw.rightScore)))
+    )
+  )
+    throw new Error("Worlds 比赛状态、BO 或比分无效");
   const matches = uniqueMatches(
     sourceMatches.map(normalizeMatch).filter(Boolean)
   ).sort((a, b) => a.timestamp - b.timestamp);
+  if (worlds && matches.length !== sourceMatches.length)
+    throw new Error("Worlds 比赛缺失、无效或 ID 重复");
   const freshnessError = activePayloadFreshnessError(payload, matches, now);
   if (freshnessError) {
     throw new Error(`远程 active.json 已陈旧：${freshnessError}`);
@@ -1533,6 +1610,13 @@ function normalizeActivePayload(payload, now = new Date()) {
     businessState: normalizeBusinessState(payload.businessState, matches),
     selectedDate: payload.selectedDate || null,
     selectionReason: String(payload.selectionReason || "SMART"),
+    classification: payload.classification || null,
+    sourceAuthorization: payload.sourceAuthorization || null,
+    coverageVerified: payload.coverageVerified === true,
+    sourceUrl: payload.sourceUrl || null,
+    sourceUpdatedAt: payload.sourceUpdatedAt || null,
+    coverageStart: payload.coverageStart || null,
+    coverageEnd: payload.coverageEnd || null,
   };
 }
 
@@ -2366,8 +2450,107 @@ async function loadDevSchedule() {
   throw new Error("DEV 工作区数据、官方页面和 DEV 缓存均不可用");
 }
 
+function worldsRouteError(route, now = new Date()) {
+  if (
+    route?.tournament?.id !== "worlds-2026" ||
+    route.businessState !== "MATCHES" ||
+    !route.matches?.length
+  )
+    return "当前数据不是 Worlds 比赛";
+  if (
+    route.classification !== "PARTIAL_OBSERVED" ||
+    route.sourceAuthorization !== "VERIFIED" ||
+    route.coverageVerified !== true ||
+    route.sourceUrl !== WORLDS_2026_SOURCE.url
+  )
+    return "缺少 Worlds 授权、窗口完整性或来源标记";
+  const start = String(route.coverageStart || "");
+  const end = String(route.coverageEnd || "");
+  if (
+    !/^2026-\d{2}-\d{2}$/.test(start) ||
+    !/^2026-\d{2}-\d{2}$/.test(end) ||
+    start < WORLDS_2026_WINDOW.start ||
+    end > WORLDS_2026_WINDOW.end ||
+    start > end ||
+    route.selectedDate < start ||
+    route.selectedDate > end
+  )
+    return "Worlds 覆盖范围与比赛日不一致";
+  if (remoteTimestampFreshnessError(route.sourceUpdatedAt, now))
+    return "Worlds 来源数据已过期";
+  const ids = new Set();
+  for (const match of route.matches) {
+    if (
+      match.tournamentId !== "worlds-2026" ||
+      !match.participants ||
+      !/^[1-9]\d*$/.test(match.id) ||
+      ids.has(match.id) ||
+      match.dateString !== route.selectedDate ||
+      !["BO1", "BO3", "BO5"].includes(match.matchType) ||
+      (match.participants.left.kind === "placeholder" &&
+        match.left !== "TBD") ||
+      (match.participants.right.kind === "placeholder" && match.right !== "TBD")
+    )
+      return "Worlds 比赛身份或数据无效";
+    ids.add(match.id);
+  }
+  return null;
+}
+
+function worldsResult(route) {
+  const range = `仅 ${route.coverageStart.slice(5).replace("-", "/")}–${route.coverageEnd.slice(5).replace("-", "/")} 已观察`;
+  return {
+    ...route,
+    tournament: { ...route.tournament, shortName: "WORLDS · 部分" },
+    coverageLabel: range,
+  };
+}
+
+async function loadProductionWorldsSchedule() {
+  const attempts = [];
+  let remoteFailure = "";
+  try {
+    const route = await loadRemoteActive();
+    const reason = worldsRouteError(route);
+    if (reason) throw new Error(reason);
+    const result = { ...worldsResult(route), source: "GitHub Worlds" };
+    writeCache(result.matches, result.source, result);
+    attempts.push({ source: "GitHub Active", status: "success" });
+    writeDataDiagnostics("worlds", result.source, attempts);
+    return result;
+  } catch (error) {
+    remoteFailure = String(error?.message || error).slice(0, 160);
+    attempts.push({
+      source: "GitHub Active",
+      status: "failure",
+      message: remoteFailure,
+    });
+  }
+  const cache = inspectCache();
+  if (cache.status === "VALID") {
+    const result = resultFromCache(
+      cache.payload,
+      "本地 Worlds 缓存",
+      "CACHE_FALLBACK"
+    );
+    if (!worldsRouteError(result)) {
+      attempts.push({ source: result.source, status: "success" });
+      writeDataDiagnostics("worlds", result.source, attempts);
+      return worldsResult(result);
+    }
+  }
+  attempts.push({
+    source: "本地缓存",
+    status: "failure",
+    message: `cache ${cache.status}: ${cache.reason}`,
+  });
+  writeDataDiagnostics("worlds", "无", attempts);
+  throw new Error(`Worlds 赛程暂不可用：${remoteFailure}`);
+}
+
 async function loadSchedule() {
   if (IS_DEV && devFixtureKey()) return loadDevSchedule();
+  if (!IS_DEV && inWorlds2026Window()) return loadProductionWorldsSchedule();
   const mode = String(CONFIG.dataMode).toLowerCase();
   const cacheState = inspectCache();
   const cached = cacheState.payload;
@@ -2498,7 +2681,7 @@ async function loadSchedule() {
     }
   }
 
-  if (guaranteedCache) {
+  if (guaranteedCache && cached.tournament?.id !== "worlds-2026") {
     const source = IS_DEV ? "DEV local cache" : "本地缓存";
     attempts.push({
       source,
@@ -3012,6 +3195,27 @@ function addEmptyRow(widget) {
   text.textColor = new Color(CONFIG.theme.secondary);
 }
 
+function worldsDisplayResult(result, family, now = new Date()) {
+  if (result.tournament?.id !== "worlds-2026") return result;
+  const limit = family === "large" ? 4 : family === "small" ? 1 : 2;
+  const matches = result.matches;
+  const focus = matches.findIndex((match) =>
+    ["upcoming", "live"].includes(effectiveMatchStatus(match, now))
+  );
+  const start =
+    focus < 0
+      ? Math.max(0, matches.length - limit)
+      : Math.min(focus, Math.max(0, matches.length - limit));
+  return { ...result, matches: matches.slice(start, start + limit) };
+}
+
+function widgetScheduleUrl(result) {
+  if (result.tournament?.id === "worlds-2026") return WORLDS_2026_SOURCE.url;
+  return CONFIG.livePlatform === "bilibili"
+    ? CONFIG.bilibiliLiveUrl
+    : CONFIG.schedulePageUrl;
+}
+
 function addFooter(widget, source, result, dense = false) {
   widget.addSpacer();
 
@@ -3024,9 +3228,11 @@ function addFooter(widget, source, result, dense = false) {
       ? result.coverageLabel
         ? "DEV · 部分"
         : `DEV · v${APP.version}`
-      : result.offset === 0
-        ? "今日赛程"
-        : `${weekdayText(result.dateString)}赛程`
+      : result.coverageLabel
+        ? "WORLDS · 部分"
+        : result.offset === 0
+          ? "今日赛程"
+          : `${weekdayText(result.dateString)}赛程`
   );
   left.font = Font.mediumSystemFont(dense ? 9 : 10);
   left.textColor = new Color(CONFIG.theme.muted);
@@ -3034,7 +3240,7 @@ function addFooter(widget, source, result, dense = false) {
   row.addSpacer();
 
   const right = row.addText(
-    IS_DEV && result.coverageLabel
+    result.coverageLabel
       ? result.coverageLabel
       : IS_DEV
         ? tournamentFooterText(result.tournament)
@@ -3047,17 +3253,14 @@ function addFooter(widget, source, result, dense = false) {
 function renderMedium(result, source) {
   const widget = new ListWidget();
   const now = new Date();
-  const layout = mediumLayoutProfile(result.matches);
+  const visible = worldsDisplayResult(result, "medium", now).matches;
+  const layout = mediumLayoutProfile(visible);
   widget.setPadding(...layout.padding);
-  widget.url =
-    CONFIG.livePlatform === "bilibili"
-      ? CONFIG.bilibiliLiveUrl
-      : CONFIG.schedulePageUrl;
+  widget.url = widgetScheduleUrl(result);
   configureRefresh(widget, result, now);
   applyBackground(widget);
 
   addHeader(widget, result, layout.dense);
-  const visible = result.matches;
   const compact = layout.compact;
   widget.addSpacer(layout.headerSpacer);
 
@@ -3081,17 +3284,14 @@ function renderLarge(result, source) {
   const widget = new ListWidget();
   const now = new Date();
   widget.setPadding(16, 17, 14, 17);
-  widget.url =
-    CONFIG.livePlatform === "bilibili"
-      ? CONFIG.bilibiliLiveUrl
-      : CONFIG.schedulePageUrl;
+  widget.url = widgetScheduleUrl(result);
   configureRefresh(widget, result, now);
   applyBackground(widget);
 
   addHeader(widget, result);
   widget.addSpacer(13);
 
-  const visible = result.matches;
+  const visible = worldsDisplayResult(result, "large", now).matches;
   visible.forEach((match, index) => {
     addMatchRow(widget, match, index, true, now);
 
@@ -3109,13 +3309,10 @@ function renderLarge(result, source) {
 function renderSmall(result) {
   const widget = new ListWidget();
   const now = new Date();
-  const first = result.matches[0];
+  const first = worldsDisplayResult(result, "small", now).matches[0];
   const visual = matchVisualStyle(first, 0, now);
   widget.setPadding(14, 14, 13, 14);
-  widget.url =
-    CONFIG.livePlatform === "bilibili"
-      ? CONFIG.bilibiliLiveUrl
-      : CONFIG.schedulePageUrl;
+  widget.url = widgetScheduleUrl(result);
   configureRefresh(widget, result, now);
   applyBackground(widget);
 
@@ -3131,6 +3328,12 @@ function renderSmall(result) {
     `${IS_DEV ? (result.coverageLabel ? "DEV·部分 " : "DEV · ") : ""}${displayMonthDay(result.dateString)}`
   );
   date.font = Font.boldSystemFont(18);
+  if (!IS_DEV && result.tournament?.id === "worlds-2026") {
+    date.text = `WORLDS·部分 ${result.dateString.slice(5).replace("-", "/")}`;
+    date.font = Font.boldSystemFont(13);
+    date.lineLimit = 1;
+    date.minimumScaleFactor = 0.8;
+  }
   date.textColor = new Color(CONFIG.theme.white);
   date.url = settingsUrl();
 
@@ -3239,7 +3442,9 @@ function renderTransition(result, source) {
 }
 
 function renderError(error) {
-  const reviewedUnavailable = IS_DEV && devFixtureKey() === "worlds-reviewed";
+  const reviewedUnavailable =
+    (IS_DEV && devFixtureKey() === "worlds-reviewed") ||
+    (!IS_DEV && inWorlds2026Window());
   const widget = new ListWidget();
   if (reviewedUnavailable) widget.url = WORLDS_2026_SOURCE.url;
   widget.setPadding(16, 16, 14, 16);
@@ -3272,7 +3477,9 @@ function renderError(error) {
 
   const message = widget.addText(
     reviewedUnavailable
-      ? "审核快照不可用或已过期。点按查看官方赛程。"
+      ? IS_DEV
+        ? "审核快照不可用或已过期。点按查看官方赛程。"
+        : "Worlds 数据未获验证或已过期。点按查看官方赛程。"
       : String(error?.message || error)
   );
   message.font = Font.mediumSystemFont(11);

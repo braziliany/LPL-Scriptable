@@ -14,6 +14,12 @@
     "source": {
       "oneOf": [{ "type": "string" }, { "type": "null" }]
     },
+    "classification": { "const": "PARTIAL_OBSERVED" },
+    "sourceAuthorization": { "const": "VERIFIED" },
+    "coverageVerified": { "const": true },
+    "sourceUrl": { "const": "https://lolesports.com/en-US/leagues/worlds" },
+    "coverageStart": { "type": "string", "pattern": "^2026-\\d{2}-\\d{2}$" },
+    "coverageEnd": { "type": "string", "pattern": "^2026-\\d{2}-\\d{2}$" },
     "matches": {
       "type": "array",
       "items": {

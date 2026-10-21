@@ -29,7 +29,9 @@
     "right": { "type": "string", "minLength": 1 },
     "leftLogo": { "type": "string" },
     "rightLogo": { "type": "string" },
-    "status": { "enum": ["upcoming", "live", "finished"] },
+    "status": {
+      "enum": ["upcoming", "live", "finished", "postponed", "cancelled"]
+    },
     "matchType": { "type": "string", "minLength": 1 },
     "stage": { "type": "string" },
     "phase": { "type": "string" },
@@ -47,9 +49,57 @@
       "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }]
     },
     "liveUrl": { "type": "string", "pattern": "^(?:https?://.*)?$" },
-    "detailUrl": { "type": "string", "pattern": "^(?:https?://.*)?$" }
+    "detailUrl": { "type": "string", "pattern": "^(?:https?://.*)?$" },
+    "participants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "source", "left", "right"],
+      "properties": {
+        "version": { "const": 1 },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "provider",
+            "url",
+            "leagueId",
+            "tournamentId",
+            "matchId"
+          ],
+          "properties": {
+            "provider": { "const": "riot-lolesports" },
+            "url": { "const": "https://lolesports.com/en-US/leagues/worlds" },
+            "leagueId": { "const": "98767975604431411" },
+            "tournamentId": { "const": "115660540725177488" },
+            "matchId": { "type": "string", "pattern": "^[1-9]\\d*$" }
+          }
+        },
+        "left": { "$ref": "#/$defs/worldsParticipant" },
+        "right": { "$ref": "#/$defs/worldsParticipant" }
+      }
+    }
   },
   "$defs": {
+    "worldsParticipant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "enum": ["team", "placeholder"] },
+        "id": { "type": "string", "pattern": "^\\d+$" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "placeholder" } } },
+          "then": { "properties": { "id": { "const": "0" } } },
+          "else": {
+            "properties": {
+              "id": { "type": "string", "pattern": "^[1-9]\\d*$" }
+            }
+          }
+        }
+      ]
+    },
     "timestamp": {
       "type": "string",
       "pattern": "^20\\d{2}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?(?:Z|[+-]\\d{2}:\\d{2})$"

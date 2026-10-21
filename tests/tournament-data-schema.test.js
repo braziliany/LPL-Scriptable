@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const Ajv2020 = require("ajv/dist/2020");
+const { buildActive } = require("../scripts/generate-active");
 
 const root = path.join(__dirname, "..");
 const read = (file) =>
@@ -54,6 +55,58 @@ assert.equal(
 assert.equal(
   active.matches.every((match) => match.tournamentId),
   true
+);
+
+const worlds = tournaments.find(
+  (tournament) => tournament.id === "worlds-2026"
+);
+const officialUrl = "https://lolesports.com/en-US/leagues/worlds";
+const worldMatch = {
+  id: "12345678901",
+  tournamentId: "worlds-2026",
+  startTime: "2026-10-23 02:00:00",
+  left: "TBD",
+  right: "TBD",
+  status: "upcoming",
+  matchType: "BO5",
+  stage: "Knockout",
+  leftScore: null,
+  rightScore: null,
+  liveUrl: "",
+  detailUrl: officialUrl,
+  participants: {
+    version: 1,
+    source: {
+      provider: "riot-lolesports",
+      url: officialUrl,
+      leagueId: "98767975604431411",
+      tournamentId: "115660540725177488",
+      matchId: "12345678901",
+    },
+    left: { kind: "placeholder", id: "0" },
+    right: { kind: "placeholder", id: "0" },
+  },
+};
+const worldSchedule = {
+  tournamentId: "worlds-2026",
+  updatedAt: "2026-10-22T08:00:00Z",
+  source: officialUrl,
+  sourceUrl: officialUrl,
+  classification: "PARTIAL_OBSERVED",
+  sourceAuthorization: "VERIFIED",
+  coverageVerified: true,
+  coverageStart: "2026-10-23",
+  coverageEnd: "2026-10-23",
+  matches: [worldMatch],
+};
+assertValid(scheduleSchema, worldSchedule, "synthetic Worlds schedule");
+const worldActive = buildActive(new Date("2026-10-22T08:00:00Z"), [worlds], {
+  "worlds-2026": worldSchedule,
+});
+assertValid(activeSchema, worldActive, "synthetic Worlds active");
+assert.equal(
+  validateActive({ ...worldActive, sourceAuthorization: "NOT_VERIFIED" }),
+  false
 );
 
 console.log("tournament data schema: ok");

@@ -16,6 +16,7 @@ const tests = [
   "tests/network-timeout-cache.test.js",
   "tests/worlds-reviewed-dev.test.js",
   "tests/worlds-reviewed-update.test.js",
+  "tests/worlds-production-client.test.js",
   "tests/timer-units.test.js",
   "tests/release-regression.test.js",
   "tests/tournament-router.test.js",

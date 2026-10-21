@@ -42,6 +42,17 @@ function buildActive(now, tournaments, schedules) {
     selectedDate: result.selectedDate,
     selectionReason: result.selectionReason,
     matches: result.matches,
+    ...(result.activeTournament?.id === "worlds-2026" &&
+    result.businessState === "MATCHES"
+      ? {
+          classification: selectedSchedule?.classification || null,
+          sourceAuthorization: selectedSchedule?.sourceAuthorization || null,
+          coverageVerified: selectedSchedule?.coverageVerified === true,
+          sourceUrl: selectedSchedule?.sourceUrl || null,
+          coverageStart: selectedSchedule?.coverageStart || null,
+          coverageEnd: selectedSchedule?.coverageEnd || null,
+        }
+      : {}),
   };
 }
 
