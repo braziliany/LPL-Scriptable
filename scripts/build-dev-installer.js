@@ -233,6 +233,24 @@ function buildDevBootstrap(
     `  designSystemModule: ${JSON.stringify(DEV_DESIGN_SYSTEM_NAME)},`,
     `  dataDirectory: ${JSON.stringify(DEV_DATA_DIRECTORY)},`,
     "};",
+    ...(lockReviewed
+      ? [
+          "function devReviewedDisplayResult(result, family, now = new Date()) {",
+          '  const limit = family === "large" ? 4 : family === "small" ? 1 : 2;',
+          "  const matches = result.matches;",
+          "  const focus = matches.findIndex((match) =>",
+          '    ["upcoming", "live"].includes(effectiveMatchStatus(match, now))',
+          "  );",
+          "  const start = focus < 0",
+          "    ? Math.max(0, matches.length - limit)",
+          "    : Math.min(focus, Math.max(0, matches.length - limit));",
+          "  return { ...result, matches: matches.slice(start, start + limit) };",
+          "}",
+          "function devReviewedSmallHeading(dateString) {",
+          '  return `WORLDS·部分 ${dateString.slice(5).replace("-", "/")}`;',
+          "}",
+        ]
+      : []),
     "",
     "// MAIN SOURCE",
   ].join("\n");
@@ -249,13 +267,54 @@ function buildDevMainSource(
     /function devFixtureKey\(\) \{\r?\n\s*if \(!IS_DEV\) return null;/;
   if (lockReviewed && !fixtureGuard.test(source))
     throw new Error("无法锁定 DEV Worlds 审核通道");
-  const mainSource = lockReviewed
+  let mainSource = lockReviewed
     ? source.replace(
         fixtureGuard,
         (text) =>
           `${text}\n  if (DEV_RUNTIME.lockedFixture === "worlds-reviewed") return "worlds-reviewed";`
       )
     : source;
+  if (lockReviewed) {
+    const replaceRequired = (input, marker, replacement) => {
+      if (!input.includes(marker))
+        throw new Error(`无法生成 DEV Worlds 显示限制：${marker}`);
+      return input.replace(marker, replacement);
+    };
+    const widgetStart = mainSource.indexOf("async function buildWidget() {");
+    const widgetEnd = mainSource.indexOf(
+      "function shouldOpenSettings(",
+      widgetStart
+    );
+    if (widgetStart < 0 || widgetEnd < 0)
+      throw new Error("无法定位 DEV Worlds 组件渲染入口");
+    let widgetSource = mainSource.slice(widgetStart, widgetEnd);
+    widgetSource = replaceRequired(
+      widgetSource,
+      "  await prepareMatchLogos(result.matches);",
+      "  const displayResult = devReviewedDisplayResult(result, config.widgetFamily);\n  await prepareMatchLogos(displayResult.matches);"
+    );
+    for (const renderer of ["Small", "Medium", "Large"]) {
+      widgetSource = replaceRequired(
+        widgetSource,
+        `render${renderer}(result`,
+        `render${renderer}(displayResult`
+      );
+    }
+    mainSource =
+      mainSource.slice(0, widgetStart) +
+      widgetSource +
+      mainSource.slice(widgetEnd);
+    mainSource = replaceRequired(
+      mainSource,
+      '`${IS_DEV ? (result.coverageLabel ? "DEV·部分 " : "DEV · ") : ""}${displayMonthDay(result.dateString)}`',
+      "devReviewedSmallHeading(result.dateString)"
+    );
+    mainSource = replaceRequired(
+      mainSource,
+      "  date.font = Font.boldSystemFont(18);",
+      "  date.font = Font.boldSystemFont(13);\n  date.lineLimit = 1;\n  date.minimumScaleFactor = 0.8;"
+    );
+  }
   return mainSource.replace(
     marker,
     `${marker}\n\n${buildDevBootstrap(undefined, fixture, lockReviewed)}`

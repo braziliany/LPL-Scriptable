@@ -222,6 +222,66 @@ vm.runInNewContext(
   reviewedOverrideContext
 );
 assert.equal(reviewedOverrideContext.__packagedFixture, "worlds-reviewed");
+const displayContext = {
+  args: { queryParameters: {}, widgetParameter: "dev:worlds-reviewed" },
+  importModule: () => designSystem,
+  console,
+};
+vm.runInNewContext(
+  bundle.scripts["LPL Schedule DEV.js"].replace(
+    /await main\(\);\s*$/,
+    "globalThis.__reviewedDisplay = { devReviewedDisplayResult, devReviewedSmallHeading };"
+  ),
+  displayContext
+);
+const displayMatches = Array.from({ length: 8 }, (_, index) => ({ id: index }));
+const displayResult = { matches: displayMatches };
+assert.equal(
+  displayContext.__reviewedDisplay.devReviewedDisplayResult(
+    displayResult,
+    "medium"
+  ).matches.length,
+  2
+);
+assert.equal(
+  displayContext.__reviewedDisplay.devReviewedDisplayResult(
+    displayResult,
+    "large"
+  ).matches.length,
+  4
+);
+assert.equal(displayResult.matches.length, 8);
+const changingResult = {
+  matches: displayMatches.map((match, index) => ({
+    ...match,
+    status: index < 4 ? "finished" : "upcoming",
+    matchType: "BO1",
+    timestamp: new Date(`2026-10-24T0${index}:00:00Z`).getTime(),
+  })),
+};
+assert.deepEqual(
+  Array.from(
+    displayContext.__reviewedDisplay.devReviewedDisplayResult(
+      changingResult,
+      "large",
+      new Date("2026-10-24T04:00:00Z")
+    ).matches,
+    (match) => match.id
+  ),
+  [4, 5, 6, 7]
+);
+assert.equal(
+  displayContext.__reviewedDisplay.devReviewedSmallHeading("2026-10-24"),
+  "WORLDS·部分 10/24"
+);
+assert.match(
+  bundle.scripts["LPL Schedule DEV.js"],
+  /const displayResult = devReviewedDisplayResult\(result, config.widgetFamily\)/
+);
+assert.match(
+  bundle.scripts["LPL Schedule DEV.js"],
+  /renderMedium\(displayResult, data.source\)/
+);
 assert.equal(
   JSON.parse(bundle.dataFiles["worlds-reviewed.json"]).matches.length,
   3
