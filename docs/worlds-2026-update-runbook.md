@@ -1,6 +1,6 @@
 # Worlds 2026 私有 DEV 赛程维护
 
-核对日期：2026-10-18，北京时间。此流程只生成 `LPL Schedule DEV` 的**本地人工审核包**。不请求 Riot 接口，不写正式 `active.json`、`schedule.json`、`Installer.js`、GitHub 工作流或公开 Raw。`F:\共享文件夹\Worlds-DEV-Updates` 是交给手机的私有文件目录，不是生产发布位置。
+流程更新：2026-10-22，北京时间；来源条款核对：2026-10-18。此流程只生成 `LPL Schedule DEV` 的**本地人工审核包**。不请求 Riot 接口，不写正式 `active.json`、`schedule.json`、`Installer.js`、GitHub 工作流或公开 Raw。`F:\共享文件夹\Worlds-DEV-Updates` 是交给手机的私有文件目录，不是生产发布位置。
 
 该维护命令已选择性纳入 v3.1.2 代码；正式版本号、正式 Installer 和生产赛程未升级。私有审核快照和对应安装包只保存在本机，不提交到仓库。用户已将 Compact 布局的真机验收确认为稳定基线；只更新同一客户端的审核数据时，执行文件哈希、安装包内快照一致性及桌面读取验证，不重复要求 iPhone 布局验收。客户端代码或布局再变更时，应单独验证相应变化。
 
