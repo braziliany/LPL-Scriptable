@@ -1,21 +1,7 @@
 {
-  "generatedAt": "2026-10-14T10:27:41.276Z",
-  "sourceUpdatedAt": "2026-10-14T08:55:05.000Z",
+  "generatedAt": "2026-10-21T17:03:37.827Z",
+  "sourceUpdatedAt": "2026-10-15T07:00:00.000Z",
   "tournament": {
-    "id": "lpl-2026-regional-finals",
-    "name": "2026 LPL 全球总决赛资格赛",
-    "shortName": "LPL QUALIFIER",
-    "season": "2026",
-    "region": "CN",
-    "stage": "区域资格赛",
-    "startDate": "2026-09-17",
-    "endDate": "2026-09-19",
-    "priority": 80,
-    "enabled": true,
-    "schedulePath": "data/schedules/lpl-2026-regional-finals.json",
-    "dataSource": "lpl"
-  },
-  "nextTournament": {
     "id": "worlds-2026",
     "name": "2026 英雄联盟全球总决赛",
     "shortName": "WORLDS 2026",
@@ -29,8 +15,9 @@
     "schedulePath": "data/schedules/worlds-2026.json",
     "dataSource": "manual"
   },
-  "businessState": "TOURNAMENT_FINISHED",
+  "nextTournament": null,
+  "businessState": "NO_UPCOMING",
   "selectedDate": null,
-  "selectionReason": "SMART_TOURNAMENT_FINISHED",
+  "selectionReason": "SMART_NO_UPCOMING_MATCHES",
   "matches": []
 }
