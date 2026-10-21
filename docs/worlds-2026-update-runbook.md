@@ -2,7 +2,7 @@
 
 核对日期：2026-10-18，北京时间。此流程只生成 `LPL Schedule DEV` 的**本地人工审核包**。不请求 Riot 接口，不写正式 `active.json`、`schedule.json`、`Installer.js`、GitHub 工作流或公开 Raw。`F:\共享文件夹\Worlds-DEV-Updates` 是交给手机的私有文件目录，不是生产发布位置。
 
-该维护命令已选择性纳入本地 `main` 的 v3.1.2 代码；正式版本号、正式 Installer 和生产赛程未升级。私有审核快照和对应安装包只保存在本机，不提交到仓库。每次从 `main` 新构建的安装包均须独立验收，不能沿用旧包的真机结果。
+该维护命令已选择性纳入 v3.1.2 代码；正式版本号、正式 Installer 和生产赛程未升级。私有审核快照和对应安装包只保存在本机，不提交到仓库。用户已将 Compact 布局的真机验收确认为稳定基线；只更新同一客户端的审核数据时，执行文件哈希、安装包内快照一致性及桌面读取验证，不重复要求 iPhone 布局验收。客户端代码或布局再变更时，应单独验证相应变化。
 
 ## 证据边界
 
@@ -33,7 +33,7 @@
    Get-FileHash -Algorithm SHA256 -LiteralPath (Get-Content -LiteralPath "$store\current.json" -Raw | ConvertFrom-Json).current.installerPath
    ```
 
-5. 仅把 `current.json` 指向的 `Installer-Dev-Worlds-<版本>.js` 从 `F:\共享文件夹\Worlds-DEV-Updates` 安装到 iPhone。组件选择 `LPL Schedule DEV`，参数留空或设 `dev:worlds-reviewed`。新包不会远程自动更新，必须重新安装才能换版。中、大组件页脚显示“部分”、已观察范围和观察更新日；小组件显示“DEV·部分”和比赛日。每次新包的 iPhone 显示必须单独验收，桌面验证不算真机结果。
+5. 仅把 `current.json` 指向的 `Installer-Dev-Worlds-<版本>.js` 从 `F:\共享文件夹\Worlds-DEV-Updates` 安装到 iPhone。组件选择 `LPL Schedule DEV`，参数留空或设 `dev:worlds-reviewed`。新包不会远程自动更新，必须重新安装才能换版。Compact 布局在小、中、大组件分别显示最多 1、2、4 场，随已完赛状态向后显示；中、大组件页脚显示“部分”、已观察范围和观察更新日，小组件显示“WORLDS·部分”和比赛日。数据更新须核对 `verify`、SHA-256 和桌面读取；不要把这些检查写成一次新的 iPhone 实测。
 
 已有的审核文件可用 `prepare --reviewed <文件> --previous <旧文件> --out <目录>` 导入，不改写原采集时刻；这是迁移已有证据的专用入口，不能用来刷新过期文件。
 
