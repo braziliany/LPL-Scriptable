@@ -214,6 +214,40 @@ assert.equal(
   3
 );
 assert.equal(buildBundle().dataFiles["worlds-reviewed.json"], undefined);
+const safeBundle = buildBundle(undefined, null, true);
+assert.equal(safeBundle.mode, "WORLDS_SAFE");
+assert.match(installerSource(safeBundle), /不显示未经验证的比赛/);
+assert.deepEqual(Object.keys(safeBundle.dataFiles), ["worlds-reviewed.json"]);
+assert.equal(
+  JSON.parse(safeBundle.dataFiles["worlds-reviewed.json"]).classification,
+  "UNAVAILABLE"
+);
+const safeContext = {
+  args: { queryParameters: {}, widgetParameter: "" },
+  importModule: () => designSystem,
+  console,
+};
+vm.runInNewContext(
+  safeBundle.scripts["LPL Schedule DEV.js"].replace(
+    /await main\(\);\s*$/,
+    "globalThis.__safeFixture = devFixtureKey();"
+  ),
+  safeContext
+);
+assert.equal(safeContext.__safeFixture, "worlds-reviewed");
+const overriddenSafeContext = {
+  args: { queryParameters: {}, widgetParameter: "dev:worlds" },
+  importModule: () => designSystem,
+  console,
+};
+vm.runInNewContext(
+  safeBundle.scripts["LPL Schedule DEV.js"].replace(
+    /await main\(\);\s*$/,
+    "globalThis.__safeFixture = devFixtureKey();"
+  ),
+  overriddenSafeContext
+);
+assert.equal(overriddenSafeContext.__safeFixture, "worlds-reviewed");
 
 // Exercise the generated Installer path and the installed DEV script together.
 const cloudFiles = new Map();
@@ -295,6 +329,56 @@ class RuntimeDate extends Date {
   runtimeNow = new Date("2026-10-16T10:00:00Z");
   cloudFiles.set(expectedPath, "{broken-json");
   await assert.rejects(runtimeContext.__runtime.loadSchedule(), /JSON/);
+
+  const safeInstallerContext = { FileManager };
+  vm.runInNewContext(
+    installerSource(safeBundle).replace(
+      /await main\(\);\s*$/,
+      "globalThis.__installSafe = installBundle;"
+    ),
+    safeInstallerContext
+  );
+  await safeInstallerContext.__installSafe();
+  assert.equal(
+    JSON.parse(cloudFiles.get(expectedPath)).classification,
+    "UNAVAILABLE"
+  );
+  runtimeNow = new Date("2026-10-24T02:00:00Z");
+  const safeRuntimeContext = {
+    FileManager,
+    Date: RuntimeDate,
+    args: { queryParameters: {}, widgetParameter: "" },
+    config: { runsInWidget: true, widgetFamily: "medium" },
+    importModule: () => designSystem,
+    Request: class {
+      constructor() {
+        throw new Error("Worlds-safe DEV must not read LPL network sources");
+      }
+    },
+    WebView: class {
+      constructor() {
+        throw new Error("Worlds-safe DEV must not parse the LPL page");
+      }
+    },
+    console,
+  };
+  vm.runInNewContext(
+    cloudFiles
+      .get("/icloud/LPL Schedule DEV.js")
+      .replace(
+        /await main\(\);\s*$/,
+        "globalThis.__safeRuntime = { devFixtureKey, loadSchedule };"
+      ),
+    safeRuntimeContext
+  );
+  assert.equal(
+    safeRuntimeContext.__safeRuntime.devFixtureKey(),
+    "worlds-reviewed"
+  );
+  await assert.rejects(
+    safeRuntimeContext.__safeRuntime.loadSchedule(),
+    /部分已观察赛程/
+  );
   console.log("worlds-reviewed-dev: ok");
 })().catch((error) => {
   console.error(error);
