@@ -209,11 +209,118 @@ vm.runInNewContext(
   packagedContext
 );
 assert.equal(packagedContext.__packagedFixture, "worlds-reviewed");
+const reviewedOverrideContext = {
+  args: { queryParameters: {}, widgetParameter: "dev:lpl-playoffs" },
+  importModule: () => designSystem,
+  console,
+};
+vm.runInNewContext(
+  bundle.scripts["LPL Schedule DEV.js"].replace(
+    /await main\(\);\s*$/,
+    "globalThis.__packagedFixture = devFixtureKey();"
+  ),
+  reviewedOverrideContext
+);
+assert.equal(reviewedOverrideContext.__packagedFixture, "worlds-reviewed");
+const displayContext = {
+  args: { queryParameters: {}, widgetParameter: "dev:worlds-reviewed" },
+  importModule: () => designSystem,
+  console,
+};
+vm.runInNewContext(
+  bundle.scripts["LPL Schedule DEV.js"].replace(
+    /await main\(\);\s*$/,
+    "globalThis.__reviewedDisplay = { devReviewedDisplayResult, devReviewedSmallHeading };"
+  ),
+  displayContext
+);
+const displayMatches = Array.from({ length: 8 }, (_, index) => ({ id: index }));
+const displayResult = { matches: displayMatches };
+assert.equal(
+  displayContext.__reviewedDisplay.devReviewedDisplayResult(
+    displayResult,
+    "medium"
+  ).matches.length,
+  2
+);
+assert.equal(
+  displayContext.__reviewedDisplay.devReviewedDisplayResult(
+    displayResult,
+    "large"
+  ).matches.length,
+  4
+);
+assert.equal(displayResult.matches.length, 8);
+const changingResult = {
+  matches: displayMatches.map((match, index) => ({
+    ...match,
+    status: index < 4 ? "finished" : "upcoming",
+    matchType: "BO1",
+    timestamp: new Date(`2026-10-24T0${index}:00:00Z`).getTime(),
+  })),
+};
+assert.deepEqual(
+  Array.from(
+    displayContext.__reviewedDisplay.devReviewedDisplayResult(
+      changingResult,
+      "large",
+      new Date("2026-10-24T04:00:00Z")
+    ).matches,
+    (match) => match.id
+  ),
+  [4, 5, 6, 7]
+);
+assert.equal(
+  displayContext.__reviewedDisplay.devReviewedSmallHeading("2026-10-24"),
+  "WORLDS·部分 10/24"
+);
+assert.match(
+  bundle.scripts["LPL Schedule DEV.js"],
+  /const displayResult = devReviewedDisplayResult\(result, config.widgetFamily\)/
+);
+assert.match(
+  bundle.scripts["LPL Schedule DEV.js"],
+  /renderMedium\(displayResult, data.source\)/
+);
 assert.equal(
   JSON.parse(bundle.dataFiles["worlds-reviewed.json"]).matches.length,
   3
 );
 assert.equal(buildBundle().dataFiles["worlds-reviewed.json"], undefined);
+const safeBundle = buildBundle(undefined, null, true);
+assert.equal(safeBundle.mode, "WORLDS_SAFE");
+assert.match(installerSource(safeBundle), /不显示未经验证的比赛/);
+assert.deepEqual(Object.keys(safeBundle.dataFiles), ["worlds-reviewed.json"]);
+assert.equal(
+  JSON.parse(safeBundle.dataFiles["worlds-reviewed.json"]).classification,
+  "UNAVAILABLE"
+);
+const safeContext = {
+  args: { queryParameters: {}, widgetParameter: "" },
+  importModule: () => designSystem,
+  console,
+};
+vm.runInNewContext(
+  safeBundle.scripts["LPL Schedule DEV.js"].replace(
+    /await main\(\);\s*$/,
+    "globalThis.__safeFixture = devFixtureKey();"
+  ),
+  safeContext
+);
+assert.equal(safeContext.__safeFixture, "worlds-reviewed");
+const overriddenSafeContext = {
+  args: { queryParameters: {}, widgetParameter: "dev:worlds" },
+  importModule: () => designSystem,
+  console,
+};
+vm.runInNewContext(
+  safeBundle.scripts["LPL Schedule DEV.js"].replace(
+    /await main\(\);\s*$/,
+    "globalThis.__safeFixture = devFixtureKey();"
+  ),
+  overriddenSafeContext
+);
+assert.equal(overriddenSafeContext.__safeFixture, "worlds-reviewed");
 
 // Exercise the generated Installer path and the installed DEV script together.
 const cloudFiles = new Map();
@@ -295,6 +402,56 @@ class RuntimeDate extends Date {
   runtimeNow = new Date("2026-10-16T10:00:00Z");
   cloudFiles.set(expectedPath, "{broken-json");
   await assert.rejects(runtimeContext.__runtime.loadSchedule(), /JSON/);
+
+  const safeInstallerContext = { FileManager };
+  vm.runInNewContext(
+    installerSource(safeBundle).replace(
+      /await main\(\);\s*$/,
+      "globalThis.__installSafe = installBundle;"
+    ),
+    safeInstallerContext
+  );
+  await safeInstallerContext.__installSafe();
+  assert.equal(
+    JSON.parse(cloudFiles.get(expectedPath)).classification,
+    "UNAVAILABLE"
+  );
+  runtimeNow = new Date("2026-10-24T02:00:00Z");
+  const safeRuntimeContext = {
+    FileManager,
+    Date: RuntimeDate,
+    args: { queryParameters: {}, widgetParameter: "" },
+    config: { runsInWidget: true, widgetFamily: "medium" },
+    importModule: () => designSystem,
+    Request: class {
+      constructor() {
+        throw new Error("Worlds-safe DEV must not read LPL network sources");
+      }
+    },
+    WebView: class {
+      constructor() {
+        throw new Error("Worlds-safe DEV must not parse the LPL page");
+      }
+    },
+    console,
+  };
+  vm.runInNewContext(
+    cloudFiles
+      .get("/icloud/LPL Schedule DEV.js")
+      .replace(
+        /await main\(\);\s*$/,
+        "globalThis.__safeRuntime = { devFixtureKey, loadSchedule };"
+      ),
+    safeRuntimeContext
+  );
+  assert.equal(
+    safeRuntimeContext.__safeRuntime.devFixtureKey(),
+    "worlds-reviewed"
+  );
+  await assert.rejects(
+    safeRuntimeContext.__safeRuntime.loadSchedule(),
+    /部分已观察赛程/
+  );
   console.log("worlds-reviewed-dev: ok");
 })().catch((error) => {
   console.error(error);
