@@ -209,6 +209,19 @@ vm.runInNewContext(
   packagedContext
 );
 assert.equal(packagedContext.__packagedFixture, "worlds-reviewed");
+const reviewedOverrideContext = {
+  args: { queryParameters: {}, widgetParameter: "dev:lpl-playoffs" },
+  importModule: () => designSystem,
+  console,
+};
+vm.runInNewContext(
+  bundle.scripts["LPL Schedule DEV.js"].replace(
+    /await main\(\);\s*$/,
+    "globalThis.__packagedFixture = devFixtureKey();"
+  ),
+  reviewedOverrideContext
+);
+assert.equal(reviewedOverrideContext.__packagedFixture, "worlds-reviewed");
 assert.equal(
   JSON.parse(bundle.dataFiles["worlds-reviewed.json"]).matches.length,
   3

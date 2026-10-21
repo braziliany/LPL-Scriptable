@@ -303,7 +303,7 @@ function buildBundle(
       [`${DEV_SCRIPT_NAME}.js`]: buildDevMainSource(
         undefined,
         reviewedSchedule || worldsSafe ? "worlds-reviewed" : "",
-        worldsSafe
+        Boolean(reviewedSchedule || worldsSafe)
       ),
       [`${DEV_DESIGN_SYSTEM_NAME}.js`]: readText("LPL-Design-System.js"),
     },
