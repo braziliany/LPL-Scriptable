@@ -8,7 +8,7 @@ const source = fs
   .readFileSync(path.join(root, "LPL-Schedule.js"), "utf8")
   .replace(
     "await main();",
-    "globalThis.__test = { loadSchedule, selectScheduleResult, worldsDisplayResult, normalizeActivePayload, renderError };"
+    "globalThis.__test = { loadSchedule, selectScheduleResult, worldsDisplayResult, normalizeActivePayload, renderError, inWorlds2026Window, worldsRouteError };"
   );
 const designSystem = require("../LPL-Design-System");
 const now = new Date("2026-10-22T08:00:00Z");
@@ -151,6 +151,29 @@ function makeContext(payload, cacheText = null) {
 
 (async () => {
   const valid = makeContext(active);
+  assert.equal(
+    valid.api.inWorlds2026Window(new Date("2026-11-14T16:00:00Z")),
+    true,
+    "北京时间 11 月 15 日决赛应仍在 Worlds 窗口内"
+  );
+  const finalPayload = {
+    ...active,
+    coverageEnd: "2026-11-15",
+    selectedDate: "2026-11-15",
+    tournament: { ...active.tournament, endDate: "2026-11-15" },
+    matches: [
+      {
+        ...match("12345678903", "TBD", "TBD", "0", "0"),
+        startTime: "2026-11-15 03:00:00",
+      },
+    ],
+  };
+  const finalContext = makeContext(finalPayload);
+  assert.equal(
+    (await finalContext.api.loadSchedule()).matches[0].time,
+    "03:00",
+    "正式客户端应接受北京时间 11 月 15 日的决赛"
+  );
   const data = await valid.api.loadSchedule();
   assert.equal(data.tournament.id, "worlds-2026");
   assert.equal(data.classification, "PARTIAL_OBSERVED");

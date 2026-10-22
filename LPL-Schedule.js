@@ -852,7 +852,7 @@ const WORLDS_2026_SOURCE = {
 };
 const WORLDS_2026_WINDOW = {
   start: "2026-10-15",
-  end: "2026-11-14",
+  end: "2026-11-15",
 };
 
 function inWorlds2026Window(now = new Date()) {
@@ -2180,7 +2180,7 @@ function normalizeReviewedWorlds(payload, now = new Date()) {
       region: "INTL",
       stage: "已观察 · 非完整",
       startDate: "2026-10-15",
-      endDate: "2026-11-14",
+      endDate: "2026-11-15",
       dataSource: "reviewed-local",
     },
     coverageLabel: `仅 ${start.slice(5).replace("-", "/")}–${end.slice(5).replace("-", "/")} 已观察${payload.reviewedAt ? ` · ${observedDay}更新` : ""}`,
