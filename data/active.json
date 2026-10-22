@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-21T17:03:37.827Z",
+  "generatedAt": "2026-10-22T06:35:54.681Z",
   "sourceUpdatedAt": "2026-10-15T07:00:00.000Z",
   "tournament": {
     "id": "worlds-2026",
@@ -9,7 +9,7 @@
     "region": "INTL",
     "stage": "全球总决赛",
     "startDate": "2026-10-15",
-    "endDate": "2026-11-14",
+    "endDate": "2026-11-15",
     "priority": 100,
     "enabled": true,
     "schedulePath": "data/schedules/worlds-2026.json",
