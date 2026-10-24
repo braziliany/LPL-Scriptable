@@ -117,6 +117,23 @@ result = route(
 );
 assert.equal(result.activeTournament.id, worlds.id);
 
+const worlds2026 = tournament("worlds-2026", 100, "2026-10-15", "2026-11-15", {
+  region: "INTL",
+});
+result = route(
+  "2026-10-24T02:00:00Z",
+  [worlds2026],
+  schedules(
+    { ...match(worlds2026.id, "2026-10-24 01:00:00"), status: "finished" },
+    match(worlds2026.id, "2026-10-25 01:00:00")
+  )
+);
+assert.equal(
+  result.selectedDate,
+  "2026-10-25",
+  "Worlds 当天比赛全部结束后应选择下一比赛日"
+);
+
 const lplDuringEwc = tournament(
   "lpl-during-ewc",
   60,

@@ -11,6 +11,7 @@
     "dev:installer": "node scripts/build-dev-installer.js",
     "worlds:review": "node scripts/worlds-reviewed-update.js",
     "worlds:api-candidate": "node scripts/worlds-api-schedule.js",
+    "worlds:tencent-candidate": "node scripts/worlds-tencent-candidate.js",
     "installer:check-production": "node scripts/check-production-installer.js",
     "installer:rc": "node scripts/build-installer-rc.js",
     "lint": "eslint .",

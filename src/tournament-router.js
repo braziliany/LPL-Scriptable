@@ -35,6 +35,8 @@ function eligibleMatches(tournament, schedules, today) {
     const date = matchDateString(match);
     return (
       match?.tournamentId === tournament.id &&
+      (tournament.id !== "worlds-2026" ||
+        !["finished", "cancelled", "postponed"].includes(match.status)) &&
       date &&
       date >= today &&
       date >= tournament.startDate &&

@@ -305,6 +305,8 @@ if (require.main === module) {
 }
 
 module.exports = {
+  SOURCE_URL,
+  TEAM_SOURCE_URL,
   buildMatchUrl,
   fetchWithRetry,
   inferMatchGroup,
