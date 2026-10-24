@@ -850,6 +850,10 @@ const WORLDS_2026_SOURCE = {
   leagueId: "98767975604431411",
   tournamentId: "115660540725177488",
 };
+const WORLDS_2026_TENCENT_SOURCE = {
+  url: "https://lpl.qq.com/web202301/schedule.html",
+  eventId: "246",
+};
 const WORLDS_2026_WINDOW = {
   start: "2026-10-15",
   end: "2026-11-15",
@@ -877,23 +881,31 @@ function normalizeParticipants(raw, left, right) {
     !Array.isArray(object) &&
     Object.keys(object).length === keys.length &&
     keys.every((key) => Object.prototype.hasOwnProperty.call(object, key));
-  if (
-    !exactKeys(value, ["version", "source", "left", "right"]) ||
-    value.version !== 1 ||
-    !exactKeys(source, [
+  const riotSource =
+    exactKeys(source, [
       "provider",
       "url",
       "leagueId",
       "tournamentId",
       "matchId",
-    ]) ||
+    ]) &&
+    source.provider === "riot-lolesports" &&
+    source.url === WORLDS_2026_SOURCE.url &&
+    source.leagueId === WORLDS_2026_SOURCE.leagueId &&
+    source.tournamentId === WORLDS_2026_SOURCE.tournamentId;
+  const tencentSource =
+    exactKeys(source, ["provider", "url", "eventId", "matchId"]) &&
+    source.provider === "tencent-lpl" &&
+    source.url === WORLDS_2026_TENCENT_SOURCE.url &&
+    source.eventId === WORLDS_2026_TENCENT_SOURCE.eventId &&
+    raw.gameId === source.eventId;
+  if (
+    !exactKeys(value, ["version", "source", "left", "right"]) ||
+    value.version !== 1 ||
     raw.tournamentId !== "worlds-2026" ||
     typeof raw.id !== "string" ||
     !/^[1-9]\d*$/.test(raw.id) ||
-    source.provider !== "riot-lolesports" ||
-    source.url !== WORLDS_2026_SOURCE.url ||
-    source.leagueId !== WORLDS_2026_SOURCE.leagueId ||
-    source.tournamentId !== WORLDS_2026_SOURCE.tournamentId ||
+    !(riotSource || tencentSource) ||
     source.matchId !== raw.id ||
     raw.detailUrl !== source.url
   )
@@ -906,10 +918,19 @@ function normalizeParticipants(raw, left, right) {
     if (!exactKeys(identity, ["kind", "id"]) || typeof identity.id !== "string")
       return null;
     if (identity.kind === "placeholder") {
-      if (identity.id !== "0" || name !== "TBD" || raw[side] !== "TBD")
+      if (
+        identity.id !== (tencentSource ? "297" : "0") ||
+        name !== "TBD" ||
+        raw[side] !== "TBD"
+      )
         return null;
     } else if (identity.kind === "team") {
-      if (!/^[1-9]\d*$/.test(identity.id) || name === "TBD") return null;
+      if (
+        !/^[1-9]\d*$/.test(identity.id) ||
+        (tencentSource && identity.id === "297") ||
+        name === "TBD"
+      )
+        return null;
     } else return null;
   }
   if (hasUnresolvedParticipants({ participants: value })) {
@@ -1066,11 +1087,13 @@ function normalizeMatch(raw) {
 
 // MARK: - 缓存
 
-function logoCacheFileName(team, participant = null) {
+function logoCacheFileName(team, participant = null, provider = null) {
   const safeName =
     normalizeTeamName(team).replace(/[^A-Z0-9_-]/g, "") || "UNKNOWN";
   const identityName =
-    participant?.kind === "team" ? `riot-${participant.id}` : safeName;
+    participant?.kind === "team"
+      ? `${provider === "tencent-lpl" ? "tencent" : "riot"}-${participant.id}`
+      : safeName;
   return `${IS_DEV ? "lpl-team-logo-dev" : "lpl-team-logo"}-${identityName}.png`;
 }
 
@@ -1133,12 +1156,12 @@ async function withNetworkTimeout(operation, seconds, label) {
   }
 }
 
-async function loadTeamLogo(url, team, participant = null) {
+async function loadTeamLogo(url, team, participant = null, provider = null) {
   if (participant?.kind === "placeholder") return placeholderTeamLogo();
   const fm = FileManager.local();
   const path = fm.joinPath(
     fm.documentsDirectory(),
-    logoCacheFileName(team, participant)
+    logoCacheFileName(team, participant, provider)
   );
 
   try {
@@ -1169,8 +1192,18 @@ async function prepareMatchLogos(matches) {
   await Promise.all(
     matches.map(async (match) => {
       [match.leftLogoImage, match.rightLogoImage] = await Promise.all([
-        loadTeamLogo(match.leftLogo, match.left, match.participants?.left),
-        loadTeamLogo(match.rightLogo, match.right, match.participants?.right),
+        loadTeamLogo(
+          match.leftLogo,
+          match.left,
+          match.participants?.left,
+          match.participants?.source?.provider
+        ),
+        loadTeamLogo(
+          match.rightLogo,
+          match.right,
+          match.participants?.right,
+          match.participants?.source?.provider
+        ),
       ]);
     })
   );
@@ -1593,10 +1626,17 @@ function normalizeActivePayload(payload, now = new Date()) {
     )
   )
     throw new Error("Worlds 比赛状态、BO 或比分无效");
-  const matches = uniqueMatches(
-    sourceMatches.map(normalizeMatch).filter(Boolean)
+  const normalizedMatches = sourceMatches.map(normalizeMatch);
+  const matches = (
+    worlds
+      ? normalizedMatches.filter(Boolean)
+      : uniqueMatches(normalizedMatches.filter(Boolean))
   ).sort((a, b) => a.timestamp - b.timestamp);
-  if (worlds && matches.length !== sourceMatches.length)
+  if (
+    worlds &&
+    (matches.length !== sourceMatches.length ||
+      new Set(matches.map((match) => match.id)).size !== matches.length)
+  )
     throw new Error("Worlds 比赛缺失、无效或 ID 重复");
   const freshnessError = activePayloadFreshnessError(payload, matches, now);
   if (freshnessError) {
@@ -2461,7 +2501,9 @@ function worldsRouteError(route, now = new Date()) {
     route.classification !== "PARTIAL_OBSERVED" ||
     route.sourceAuthorization !== "VERIFIED" ||
     route.coverageVerified !== true ||
-    route.sourceUrl !== WORLDS_2026_SOURCE.url
+    ![WORLDS_2026_SOURCE.url, WORLDS_2026_TENCENT_SOURCE.url].includes(
+      route.sourceUrl
+    )
   )
     return "缺少 Worlds 授权、窗口完整性或来源标记";
   const start = String(route.coverageStart || "");
@@ -2483,6 +2525,7 @@ function worldsRouteError(route, now = new Date()) {
     if (
       match.tournamentId !== "worlds-2026" ||
       !match.participants ||
+      match.participants.source.url !== route.sourceUrl ||
       !/^[1-9]\d*$/.test(match.id) ||
       ids.has(match.id) ||
       match.dateString !== route.selectedDate ||
@@ -3210,7 +3253,8 @@ function worldsDisplayResult(result, family, now = new Date()) {
 }
 
 function widgetScheduleUrl(result) {
-  if (result.tournament?.id === "worlds-2026") return WORLDS_2026_SOURCE.url;
+  if (result.tournament?.id === "worlds-2026")
+    return result.sourceUrl || WORLDS_2026_SOURCE.url;
   return CONFIG.livePlatform === "bilibili"
     ? CONFIG.bilibiliLiveUrl
     : CONFIG.schedulePageUrl;

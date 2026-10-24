@@ -8,11 +8,12 @@ const source = fs
   .readFileSync(path.join(root, "LPL-Schedule.js"), "utf8")
   .replace(
     "await main();",
-    "globalThis.__test = { loadSchedule, selectScheduleResult, worldsDisplayResult, normalizeActivePayload, renderError, inWorlds2026Window, worldsRouteError };"
+    "globalThis.__test = { loadSchedule, selectScheduleResult, worldsDisplayResult, normalizeActivePayload, renderError, inWorlds2026Window, worldsRouteError, logoCacheFileName };"
   );
 const designSystem = require("../LPL-Design-System");
 const now = new Date("2026-10-22T08:00:00Z");
 const officialUrl = "https://lolesports.com/en-US/leagues/worlds";
+const tencentUrl = "https://lpl.qq.com/web202301/schedule.html";
 const match = (id, left, right, leftId, rightId) => ({
   id,
   tournamentId: "worlds-2026",
@@ -66,17 +67,19 @@ const active = {
   ],
 };
 
-function makeContext(payload, cacheText = null) {
+function makeContext(payload, cacheText = null, clock = now) {
   const writes = new Map();
   if (cacheText !== null)
     writes.set("/documents/lpl-schedule-cache.json", cacheText);
   const requests = [];
   const RuntimeDate = class extends Date {
     constructor(...args) {
-      super(args.length >= 2 ? Date.UTC(...args) : args.length ? args[0] : now);
+      super(
+        args.length >= 2 ? Date.UTC(...args) : args.length ? args[0] : clock
+      );
     }
     static now() {
-      return now.getTime();
+      return clock.getTime();
     }
   };
   const fm = {
@@ -151,10 +154,116 @@ function makeContext(payload, cacheText = null) {
 
 (async () => {
   const valid = makeContext(active);
+  const tencentMatch = (id, left, right, leftId, rightId) => ({
+    ...match(id, left, right, leftId, rightId),
+    gameId: "246",
+    detailUrl: tencentUrl,
+    participants: {
+      version: 1,
+      source: {
+        provider: "tencent-lpl",
+        url: tencentUrl,
+        eventId: "246",
+        matchId: id,
+      },
+      left: { kind: leftId === "297" ? "placeholder" : "team", id: leftId },
+      right: { kind: rightId === "297" ? "placeholder" : "team", id: rightId },
+    },
+  });
+  const tencentActive = {
+    ...active,
+    sourceUrl: tencentUrl,
+    matches: [
+      tencentMatch("13650", "TBD", "TBD", "297", "297"),
+      tencentMatch("13651", "TBD", "TES", "297", "13"),
+      tencentMatch("13652", "TBD", "TBD", "297", "297"),
+    ],
+  };
+  const tencent = makeContext(tencentActive);
+  const tencentData = await tencent.api.loadSchedule();
+  assert.equal(tencentData.matches.length, 3);
+  assert.equal(tencentData.matches[0].left, "TBD");
+  assert.equal(tencentData.matches[1].right, "TES");
+  assert.equal(tencentData.matches[0].participants.source.eventId, "246");
+  assert.notEqual(
+    tencent.api.logoCacheFileName(
+      "TES",
+      { kind: "team", id: "13" },
+      "tencent-lpl"
+    ),
+    tencent.api.logoCacheFileName(
+      "TES",
+      { kind: "team", id: "13" },
+      "riot-lolesports"
+    )
+  );
+  for (const invalidMatch of [
+    { ...tencentActive.matches[0], gameId: "245" },
+    {
+      ...tencentActive.matches[0],
+      participants: {
+        ...tencentActive.matches[0].participants,
+        source: {
+          ...tencentActive.matches[0].participants.source,
+          eventId: "245",
+        },
+      },
+    },
+    {
+      ...tencentActive.matches[0],
+      participants: {
+        ...tencentActive.matches[0].participants,
+        source: {
+          ...tencentActive.matches[0].participants.source,
+          url: officialUrl,
+        },
+      },
+    },
+    {
+      ...tencentActive.matches[0],
+      participants: {
+        ...tencentActive.matches[0].participants,
+        left: { kind: "placeholder", id: "0" },
+      },
+    },
+    {
+      ...tencentActive.matches[0],
+      left: "TES",
+      participants: {
+        ...tencentActive.matches[0].participants,
+        left: { kind: "team", id: "297" },
+      },
+    },
+  ]) {
+    const invalid = makeContext({ ...tencentActive, matches: [invalidMatch] });
+    await assert.rejects(invalid.api.loadSchedule(), /Worlds.*不可用/);
+  }
+  for (const changed of [
+    { ...tencentActive, sourceUrl: officialUrl },
+    { ...tencentActive, sourceAuthorization: "NOT_VERIFIED" },
+    { ...tencentActive, coverageVerified: false },
+    {
+      ...tencentActive,
+      matches: [tencentActive.matches[0], tencentActive.matches[0]],
+    },
+  ]) {
+    await assert.rejects(
+      makeContext(changed).api.loadSchedule(),
+      /Worlds.*不可用/
+    );
+  }
   assert.equal(
     valid.api.inWorlds2026Window(new Date("2026-11-14T16:00:00Z")),
     true,
     "北京时间 11 月 15 日决赛应仍在 Worlds 窗口内"
+  );
+  assert.equal(
+    valid.api.inWorlds2026Window(new Date("2026-11-15T15:59:59Z")),
+    true
+  );
+  assert.equal(
+    valid.api.inWorlds2026Window(new Date("2026-11-15T16:00:00Z")),
+    false
   );
   const finalPayload = {
     ...active,
@@ -173,6 +282,29 @@ function makeContext(payload, cacheText = null) {
     (await finalContext.api.loadSchedule()).matches[0].time,
     "03:00",
     "正式客户端应接受北京时间 11 月 15 日的决赛"
+  );
+  const finalClock = new Date("2026-11-14T18:00:00Z");
+  const tencentFinal = makeContext(
+    {
+      ...tencentActive,
+      generatedAt: finalClock.toISOString(),
+      sourceUpdatedAt: finalClock.toISOString(),
+      selectedDate: "2026-11-15",
+      coverageEnd: "2026-11-15",
+      tournament: { ...tencentActive.tournament, endDate: "2026-11-15" },
+      matches: [
+        {
+          ...tencentMatch("13660", "TBD", "TBD", "297", "297"),
+          startTime: "2026-11-15 03:00:00",
+        },
+      ],
+    },
+    null,
+    finalClock
+  );
+  assert.equal(
+    (await tencentFinal.api.loadSchedule()).matches[0].time,
+    "03:00"
   );
   const data = await valid.api.loadSchedule();
   assert.equal(data.tournament.id, "worlds-2026");

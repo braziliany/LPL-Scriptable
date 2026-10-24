@@ -100,10 +100,74 @@ const worldSchedule = {
   matches: [worldMatch],
 };
 assertValid(scheduleSchema, worldSchedule, "synthetic Worlds schedule");
+const tencentUrl = "https://lpl.qq.com/web202301/schedule.html";
+const tencentMatch = {
+  ...worldMatch,
+  id: "13660",
+  gameId: "246",
+  detailUrl: tencentUrl,
+  participants: {
+    version: 1,
+    source: {
+      provider: "tencent-lpl",
+      url: tencentUrl,
+      eventId: "246",
+      matchId: "13660",
+    },
+    left: { kind: "placeholder", id: "297" },
+    right: { kind: "placeholder", id: "297" },
+  },
+};
+assertValid(matchSchema, tencentMatch, "synthetic Tencent Worlds match");
+const validateMatch = ajv.compile(matchSchema);
+assert.equal(
+  validateMatch({
+    ...tencentMatch,
+    participants: {
+      ...tencentMatch.participants,
+      source: { ...tencentMatch.participants.source, eventId: "245" },
+    },
+  }),
+  false
+);
+assert.equal(
+  validateMatch({
+    ...tencentMatch,
+    participants: {
+      ...tencentMatch.participants,
+      left: { kind: "team", id: "297" },
+    },
+  }),
+  false
+);
+assert.equal(
+  validateMatch({
+    ...tencentMatch,
+    participants: {
+      ...tencentMatch.participants,
+      left: { kind: "placeholder", id: "0" },
+    },
+  }),
+  false
+);
+const tencentSchedule = {
+  ...worldSchedule,
+  sourceUrl: tencentUrl,
+  matches: [tencentMatch],
+};
+assertValid(
+  scheduleSchema,
+  tencentSchedule,
+  "synthetic Tencent Worlds schedule"
+);
 const worldActive = buildActive(new Date("2026-10-22T08:00:00Z"), [worlds], {
   "worlds-2026": worldSchedule,
 });
 assertValid(activeSchema, worldActive, "synthetic Worlds active");
+const tencentActive = buildActive(new Date("2026-10-22T08:00:00Z"), [worlds], {
+  "worlds-2026": tencentSchedule,
+});
+assertValid(activeSchema, tencentActive, "synthetic Tencent Worlds active");
 assert.equal(
   validateActive({ ...worldActive, sourceAuthorization: "NOT_VERIFIED" }),
   false
