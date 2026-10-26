@@ -10,15 +10,21 @@ const {
 const leagues = {
   data: {
     leagues: [
-      { id: "lpl", name: "LPL 2026", season: 2026 },
-      { id: "observed-worlds-id", name: "Worlds", season: 2026 },
+      { leagueId: "lol-lpl", name: "LPL", slug: "lpl" },
+      {
+        leagueId: "lol-worlds",
+        esportsApiId: "98767975604431411",
+        name: "Worlds",
+        slug: "worlds",
+      },
     ],
   },
 };
 
 assert.deepEqual(discoverWorldsLeague(leagues), {
-  id: "observed-worlds-id",
+  id: "lol-worlds",
   name: "Worlds",
+  metadataUpdatedAt: null,
 });
 assert.throws(
   () =>
@@ -32,8 +38,18 @@ assert.throws(
     discoverWorldsLeague({
       data: {
         leagues: [
-          { id: "one", name: "Worlds", season: 2026 },
-          { id: "two", name: "World Championship", season: 2026 },
+          {
+            leagueId: "lol-worlds",
+            esportsApiId: "98767975604431411",
+            name: "Worlds",
+            slug: "worlds",
+          },
+          {
+            leagueId: "lol-worlds-duplicate",
+            esportsApiId: "98767975604431411",
+            name: "Worlds",
+            slug: "worlds",
+          },
         ],
       },
     }),
@@ -68,11 +84,52 @@ assert.throws(() => uniqueMatchIds([{ other: "123" }]), /field unverified/);
     };
   };
   const result = await probe({ key: "test-secret", fetchImpl });
-  assert.equal(result.league.id, "observed-worlds-id");
+  assert.equal(result.league.id, "lol-worlds");
   assert.equal(result.requests, 2);
-  assert.match(urls[1], /observed-worlds-id\/schedule/);
+  assert.match(urls[1], /lol-worlds\/schedule/);
   assert.match(urls[1], /from=2026-10-14/);
   assert.ok(!JSON.stringify(result).includes("test-secret"));
+  const singleUrls = [];
+  const single = await probe({
+    key: "test-secret",
+    knownLeagueId: "lol-worlds",
+    fetchImpl: async (url) => {
+      singleUrls.push(url);
+      return {
+        ok: true,
+        json: async () => ({
+          data: { events: [{ matchId: "lol-match-123" }], hasMore: false },
+        }),
+      };
+    },
+  });
+  assert.equal(single.requests, 1);
+  assert.equal(single.leagues, null);
+  assert.match(singleUrls[0], /lol-worlds\/schedule/);
+  const pageUrls = [];
+  const paged = await probe({
+    key: "test-secret",
+    knownLeagueId: "lol-worlds",
+    fetchImpl: async (url) => {
+      pageUrls.push(url);
+      return {
+        ok: true,
+        json: async () => ({
+          data: {
+            events: [{ matchId: `lol-match-${pageUrls.length}` }],
+            hasMore: pageUrls.length === 1,
+            nextOffset: pageUrls.length === 1 ? 1 : null,
+          },
+        }),
+      };
+    },
+  });
+  assert.equal(paged.requests, 2);
+  assert.match(pageUrls[1], /offset=1/);
+  await assert.rejects(
+    () => probe({ key: "test-secret", knownLeagueId: "lol-lpl" }),
+    /known league ID/
+  );
   console.log("worlds Cito private probe: ok");
 })().catch((error) => {
   console.error(error);

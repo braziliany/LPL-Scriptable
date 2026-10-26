@@ -14,6 +14,7 @@
     "worlds:tencent-candidate": "node scripts/worlds-tencent-candidate.js",
     "worlds:tencent-stage": "node scripts/stage-worlds-tencent.js",
     "worlds:cito-probe": "node scripts/worlds-cito-candidate.js",
+    "worlds:cito-stage": "node scripts/stage-worlds-cito.js",
     "installer:check-production": "node scripts/check-production-installer.js",
     "installer:rc": "node scripts/build-installer-rc.js",
     "lint": "eslint .",

@@ -90,6 +90,29 @@
                 "eventId": { "const": "246" },
                 "matchId": { "type": "string", "pattern": "^[1-9]\\d*$" }
               }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "provider",
+                "url",
+                "leagueId",
+                "tournamentId",
+                "matchId"
+              ],
+              "properties": {
+                "provider": { "const": "cito-api" },
+                "url": {
+                  "const": "https://api.citoapi.com/api/v1/lol/leagues/lol-worlds/schedule"
+                },
+                "leagueId": { "const": "lol-worlds" },
+                "tournamentId": { "const": "lol-worlds_2026" },
+                "matchId": {
+                  "type": "string",
+                  "pattern": "^lol-match-[1-9]\\d*$"
+                }
+              }
             }
           ]
         },
@@ -115,10 +138,28 @@
             }
           },
           "else": {
-            "type": "object",
-            "properties": {
-              "left": { "$ref": "#/$defs/worldsParticipant" },
-              "right": { "$ref": "#/$defs/worldsParticipant" }
+            "if": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "object",
+                  "properties": { "provider": { "const": "cito-api" } }
+                }
+              }
+            },
+            "then": {
+              "type": "object",
+              "properties": {
+                "left": { "$ref": "#/$defs/citoWorldsParticipant" },
+                "right": { "$ref": "#/$defs/citoWorldsParticipant" }
+              }
+            },
+            "else": {
+              "type": "object",
+              "properties": {
+                "left": { "$ref": "#/$defs/worldsParticipant" },
+                "right": { "$ref": "#/$defs/worldsParticipant" }
+              }
             }
           }
         }
@@ -159,6 +200,22 @@
           "if": { "properties": { "kind": { "const": "placeholder" } } },
           "then": { "properties": { "id": { "const": "297" } } },
           "else": { "properties": { "id": { "not": { "const": "297" } } } }
+        }
+      ]
+    },
+    "citoWorldsParticipant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "enum": ["team", "placeholder"] },
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "placeholder" } } },
+          "then": { "properties": { "id": { "const": "tbd" } } },
+          "else": { "properties": { "id": { "not": { "const": "tbd" } } } }
         }
       ]
     },

@@ -8,12 +8,14 @@ const source = fs
   .readFileSync(path.join(root, "LPL-Schedule.js"), "utf8")
   .replace(
     "await main();",
-    "globalThis.__test = { loadSchedule, selectScheduleResult, worldsDisplayResult, normalizeActivePayload, renderError, inWorlds2026Window, worldsRouteError, logoCacheFileName };"
+    "globalThis.__test = { loadSchedule, selectScheduleResult, worldsDisplayResult, normalizeActivePayload, renderError, inWorlds2026Window, worldsRouteError, logoCacheFileName, widgetScheduleUrl };"
   );
 const designSystem = require("../LPL-Design-System");
 const now = new Date("2026-10-22T08:00:00Z");
 const officialUrl = "https://lolesports.com/en-US/leagues/worlds";
 const tencentUrl = "https://lpl.qq.com/web202301/schedule.html";
+const citoUrl =
+  "https://api.citoapi.com/api/v1/lol/leagues/lol-worlds/schedule";
 const match = (id, left, right, leftId, rightId) => ({
   id,
   tournamentId: "worlds-2026",
@@ -185,6 +187,59 @@ function makeContext(payload, cacheText = null, clock = now) {
   assert.equal(tencentData.matches[0].left, "TBD");
   assert.equal(tencentData.matches[1].right, "TES");
   assert.equal(tencentData.matches[0].participants.source.eventId, "246");
+  const citoMatch = {
+    ...match("lol-match-115660540726095133", "TBD", "TBD", "0", "0"),
+    gameId: "lol-worlds",
+    participants: {
+      version: 1,
+      source: {
+        provider: "cito-api",
+        url: citoUrl,
+        leagueId: "lol-worlds",
+        tournamentId: "lol-worlds_2026",
+        matchId: "lol-match-115660540726095133",
+      },
+      left: { kind: "placeholder", id: "tbd" },
+      right: { kind: "placeholder", id: "tbd" },
+    },
+  };
+  const citoActive = {
+    ...active,
+    sourceUrl: citoUrl,
+    matches: [citoMatch],
+  };
+  const cito = makeContext(citoActive);
+  assert.equal((await cito.api.loadSchedule()).matches[0].id, citoMatch.id);
+  assert.equal(cito.api.widgetScheduleUrl(citoActive), officialUrl);
+  for (const invalidMatch of [
+    { ...citoMatch, gameId: "lol-lpl" },
+    {
+      ...citoMatch,
+      participants: {
+        ...citoMatch.participants,
+        source: {
+          ...citoMatch.participants.source,
+          tournamentId: "lol-worlds_2025",
+        },
+      },
+    },
+    {
+      ...citoMatch,
+      participants: {
+        ...citoMatch.participants,
+        left: { kind: "team", id: "tbd" },
+      },
+    },
+    { ...citoMatch, id: "lol-match-0" },
+  ]) {
+    await assert.rejects(
+      makeContext({
+        ...citoActive,
+        matches: [invalidMatch],
+      }).api.loadSchedule(),
+      /Worlds.*不可用/
+    );
+  }
   assert.notEqual(
     tencent.api.logoCacheFileName(
       "TES",
@@ -390,6 +445,31 @@ function makeContext(payload, cacheText = null, clock = now) {
     Array.from(display.matches, (item) => item.id),
     ["4", "5", "6", "7"]
   );
+
+  if (process.env.CITO_PRIVATE_ACTIVE_PATH) {
+    const privateActive = JSON.parse(
+      fs.readFileSync(process.env.CITO_PRIVATE_ACTIVE_PATH, "utf8")
+    );
+    assert.equal(privateActive.sourceAuthorization, "NOT_VERIFIED");
+    assert.equal(privateActive.coverageVerified, false);
+    const technicalPayload = {
+      ...privateActive,
+      sourceAuthorization: "VERIFIED",
+      coverageVerified: true,
+    };
+    const privateContext = makeContext(
+      technicalPayload,
+      null,
+      new Date(privateActive.generatedAt)
+    );
+    const privateResult = await privateContext.api.loadSchedule();
+    assert.equal(privateResult.tournament.id, "worlds-2026");
+    assert.equal(privateResult.sourceUrl, citoUrl);
+    assert.equal(privateResult.matches.length, privateActive.matches.length);
+    console.log(
+      `Cito private client simulation: ${privateResult.selectedDate}, ${privateResult.matches.length} matches; authorization overridden in memory only`
+    );
+  }
 
   console.log("worlds production client: ok");
 })().catch((error) => {

@@ -14,18 +14,21 @@ function leaguesOf(payload) {
 
 function discoverWorldsLeague(payload) {
   const found = leaguesOf(payload).filter((league) => {
-    const name = String(league?.name ?? league?.displayName ?? "");
-    const season = String(league?.season ?? league?.year ?? "");
     return (
-      /worlds|world championship/i.test(name) &&
-      (season === "2026" || /2026/.test(name))
+      league?.name === "Worlds" &&
+      league?.slug === "worlds" &&
+      String(league?.esportsApiId) === "98767975604431411"
     );
   });
   if (found.length !== 1)
-    throw new Error(`Expected one Worlds 2026 league; found ${found.length}`);
-  const id = String(found[0].id ?? found[0].slug ?? "");
+    throw new Error(`Expected one Worlds league; found ${found.length}`);
+  const id = String(found[0].leagueId ?? "");
   if (!/^[a-zA-Z0-9_-]+$/.test(id)) throw new Error("Worlds league ID invalid");
-  return { id, name: String(found[0].name ?? found[0].displayName) };
+  return {
+    id,
+    name: String(found[0].name),
+    metadataUpdatedAt: found[0].lastUpdated ?? null,
+  };
 }
 
 function eventsOf(payload) {
@@ -68,15 +71,23 @@ async function requestJson(url, key, fetchImpl = fetch) {
 
 async function probe({
   key = process.env.CITO_API_KEY,
+  knownLeagueId = null,
   fetchImpl = fetch,
 } = {}) {
   if (!key) throw new Error("CITO_API_KEY missing");
-  const leagues = await requestJson(`${BASE}/lol/leagues`, key, fetchImpl);
-  const league = discoverWorldsLeague(leagues);
+  if (knownLeagueId !== null && knownLeagueId !== "lol-worlds")
+    throw new Error("Cito known league ID invalid");
+  const leagues = knownLeagueId
+    ? null
+    : await requestJson(`${BASE}/lol/leagues`, key, fetchImpl);
+  const league = knownLeagueId
+    ? { id: "lol-worlds", name: "Worlds", metadataUpdatedAt: null }
+    : discoverWorldsLeague(leagues);
   const pages = [];
-  let requests = 1;
+  let requests = knownLeagueId ? 0 : 1;
   const limit = 100;
-  for (let offset = 0; offset < 500; offset += limit) {
+  let offset = 0;
+  for (let pageIndex = 0; pageIndex < 5; pageIndex++) {
     const query = new URLSearchParams({
       from: "2026-10-14",
       to: "2026-11-16",
@@ -89,8 +100,15 @@ async function probe({
     const events = eventsOf(page);
     pages.push(page);
     if (!hasMore(page, events.length, limit)) break;
-    if (events.length === 0 || offset >= 400)
+    const nextOffset = (page?.data ?? page)?.nextOffset;
+    if (
+      events.length === 0 ||
+      !Number.isInteger(nextOffset) ||
+      nextOffset <= offset ||
+      pageIndex === 4
+    )
       throw new Error("Cito pagination stalled or exceeded budget");
+    offset = nextOffset;
   }
   return {
     league,
@@ -114,14 +132,18 @@ async function cli(args) {
     path.isAbsolute(relative)
   ))
     throw new Error("Output must be outside repository");
-  const result = await probe();
+  const knownLeagueAt = args.indexOf("--known-league");
+  const result = await probe({
+    knownLeagueId: knownLeagueAt >= 0 ? args[knownLeagueAt + 1] : null,
+  });
   const events = result.pages.flatMap(eventsOf);
   const ids = uniqueMatchIds(events);
   fs.mkdirSync(out);
-  fs.writeFileSync(
-    path.join(out, "cito-leagues.private.json"),
-    JSON.stringify(result.leagues, null, 2)
-  );
+  if (result.leagues)
+    fs.writeFileSync(
+      path.join(out, "cito-leagues.private.json"),
+      JSON.stringify(result.leagues, null, 2)
+    );
   fs.writeFileSync(
     path.join(out, "cito-schedule.private.json"),
     JSON.stringify(result.pages, null, 2)
@@ -130,6 +152,7 @@ async function cli(args) {
     observedAt: result.observedAt,
     league: result.league,
     requests: result.requests,
+    leagueMetadataUpdatedAt: result.league.metadataUpdatedAt,
     rows: events.length,
     uniqueIds: new Set(ids).size,
     needsResponseContractReview: true,

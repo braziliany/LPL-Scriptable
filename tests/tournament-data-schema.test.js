@@ -101,6 +101,8 @@ const worldSchedule = {
 };
 assertValid(scheduleSchema, worldSchedule, "synthetic Worlds schedule");
 const tencentUrl = "https://lpl.qq.com/web202301/schedule.html";
+const citoUrl =
+  "https://api.citoapi.com/api/v1/lol/leagues/lol-worlds/schedule";
 const tencentMatch = {
   ...worldMatch,
   id: "13660",
@@ -119,6 +121,37 @@ const tencentMatch = {
   },
 };
 assertValid(matchSchema, tencentMatch, "synthetic Tencent Worlds match");
+const citoMatch = {
+  ...worldMatch,
+  id: "lol-match-115660540726095133",
+  gameId: "lol-worlds",
+  participants: {
+    version: 1,
+    source: {
+      provider: "cito-api",
+      url: citoUrl,
+      leagueId: "lol-worlds",
+      tournamentId: "lol-worlds_2026",
+      matchId: "lol-match-115660540726095133",
+    },
+    left: { kind: "placeholder", id: "tbd" },
+    right: { kind: "placeholder", id: "tbd" },
+  },
+};
+assertValid(matchSchema, citoMatch, "synthetic Cito Worlds match");
+assert.equal(
+  ajv.compile(matchSchema)({
+    ...citoMatch,
+    participants: {
+      ...citoMatch.participants,
+      source: {
+        ...citoMatch.participants.source,
+        tournamentId: "lol-worlds_2025",
+      },
+    },
+  }),
+  false
+);
 const validateMatch = ajv.compile(matchSchema);
 assert.equal(
   validateMatch({
@@ -155,6 +188,13 @@ const tencentSchedule = {
   sourceUrl: tencentUrl,
   matches: [tencentMatch],
 };
+const citoSchedule = {
+  ...worldSchedule,
+  source: citoUrl,
+  sourceUrl: citoUrl,
+  matches: [citoMatch],
+};
+assertValid(scheduleSchema, citoSchedule, "synthetic Cito Worlds schedule");
 assertValid(
   scheduleSchema,
   tencentSchedule,
@@ -168,6 +208,10 @@ const tencentActive = buildActive(new Date("2026-10-22T08:00:00Z"), [worlds], {
   "worlds-2026": tencentSchedule,
 });
 assertValid(activeSchema, tencentActive, "synthetic Tencent Worlds active");
+const citoActive = buildActive(new Date("2026-10-22T08:00:00Z"), [worlds], {
+  "worlds-2026": citoSchedule,
+});
+assertValid(activeSchema, citoActive, "synthetic Cito Worlds active");
 assert.equal(
   validateActive({ ...worldActive, sourceAuthorization: "NOT_VERIFIED" }),
   false

@@ -854,6 +854,11 @@ const WORLDS_2026_TENCENT_SOURCE = {
   url: "https://lpl.qq.com/web202301/schedule.html",
   eventId: "246",
 };
+const WORLDS_2026_CITO_SOURCE = {
+  url: "https://api.citoapi.com/api/v1/lol/leagues/lol-worlds/schedule",
+  leagueId: "lol-worlds",
+  tournamentId: "lol-worlds_2026",
+};
 const WORLDS_2026_WINDOW = {
   start: "2026-10-15",
   end: "2026-11-15",
@@ -899,15 +904,30 @@ function normalizeParticipants(raw, left, right) {
     source.url === WORLDS_2026_TENCENT_SOURCE.url &&
     source.eventId === WORLDS_2026_TENCENT_SOURCE.eventId &&
     raw.gameId === source.eventId;
+  const citoSource =
+    exactKeys(source, [
+      "provider",
+      "url",
+      "leagueId",
+      "tournamentId",
+      "matchId",
+    ]) &&
+    source.provider === "cito-api" &&
+    source.url === WORLDS_2026_CITO_SOURCE.url &&
+    source.leagueId === WORLDS_2026_CITO_SOURCE.leagueId &&
+    source.tournamentId === WORLDS_2026_CITO_SOURCE.tournamentId &&
+    raw.gameId === source.leagueId;
   if (
     !exactKeys(value, ["version", "source", "left", "right"]) ||
     value.version !== 1 ||
     raw.tournamentId !== "worlds-2026" ||
     typeof raw.id !== "string" ||
-    !/^[1-9]\d*$/.test(raw.id) ||
-    !(riotSource || tencentSource) ||
+    !(citoSource
+      ? /^lol-match-[1-9]\d*$/.test(raw.id)
+      : /^[1-9]\d*$/.test(raw.id)) ||
+    !(riotSource || tencentSource || citoSource) ||
     source.matchId !== raw.id ||
-    raw.detailUrl !== source.url
+    raw.detailUrl !== (citoSource ? WORLDS_2026_SOURCE.url : source.url)
   )
     return null;
   for (const [side, name] of [
@@ -919,15 +939,18 @@ function normalizeParticipants(raw, left, right) {
       return null;
     if (identity.kind === "placeholder") {
       if (
-        identity.id !== (tencentSource ? "297" : "0") ||
+        identity.id !== (citoSource ? "tbd" : tencentSource ? "297" : "0") ||
         name !== "TBD" ||
         raw[side] !== "TBD"
       )
         return null;
     } else if (identity.kind === "team") {
       if (
-        !/^[1-9]\d*$/.test(identity.id) ||
-        (tencentSource && identity.id === "297") ||
+        !(citoSource
+          ? /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(identity.id) &&
+            identity.id !== "tbd"
+          : /^[1-9]\d*$/.test(identity.id) &&
+            !(tencentSource && identity.id === "297")) ||
         name === "TBD"
       )
         return null;
@@ -1092,7 +1115,7 @@ function logoCacheFileName(team, participant = null, provider = null) {
     normalizeTeamName(team).replace(/[^A-Z0-9_-]/g, "") || "UNKNOWN";
   const identityName =
     participant?.kind === "team"
-      ? `${provider === "tencent-lpl" ? "tencent" : "riot"}-${participant.id}`
+      ? `${provider === "tencent-lpl" ? "tencent" : provider === "cito-api" ? "cito" : "riot"}-${participant.id}`
       : safeName;
   return `${IS_DEV ? "lpl-team-logo-dev" : "lpl-team-logo"}-${identityName}.png`;
 }
@@ -2501,9 +2524,11 @@ function worldsRouteError(route, now = new Date()) {
     route.classification !== "PARTIAL_OBSERVED" ||
     route.sourceAuthorization !== "VERIFIED" ||
     route.coverageVerified !== true ||
-    ![WORLDS_2026_SOURCE.url, WORLDS_2026_TENCENT_SOURCE.url].includes(
-      route.sourceUrl
-    )
+    ![
+      WORLDS_2026_SOURCE.url,
+      WORLDS_2026_TENCENT_SOURCE.url,
+      WORLDS_2026_CITO_SOURCE.url,
+    ].includes(route.sourceUrl)
   )
     return "缺少 Worlds 授权、窗口完整性或来源标记";
   const start = String(route.coverageStart || "");
@@ -2526,7 +2551,9 @@ function worldsRouteError(route, now = new Date()) {
       match.tournamentId !== "worlds-2026" ||
       !match.participants ||
       match.participants.source.url !== route.sourceUrl ||
-      !/^[1-9]\d*$/.test(match.id) ||
+      !(match.participants.source.provider === "cito-api"
+        ? /^lol-match-[1-9]\d*$/.test(match.id)
+        : /^[1-9]\d*$/.test(match.id)) ||
       ids.has(match.id) ||
       match.dateString !== route.selectedDate ||
       !["BO1", "BO3", "BO5"].includes(match.matchType) ||
@@ -3254,7 +3281,9 @@ function worldsDisplayResult(result, family, now = new Date()) {
 
 function widgetScheduleUrl(result) {
   if (result.tournament?.id === "worlds-2026")
-    return result.sourceUrl || WORLDS_2026_SOURCE.url;
+    return result.sourceUrl === WORLDS_2026_CITO_SOURCE.url
+      ? WORLDS_2026_SOURCE.url
+      : result.sourceUrl || WORLDS_2026_SOURCE.url;
   return CONFIG.livePlatform === "bilibili"
     ? CONFIG.bilibiliLiveUrl
     : CONFIG.schedulePageUrl;

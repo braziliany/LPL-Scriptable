@@ -20,7 +20,8 @@
     "sourceUrl": {
       "enum": [
         "https://lolesports.com/en-US/leagues/worlds",
-        "https://lpl.qq.com/web202301/schedule.html"
+        "https://lpl.qq.com/web202301/schedule.html",
+        "https://api.citoapi.com/api/v1/lol/leagues/lol-worlds/schedule"
       ]
     },
     "coverageStart": { "type": "string", "pattern": "^2026-\\d{2}-\\d{2}$" },
