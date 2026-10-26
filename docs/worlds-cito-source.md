@@ -14,6 +14,14 @@ Beijing date range is 2026-10-16 through 2026-11-15. The 2026-11-15 03:00
 final is a BO5 TBD–TBD. Coverage remains `PARTIAL_OBSERVED` because Cito's
 database total does not independently prove the complete Worlds schedule.
 
+A one-request refresh at 2026-10-27 05:06:51 Beijing time again returned 46
+unique rows. Compared with the 00:09:34 candidate it added zero IDs, removed
+zero IDs, and changed four matches: three advanced from upcoming to completed
+with results; TLAW–AL moved from 06:00 to 05:00 and became live at 0–0. The
+private Active candidate then selected that single 2026-10-27 match. This
+demonstrates a real revision through the candidate and client read path, not
+publication of the snapshot.
+
 The API response supplies `matchId`, UTC `startTime`, `blockName`, two teams
 with code and slug, `strategy.count`, state, score, and completed outcome. The
 converter validates these fields and never guesses TBD teams. It stores the
