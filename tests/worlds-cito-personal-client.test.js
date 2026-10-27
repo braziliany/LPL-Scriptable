@@ -117,6 +117,7 @@ vm.runInNewContext(source, context, { filename: "LPL-Schedule.js" });
   assert.equal(loaded.classification, "PARTIAL_OBSERVED");
   assert.equal(loaded.sourceAuthorization, "NOT_VERIFIED");
   assert.equal(loaded.coverageVerified, false);
+  assert.match(loaded.coverageLabel, /^Cito · /);
   assert.ok(loaded.matches.length >= 1);
   assert.equal(
     context.__test.selectScheduleResult(loaded).tournament.shortName,

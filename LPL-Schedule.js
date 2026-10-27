@@ -2737,8 +2737,8 @@ async function loadPersonalCitoWorldsSchedule({
     .toISOString()
     .slice(11, 16);
   const cacheLabel = stale
-    ? `个人 · 旧缓存 ${Math.floor((now.getTime() - Date.parse(loaded.fetchedAt)) / 3600_000)}h`
-    : `个人 · ${beijingTime}更新`;
+    ? `Cito · 旧缓存 ${Math.floor((now.getTime() - Date.parse(loaded.fetchedAt)) / 3600_000)}h`
+    : `Cito · ${beijingTime}更新`;
   const result = {
     matches: selectedMatches,
     source: loaded.requests ? "Cito 个人 API" : "Cito 个人本地缓存",
@@ -3605,7 +3605,11 @@ function renderSmall(result) {
   );
   date.font = Font.boldSystemFont(18);
   if (!IS_DEV && result.tournament?.id === "worlds-2026") {
-    date.text = `WORLDS·部分 ${result.dateString.slice(5).replace("-", "/")}`;
+    const label =
+      result.tournament?.dataSource === "cito-personal"
+        ? "WORLDS·Cito·部分"
+        : "WORLDS·部分";
+    date.text = `${label} ${result.dateString.slice(5).replace("-", "/")}`;
     date.font = Font.boldSystemFont(13);
     date.lineLimit = 1;
     date.minimumScaleFactor = 0.8;
