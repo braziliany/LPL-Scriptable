@@ -1,6 +1,14 @@
 # LOL Tournament Schedule 2026 · Scriptable
 
-一个自动选择当前 LOL 赛事的 Scriptable 赛程小组件。v3.1.3 修复 Worlds 赛事窗口误选旧 LPL 赛程的问题；真实 Worlds 赛程的公开分发仍待来源授权和覆盖范围核实。
+一个自动选择当前 LOL 赛事的 Scriptable 赛程小组件。v3.1.4 可在本人 iPhone 上启用 Cito 个人模式，直接读取并私有缓存 Worlds 已观察赛程；公开 Worlds 数据仍不经 GitHub Raw 分发。
+
+### Worlds 个人模式首次设置
+
+1. 运行最新版 `LPL Schedule Installer` 安装正式组件和两个 Cito 模块。离线交付包也可直接运行，安装后组件名称仍是 `LPL Schedule 2026`。
+2. 在 Scriptable 中运行 `LPL Schedule 2026`，打开设置中的 `Cito 个人`，通过安全输入框输入本人 API Key。Key 仅存入 Scriptable Keychain，无法从 Windows 自动传到 iPhone。
+3. 首次读取成功后，已有绑定 `LPL Schedule 2026` 的组件即可显示 Worlds。之后组件优先读本地 3 小时缓存；到期尝试刷新，失败时旧缓存最多保留 24 小时并明确标记。可在应用内同一菜单手动刷新或关闭并删除 Key。
+
+个人模式只显示 `PARTIAL_OBSERVED` 已观察比赛，不改变公开发布校验；无有效数据时打开官方 Worlds 页面。iOS 不保证组件按固定频率运行。
 
 ## 主要功能
 

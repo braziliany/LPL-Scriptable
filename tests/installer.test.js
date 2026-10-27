@@ -57,11 +57,19 @@ async function verifyAliasUpdate() {
 assert.equal(context.__installerTestApi.CONFIG.season, "2026 LOL 赛事 SMART");
 assert.deepEqual(
   resources.map((resource) => resource.scriptName),
-  ["LPL-Design-System", "LPL Schedule 2026", "LPL Schedule Installer"]
+  [
+    "LPL-Design-System",
+    "LPL Schedule 2026",
+    "LPL-Cito-Worlds",
+    "LPL-Cito-Personal",
+    "LPL Schedule Installer",
+  ]
 );
 assert.match(resources[0].sourceUrl, /LPL-Design-System\.js$/);
 assert.match(resources[1].sourceUrl, /LPL-Schedule\.js$/);
-assert.match(resources[2].sourceUrl, /Installer\.js$/);
+assert.match(resources[2].sourceUrl, /LPL-Cito-Worlds\.js$/);
+assert.match(resources[3].sourceUrl, /LPL-Cito-Personal\.js$/);
+assert.match(resources[4].sourceUrl, /Installer\.js$/);
 assert.equal(
   context.__installerTestApi.extractVersion(
     'const APP = { version: "2.1.0" };'

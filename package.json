@@ -1,6 +1,6 @@
 {
   "name": "lpl-scriptable",
-  "version": "3.1.3",
+  "version": "3.1.4",
   "private": true,
   "description": "Smart League of Legends tournament schedule widget for Scriptable",
   "scripts": {

@@ -4,6 +4,7 @@ const { execFileSync } = require("node:child_process");
 const root = path.join(__dirname, "..");
 const tests = [
   "tests/installer.test.js",
+  "tests/personal-cito-installer.test.js",
   "tests/production-installer-contract.test.js",
   "tests/installer-rc.test.js",
   "tests/dev-installer.test.js",
@@ -21,6 +22,8 @@ const tests = [
   "tests/stage-worlds-tencent.test.js",
   "tests/worlds-cito-candidate.test.js",
   "tests/worlds-cito-convert.test.js",
+  "tests/worlds-cito-personal.test.js",
+  "tests/worlds-cito-personal-client.test.js",
   "tests/stage-worlds-cito.test.js",
   "tests/worlds-production-client.test.js",
   "tests/timer-units.test.js",
@@ -36,6 +39,8 @@ const syntaxChecks = [
   "Installer.js",
   "LPL-Design-System.js",
   "LPL-Schedule.js",
+  "LPL-Cito-Worlds.js",
+  "LPL-Cito-Personal.js",
   "scripts/update-schedule.js",
   "scripts/build-tournament-data.js",
   "scripts/generate-active.js",
@@ -51,6 +56,7 @@ const syntaxChecks = [
   "Installer-Dev.js",
   "src/tournament-router.js",
   "scripts/check-version.js",
+  "scripts/build-personal-cito-installer.js",
   "scripts/extract-release-notes.js",
 ];
 

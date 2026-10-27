@@ -17,7 +17,7 @@
 
 const APP = {
   name: "LPL Schedule",
-  version: "3.1.3",
+  version: "3.1.4",
   repository: "https://github.com/braziliany/LPL-Scriptable",
   rawBase: "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main",
 };
@@ -65,6 +65,7 @@ const CONFIG = {
   // remote：只使用 GitHub 远程 JSON
   // official：只解析官方页面
   dataMode: "auto",
+  personalCito: false,
 
   remoteActiveUrl: `${APP.rawBase}/data/active.json`,
   remoteScheduleUrl: `${APP.rawBase}/data/schedule.json`,
@@ -199,6 +200,7 @@ const STORAGE_NAMESPACE = IS_DEV ? "lpl-schedule-dev" : "lpl-schedule";
 const CACHE_FILE = `${STORAGE_NAMESPACE}-cache.json`;
 const SETTINGS_FILE = `${STORAGE_NAMESPACE}-settings.json`;
 const DATA_DIAGNOSTICS_FILE = `${STORAGE_NAMESPACE}-data-diagnostics.json`;
+const PERSONAL_CITO_KEYCHAIN_KEY = "lpl-schedule-personal-cito-api-key";
 const SETTINGS_SCHEMA_VERSION = 2;
 const REFRESH_PROFILES = {
   realtime: {
@@ -223,6 +225,7 @@ const REFRESH_PROFILES = {
 const DEFAULT_SETTINGS = {
   schemaVersion: SETTINGS_SCHEMA_VERSION,
   dataMode: CONFIG.dataMode,
+  personalCito: false,
   highlightedTeams: [...CONFIG.highlightedTeams],
   livePlatform: CONFIG.livePlatform,
   cacheHours: CONFIG.cacheHours,
@@ -418,6 +421,7 @@ function normalizeUserSettings(value) {
   return {
     schemaVersion: SETTINGS_SCHEMA_VERSION,
     dataMode,
+    personalCito: raw.personalCito === true,
     highlightedTeams,
     livePlatform,
     cacheHours,
@@ -455,6 +459,7 @@ function writeUserSettings(settings) {
 function applyUserSettings(settings) {
   const normalized = normalizeUserSettings(settings);
   CONFIG.dataMode = normalized.dataMode;
+  CONFIG.personalCito = normalized.personalCito;
   CONFIG.highlightedTeams = [...normalized.highlightedTeams];
   CONFIG.livePlatform = normalized.livePlatform;
   CONFIG.cacheHours = normalized.cacheHours;
@@ -647,6 +652,7 @@ function buildDiagnosticText(
     `选择原因：${cache?.selectionReason || "无"}`,
     `运行环境：${runtimeLabel}`,
     `数据模式：${normalized.dataMode}`,
+    `Cito 个人模式：${normalized.personalCito ? "已启用" : "关闭"}`,
     `直播平台：${normalized.livePlatform}`,
     `主题模式：${normalized.themeMode}`,
     `刷新策略：${normalized.refreshProfile}`,
@@ -708,6 +714,77 @@ async function presentSingleMatchPreview(settings) {
   await widget.presentMedium();
 }
 
+async function presentPersonalCitoSetup(settings) {
+  if (settings.personalCito) {
+    const menu = new Alert();
+    menu.title = "Cito 个人模式";
+    menu.message =
+      "API Key 只保存在本机 Keychain；赛程只写入 Scriptable 本地缓存。";
+    menu.addAction("立即刷新赛程");
+    menu.addAction("更换 API Key");
+    menu.addDestructiveAction("关闭并删除 Key");
+    menu.addCancelAction("返回");
+    const choice = await menu.present();
+    if (choice === 0) {
+      try {
+        const result = await loadPersonalCitoWorldsSchedule({
+          forceRefresh: true,
+        });
+        const done = new Alert();
+        done.title = "Worlds 个人赛程已刷新";
+        done.message = `已观察 ${result.observedMatchCount} 场；当前显示 ${result.selectedDate} 的 ${result.matches.length} 场。`;
+        done.addAction("完成");
+        await done.present();
+      } catch (error) {
+        const failed = new Alert();
+        failed.title = "Cito 刷新失败";
+        failed.message = String(error?.message || error);
+        failed.addAction("返回");
+        await failed.present();
+      }
+      return settings;
+    }
+    if (choice === 2) {
+      settings.personalCito = false;
+      if (Keychain.contains(PERSONAL_CITO_KEYCHAIN_KEY))
+        Keychain.remove(PERSONAL_CITO_KEYCHAIN_KEY);
+      return settings;
+    }
+    if (choice !== 1) return settings;
+  }
+  const prompt = new Alert();
+  prompt.title = "配置 Cito 个人模式";
+  prompt.message =
+    "请输入本人 Cito API Key；仅写入 iPhone Keychain，不会上传到 GitHub。";
+  prompt.addSecureTextField("Cito API Key");
+  prompt.addAction("保存并读取赛程");
+  prompt.addCancelAction("取消");
+  if ((await prompt.present()) !== 0) return settings;
+  const key = String(prompt.textFieldValue(0) || "").trim();
+  if (!key) return settings;
+  Keychain.set(PERSONAL_CITO_KEYCHAIN_KEY, key);
+  settings.personalCito = true;
+  applyUserSettings(settings);
+  try {
+    const result = await loadPersonalCitoWorldsSchedule({
+      keyOverride: key,
+      forceRefresh: true,
+    });
+    const done = new Alert();
+    done.title = "Worlds 个人模式已启用";
+    done.message = `已观察 ${result.observedMatchCount} 场；当前显示 ${result.selectedDate} 的 ${result.matches.length} 场。`;
+    done.addAction("完成");
+    await done.present();
+  } catch (error) {
+    const failed = new Alert();
+    failed.title = "已保存 Key，赛程待刷新";
+    failed.message = String(error?.message || error);
+    failed.addAction("返回");
+    await failed.present();
+  }
+  return settings;
+}
+
 async function presentSettings() {
   let settings = readUserSettings();
 
@@ -717,6 +794,7 @@ async function presentSettings() {
     alert.message = [
       `关注：${settings.highlightedTeams.join(", ") || "无"}`,
       `数据：${settings.dataMode}`,
+      `Cito 个人：${settings.personalCito ? "开" : "关"}`,
       `直播：${settings.livePlatform}`,
       `缓存：${settings.cacheHours} 小时`,
       `刷新：${REFRESH_PROFILES[settings.refreshProfile].label}`,
@@ -730,6 +808,7 @@ async function presentSettings() {
     alert.addAction("组件主题");
     alert.addAction("预览中号单场");
     alert.addAction("运行诊断");
+    alert.addAction("Cito 个人模式");
     alert.addDestructiveAction("恢复默认设置");
     alert.addCancelAction("完成");
 
@@ -765,6 +844,8 @@ async function presentSettings() {
     } else if (choice === 7) {
       await presentDiagnostics(settings);
     } else if (choice === 8) {
+      settings = await presentPersonalCitoSetup(settings);
+    } else if (choice === 9) {
       settings = normalizeUserSettings(DEFAULT_SETTINGS);
     }
 
@@ -2576,6 +2657,126 @@ function worldsResult(route) {
   };
 }
 
+function personalCitoKey() {
+  if (
+    typeof Keychain === "undefined" ||
+    !Keychain.contains(PERSONAL_CITO_KEYCHAIN_KEY)
+  )
+    throw new Error("请在正式组件设置中配置 Cito API Key");
+  const key = Keychain.get(PERSONAL_CITO_KEYCHAIN_KEY);
+  if (!key) throw new Error("Cito Keychain 凭据为空");
+  return key;
+}
+
+function selectPersonalWorldsDate(matches, now = new Date()) {
+  const today = beijingDateString(now);
+  const dates = [...new Set(matches.map((match) => match.dateString))]
+    .filter((date) => date >= today)
+    .sort();
+  const todayMatches = matches.filter((match) => match.dateString === today);
+  const todayStillPlaying = todayMatches.some(
+    (match) => effectiveMatchStatus(match, now) !== "finished"
+  );
+  const selectedDate =
+    (todayStillPlaying ? today : null) ||
+    dates.find((date) => date > today) ||
+    (todayMatches.length ? today : null);
+  if (!selectedDate) throw new Error("已观察的 Worlds 赛程没有近期比赛");
+  return selectedDate;
+}
+
+async function loadPersonalCitoWorldsSchedule({
+  keyOverride = null,
+  forceRefresh = false,
+  now = new Date(),
+} = {}) {
+  let converter;
+  let personal;
+  try {
+    converter = importModule("LPL-Cito-Worlds");
+    personal = importModule("LPL-Cito-Personal");
+  } catch {
+    throw new Error("缺少 Cito 个人模式模块，请运行最新版 Installer");
+  }
+  const loaded = await personal.loadPersonalCitoSchedule({
+    key: keyOverride || personalCitoKey(),
+    fm: FileManager.local(),
+    Request,
+    convertCitoWorlds: converter.convertCitoWorlds,
+    sourceUrl: converter.SOURCE_URL,
+    leagueId: converter.LEAGUE_ID,
+    now,
+    isWidget: isWidgetRuntime(),
+    withTimeout: withNetworkTimeout,
+    forceRefresh,
+  });
+  const schedule = loaded.schedule;
+  if (
+    schedule?.tournamentId !== "worlds-2026" ||
+    schedule.sourceUrl !== WORLDS_2026_CITO_SOURCE.url ||
+    schedule.classification !== "PARTIAL_OBSERVED" ||
+    schedule.sourceAuthorization !== "NOT_VERIFIED" ||
+    schedule.coverageVerified !== false ||
+    schedule.updatedAt !== loaded.fetchedAt ||
+    !Array.isArray(schedule.matches) ||
+    !schedule.matches.length
+  )
+    throw new Error("Cito 个人赛程身份或覆盖标记无效");
+  const matches = schedule.matches.map(normalizeMatch);
+  if (
+    matches.some((match) => !match) ||
+    new Set(matches.map((match) => match.id)).size !== matches.length
+  )
+    throw new Error("Cito 个人比赛数据无效");
+  const selectedDate = selectPersonalWorldsDate(matches, now);
+  const selectedMatches = matches
+    .filter((match) => match.dateString === selectedDate)
+    .sort((a, b) => a.timestamp - b.timestamp);
+  const stale = ["STALE", "RECOVERED_STALE"].includes(loaded.cacheState);
+  const beijingTime = new Date(Date.parse(loaded.fetchedAt) + 8 * 3600_000)
+    .toISOString()
+    .slice(11, 16);
+  const cacheLabel = stale
+    ? `个人 · 旧缓存 ${Math.floor((now.getTime() - Date.parse(loaded.fetchedAt)) / 3600_000)}h`
+    : `个人 · ${beijingTime}更新`;
+  const result = {
+    matches: selectedMatches,
+    source: loaded.requests ? "Cito 个人 API" : "Cito 个人本地缓存",
+    tournament: {
+      id: "worlds-2026",
+      name: "2026 英雄联盟全球总决赛",
+      shortName: "WORLDS · 部分",
+      season: "2026",
+      region: "INTL",
+      stage: "全球总决赛",
+      startDate: "2026-10-15",
+      endDate: "2026-11-15",
+      dataSource: "cito-personal",
+    },
+    nextTournament: null,
+    businessState: "MATCHES",
+    selectedDate,
+    selectionReason: `PERSONAL_CITO_${loaded.cacheState}`,
+    classification: "PARTIAL_OBSERVED",
+    sourceAuthorization: "NOT_VERIFIED",
+    coverageVerified: false,
+    sourceUrl: WORLDS_2026_CITO_SOURCE.url,
+    sourceUpdatedAt: loaded.fetchedAt,
+    coverageStart: schedule.coverageStart,
+    coverageEnd: schedule.coverageEnd,
+    coverageLabel: cacheLabel,
+    observedMatchCount: matches.length,
+  };
+  writeDataDiagnostics("personal-cito", result.source, [
+    {
+      source: "Cito 个人缓存",
+      status: "success",
+      message: `${loaded.cacheState}; observed=${loaded.fetchedAt}; matches=${matches.length}`,
+    },
+  ]);
+  return result;
+}
+
 async function loadProductionWorldsSchedule() {
   const attempts = [];
   let remoteFailure = "";
@@ -2620,6 +2821,8 @@ async function loadProductionWorldsSchedule() {
 
 async function loadSchedule() {
   if (IS_DEV && devFixtureKey()) return loadDevSchedule();
+  if (!IS_DEV && CONFIG.personalCito && inWorlds2026Window())
+    return loadPersonalCitoWorldsSchedule();
   if (!IS_DEV && inWorlds2026Window()) return loadProductionWorldsSchedule();
   const mode = String(CONFIG.dataMode).toLowerCase();
   const cacheState = inspectCache();
@@ -3552,7 +3755,9 @@ function renderError(error) {
     reviewedUnavailable
       ? IS_DEV
         ? "审核快照不可用或已过期。点按查看官方赛程。"
-        : "Worlds 数据未获验证或已过期。点按查看官方赛程。"
+        : CONFIG.personalCito
+          ? "Cito 个人缓存不可用。请打开组件设置刷新；点按查看官方赛程。"
+          : "Worlds 数据未获验证或已过期。点按查看官方赛程。"
       : String(error?.message || error)
   );
   message.font = Font.mediumSystemFont(11);

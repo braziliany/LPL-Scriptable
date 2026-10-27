@@ -104,7 +104,7 @@ async function verify() {
   assert.equal(files.get("/icloud/LPL Schedule Installer.js"), rcSource);
   assert.equal(
     files.size,
-    5,
+    7,
     "repeat installation must not create duplicate scripts"
   );
   healthyRemoteInstaller = true;

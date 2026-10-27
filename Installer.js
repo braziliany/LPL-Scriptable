@@ -10,7 +10,7 @@
  */
 
 const CONFIG = {
-  version: "3.1.3",
+  version: "3.1.4",
   season: "2026 LOL 赛事 SMART",
   changelogUrl:
     "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/CHANGELOG.md",
@@ -26,6 +26,18 @@ const CONFIG = {
       sourceUrl:
         "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/LPL-Schedule.js",
       marker: "LOL Tournament Schedule Widget",
+    },
+    {
+      scriptName: "LPL-Cito-Worlds",
+      sourceUrl:
+        "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/LPL-Cito-Worlds.js",
+      marker: "Converts observed Cito Worlds responses",
+    },
+    {
+      scriptName: "LPL-Cito-Personal",
+      sourceUrl:
+        "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/LPL-Cito-Personal.js",
+      marker: "Personal Scriptable storage and API access",
     },
     {
       scriptName: "LPL Schedule Installer",
@@ -113,6 +125,22 @@ function validateResourceContent(resource, content) {
       reject("设计系统版本缺失");
     }
     if (!/module\.exports\s*=\s*\{/.test(content)) reject("模块导出缺失");
+    return;
+  }
+  if (resource.scriptName === "LPL-Cito-Worlds") {
+    if (
+      !/module\.exports\s*=\s*\{/.test(content) ||
+      !/convertCitoWorlds/.test(content)
+    )
+      reject("Cito 转换模块缺失");
+    return;
+  }
+  if (resource.scriptName === "LPL-Cito-Personal") {
+    if (
+      !/module\.exports\s*=\s*\{/.test(content) ||
+      !/loadPersonalCitoSchedule/.test(content)
+    )
+      reject("Cito 缓存模块缺失");
     return;
   }
   if (

@@ -570,6 +570,7 @@ assert.deepEqual(
   {
     schemaVersion: 2,
     dataMode: "remote",
+    personalCito: false,
     highlightedTeams: ["TT", "BLG"],
     livePlatform: "bilibili",
     cacheHours: 24,
@@ -582,6 +583,7 @@ assert.deepEqual(
   {
     schemaVersion: 2,
     dataMode: "auto",
+    personalCito: false,
     highlightedTeams: ["BLG", "AL", "TES", "WBG"],
     livePlatform: "bilibili",
     cacheHours: 12,
@@ -610,7 +612,7 @@ const diagnosticText = context.__testApi.buildDiagnosticText(
   "medium",
   new Date("2026-07-30T10:09:00+08:00")
 );
-assert.match(diagnosticText, /组件版本：3\.1\.3/);
+assert.match(diagnosticText, /组件版本：3\.1\.4/);
 assert.match(diagnosticText, /设计系统：3\.1\.0/);
 assert.match(diagnosticText, /设置结构：v2/);
 assert.match(diagnosticText, /当前赛事：2026 英雄联盟全球总决赛/);
