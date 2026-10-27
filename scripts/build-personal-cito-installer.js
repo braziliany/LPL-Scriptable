@@ -20,15 +20,33 @@ const anchor =
   "const downloads = await Promise.all(CONFIG.resources.map(downloadResource));";
 if (!source.includes(anchor))
   throw new Error("Installer download anchor missing");
+const releaseNotes = `let releaseNotes = "";
+    try {
+      releaseNotes = extractReleaseNotes(
+        await downloadText(CONFIG.changelogUrl),
+        remoteVersion
+      );
+    } catch (error) {
+      console.warn(\`更新说明获取失败：\${error}\`);
+    }`;
+if (!source.includes(releaseNotes))
+  throw new Error("Installer release note anchor missing");
 const installer = source
   .replace(
     anchor,
-    `const downloads = CONFIG.resources.map((resource) => {
+    `const ready = new Alert();
+    ready.title = "安装 Worlds Cito 个人版";
+    ready.message = "安装包已在本机，继续后会检查并更新正式组件。不会传输 API Key 或赛事缓存。";
+    ready.addAction("继续安装");
+    ready.addCancelAction("取消");
+    if ((await ready.present()) !== 0) { Script.complete(); return; }
+    const downloads = CONFIG.resources.map((resource) => {
       const content = PERSONAL_CITO_BUNDLE[resource.scriptName];
       validateResourceContent(resource, content);
       return { ...resource, content };
     });`
   )
+  .replace(releaseNotes, 'const releaseNotes = "";')
   .replace(
     /await main\(\);\s*$/,
     `const PERSONAL_CITO_BUNDLE = ${JSON.stringify(bundle)};\nawait main();\n`

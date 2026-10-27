@@ -3,6 +3,7 @@ const vm = require("node:vm");
 const { installer } = require("../scripts/build-personal-cito-installer");
 
 const files = new Map([["/icloud/LPL Schedule 2026.js", "old"]]);
+const alerts = [];
 const context = {
   console,
   FileManager: {
@@ -17,19 +18,17 @@ const context = {
     }),
   },
   Alert: class {
-    addAction() {}
-    addCancelAction() {}
     async present() {
+      alerts.push(this.title);
       return 0;
     }
+    addAction() {}
+    addCancelAction() {}
   },
   Safari: { open() {} },
   Script: { complete() {} },
   Request: class {
-    constructor(url) {
-      this.url = url;
-    }
-    async loadString() {
+    constructor() {
       throw new Error("offline package requested network");
     }
   },
@@ -41,6 +40,8 @@ vm.runInNewContext(
 context
   .runInstaller()
   .then(() => {
+    assert.equal(alerts[0], "安装 Worlds Cito 个人版");
+    assert.equal(alerts.at(-1), "安装完成");
     for (const name of [
       "LPL-Design-System",
       "LPL Schedule 2026",
