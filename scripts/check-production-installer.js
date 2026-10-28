@@ -63,7 +63,7 @@ async function checkProductionInstaller({
     }
     if (expectedWidgetHash) {
       const widget = downloads.find(({ requestedUrl }) =>
-        requestedUrl.endsWith("/LPL-Schedule.js")
+        requestedUrl.endsWith("/LoL-Esports-Schedule.js")
       );
       assert.equal(
         widget.sha256,

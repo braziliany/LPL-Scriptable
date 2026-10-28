@@ -1,6 +1,6 @@
 {
   "name": "lpl-scriptable",
-  "version": "3.1.4",
+  "version": "4.0.0",
   "private": true,
   "description": "Smart League of Legends tournament schedule widget for Scriptable",
   "scripts": {
@@ -17,6 +17,7 @@
     "worlds:cito-stage": "node scripts/stage-worlds-cito.js",
     "installer:check-production": "node scripts/check-production-installer.js",
     "installer:rc": "node scripts/build-installer-rc.js",
+    "build:unified": "node scripts/build-unified-script.js",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,json,yml}\"",
     "format:check": "prettier --check \"**/*.{js,json,yml}\"",

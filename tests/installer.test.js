@@ -38,38 +38,33 @@ assert.deepEqual(
   Array.from(
     context.__installerTestApi.mainScriptNames(fileManager, "/icloud")
   ),
-  ["LPL Schedule 2026", "LPL Schedule"]
+  ["英雄联盟比赛赛程表", "LPL Schedule 2026", "LPL Schedule"]
 );
 async function verifyAliasUpdate() {
   const installed = await context.__installerTestApi.installDownloads([
-    { scriptName: "LPL Schedule 2026", content: "new production script" },
+    { scriptName: "英雄联盟比赛赛程表", content: "new production script" },
   ]);
   assert.deepEqual(Array.from(installed), [
+    "英雄联盟比赛赛程表",
     "LPL Schedule 2026",
     "LPL Schedule",
   ]);
   assert.equal(files.get("/icloud/LPL Schedule.js"), "new production script");
   assert.equal(
+    files.get("/icloud/英雄联盟比赛赛程表.js"),
+    "new production script"
+  );
+  assert.equal(
     files.get("/icloud/LPL Schedule 2026.js"),
     "new production script"
   );
 }
-assert.equal(context.__installerTestApi.CONFIG.season, "2026 LOL 赛事 SMART");
+assert.equal(context.__installerTestApi.CONFIG.season, "LoL Esports Schedule");
 assert.deepEqual(
   resources.map((resource) => resource.scriptName),
-  [
-    "LPL-Design-System",
-    "LPL Schedule 2026",
-    "LPL-Cito-Worlds",
-    "LPL-Cito-Personal",
-    "LPL Schedule Installer",
-  ]
+  ["英雄联盟比赛赛程表"]
 );
-assert.match(resources[0].sourceUrl, /LPL-Design-System\.js$/);
-assert.match(resources[1].sourceUrl, /LPL-Schedule\.js$/);
-assert.match(resources[2].sourceUrl, /LPL-Cito-Worlds\.js$/);
-assert.match(resources[3].sourceUrl, /LPL-Cito-Personal\.js$/);
-assert.match(resources[4].sourceUrl, /Installer\.js$/);
+assert.match(resources[0].sourceUrl, /LoL-Esports-Schedule\.js$/);
 assert.equal(
   context.__installerTestApi.extractVersion(
     'const APP = { version: "2.1.0" };'

@@ -19,10 +19,10 @@ function invariant(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-function beijingTime(value) {
+function beijingTime(value, seasonYear) {
   invariant(
     typeof value === "string" &&
-      /^2026-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value),
+      /^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value),
     "Cito startTime invalid"
   );
   const instant = new Date(value);
@@ -36,10 +36,7 @@ function beijingTime(value) {
     .toISOString()
     .slice(0, 19)
     .replace("T", " ");
-  invariant(
-    local.slice(0, 10) >= "2026-10-15" && local.slice(0, 10) <= "2026-11-15",
-    "Cito event outside Worlds 2026 window"
-  );
+  invariant(local.slice(0, 4) === seasonYear, "Cito event season mismatch");
   return local;
 }
 
@@ -81,16 +78,20 @@ function safeLogo(value) {
 }
 
 function mapEvent(event, observedAt, previous) {
+  const seasonMatch = String(event?.tournamentId || "").match(
+    /^lol-worlds_(20\d{2})$/
+  );
+  invariant(seasonMatch, "Cito Worlds tournament identity invalid");
+  const seasonYear = seasonMatch[1];
   invariant(
     event?.leagueId === LEAGUE_ID &&
       event?.leagueName === "Worlds" &&
-      event?.tournamentId === TOURNAMENT_ID &&
       event?.type === "match",
     "Cito Worlds identity conflict"
   );
   const id = String(event.matchId || "");
   invariant(/^lol-match-[1-9]\d*$/.test(id), "Cito match ID invalid");
-  const startTime = beijingTime(event.startTime);
+  const startTime = beijingTime(event.startTime, seasonYear);
   const state = STATUS[String(event.state || "").toLowerCase()];
   invariant(state, "Cito match state invalid");
   const bo = event.strategy?.count;
@@ -142,7 +143,7 @@ function mapEvent(event, observedAt, previous) {
   return {
     id,
     gameId: LEAGUE_ID,
-    tournamentId: "worlds-2026",
+    tournamentId: `worlds-${seasonYear}`,
     startTime,
     left: left.code,
     right: right.code,
@@ -173,7 +174,7 @@ function mapEvent(event, observedAt, previous) {
         provider: "cito-api",
         url: SOURCE_URL,
         leagueId: LEAGUE_ID,
-        tournamentId: TOURNAMENT_ID,
+        tournamentId: event.tournamentId,
         matchId: id,
       },
       left: left.identity,
@@ -229,6 +230,10 @@ function convertCitoWorlds(
   );
   const ids = events.map((event) => String(event?.matchId || ""));
   invariant(new Set(ids).size === ids.length, "Cito duplicate match ID");
+  const seasons = new Set(
+    events.map((event) => String(event?.tournamentId || ""))
+  );
+  invariant(seasons.size === 1, "Cito response mixes Worlds seasons");
   const previous = new Map(
     (previousSchedule?.matches || []).map((match) => [match.id, match])
   );
@@ -255,7 +260,7 @@ function convertCitoWorlds(
     )
     .sort();
   const schedule = {
-    tournamentId: "worlds-2026",
+    tournamentId: matches[0].tournamentId,
     updatedAt: observedAt,
     source: SOURCE_URL,
     sourceUrl: SOURCE_URL,

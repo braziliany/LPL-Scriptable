@@ -243,6 +243,32 @@ const normalizedActive = context.__testApi.normalizeActivePayload(
   activePayload,
   new Date("2026-10-20T03:00:00.000Z")
 );
+const nextSeason = context.__testApi.normalizeActivePayload(
+  {
+    ...activePayload,
+    generatedAt: "2027-01-14T02:00:00.000Z",
+    sourceUpdatedAt: "2027-01-14T01:00:00.000Z",
+    tournament: {
+      ...activeTournament,
+      id: "lpl-2027-split1",
+      name: "2027 LPL 第一赛段",
+      season: "2027",
+      startDate: "2027-01-14",
+      endDate: "2027-03-08",
+      dataSource: "lpl",
+    },
+    selectedDate: "2027-01-14",
+    matches: [
+      {
+        ...activePayload.matches[0],
+        tournamentId: "lpl-2027-split1",
+        startTime: "2027-01-14 17:00:00",
+      },
+    ],
+  },
+  new Date("2027-01-14T03:00:00.000Z")
+);
+assert.equal(nextSeason.tournament.id, "lpl-2027-split1");
 assert.equal(normalizedActive.tournament.shortName, "WORLDS 2026");
 assert.equal(normalizedActive.matches[0].tournamentId, "worlds-2026");
 assert.equal(
@@ -571,6 +597,7 @@ assert.deepEqual(
     schemaVersion: 2,
     dataMode: "remote",
     personalCito: false,
+    manualTournamentId: "",
     highlightedTeams: ["TT", "BLG"],
     livePlatform: "bilibili",
     cacheHours: 24,
@@ -584,6 +611,7 @@ assert.deepEqual(
     schemaVersion: 2,
     dataMode: "auto",
     personalCito: false,
+    manualTournamentId: "",
     highlightedTeams: ["BLG", "AL", "TES", "WBG"],
     livePlatform: "bilibili",
     cacheHours: 12,

@@ -3,47 +3,23 @@
 // icon-color: yellow; icon-glyph: download;
 
 /**
- * LPL Schedule 一键安装器
+ * 英雄联盟比赛赛程表安装器
  *
  * 使用前请确认项目已上传到：
  * braziliany/LPL-Scriptable
  */
 
 const CONFIG = {
-  version: "3.1.4",
-  season: "2026 LOL 赛事 SMART",
+  version: "4.0.0",
+  season: "LoL Esports Schedule",
   changelogUrl:
     "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/CHANGELOG.md",
   resources: [
     {
-      scriptName: "LPL-Design-System",
+      scriptName: "英雄联盟比赛赛程表",
       sourceUrl:
-        "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/LPL-Design-System.js",
-      marker: "LPL Scriptable Design System",
-    },
-    {
-      scriptName: "LPL Schedule 2026",
-      sourceUrl:
-        "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/LPL-Schedule.js",
+        "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/LoL-Esports-Schedule.js",
       marker: "LOL Tournament Schedule Widget",
-    },
-    {
-      scriptName: "LPL-Cito-Worlds",
-      sourceUrl:
-        "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/LPL-Cito-Worlds.js",
-      marker: "Converts observed Cito Worlds responses",
-    },
-    {
-      scriptName: "LPL-Cito-Personal",
-      sourceUrl:
-        "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/LPL-Cito-Personal.js",
-      marker: "Personal Scriptable storage and API access",
-    },
-    {
-      scriptName: "LPL Schedule Installer",
-      sourceUrl:
-        "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/Installer.js",
-      marker: "LPL Schedule 一键安装器",
     },
   ],
 };
@@ -73,7 +49,7 @@ function mainScriptNames(fm, directory) {
   const existing = ["LPL Schedule 2026", "LPL Schedule"].filter((name) =>
     fm.fileExists(fm.joinPath(directory, `${name}.js`))
   );
-  return existing.length ? existing : ["LPL Schedule 2026"];
+  return ["英雄联盟比赛赛程表", ...existing];
 }
 
 function extractReleaseNotes(changelog, version) {
@@ -120,29 +96,6 @@ function validateResourceContent(resource, content) {
   if (/globalThis\.__LPL_SCHEDULE_DEV__\s*=/.test(content)) {
     reject("不允许 DEV bootstrap");
   }
-  if (resource.scriptName === "LPL-Design-System") {
-    if (!/const\s+version\s*=\s*["']\d+\.\d+\.\d+["']/.test(content)) {
-      reject("设计系统版本缺失");
-    }
-    if (!/module\.exports\s*=\s*\{/.test(content)) reject("模块导出缺失");
-    return;
-  }
-  if (resource.scriptName === "LPL-Cito-Worlds") {
-    if (
-      !/module\.exports\s*=\s*\{/.test(content) ||
-      !/convertCitoWorlds/.test(content)
-    )
-      reject("Cito 转换模块缺失");
-    return;
-  }
-  if (resource.scriptName === "LPL-Cito-Personal") {
-    if (
-      !/module\.exports\s*=\s*\{/.test(content) ||
-      !/loadPersonalCitoSchedule/.test(content)
-    )
-      reject("Cito 缓存模块缺失");
-    return;
-  }
   if (
     !/^\/\/ Variables used by Scriptable\.\r?\n\/\/ These must be at the very top of the file\. Do not edit\.\r?\n\/\/ icon-color: [^\r\n]+; icon-glyph: [^\r\n]+;/.test(
       content
@@ -151,19 +104,19 @@ function validateResourceContent(resource, content) {
     reject("Scriptable metadata 缺失");
   }
   if (!extractVersion(content)) reject("版本缺失");
-  if (resource.scriptName === "LPL Schedule 2026") {
-    if (!/const\s+APP\s*=\s*\{\s*name:\s*["']LPL Schedule["']/.test(content)) {
+  if (resource.scriptName === "英雄联盟比赛赛程表") {
+    if (
+      !/const\s+APP\s*=\s*\{\s*name:\s*["']英雄联盟比赛赛程表["']/.test(content)
+    ) {
       reject("主脚本身份不匹配");
     }
+    if (/\bimportModule\s*\(/.test(content)) reject("仍依赖辅助脚本");
     if (
-      !/\bimportModule\s*\(\s*(?:IS_DEV\s*\?\s*DEV_RUNTIME\.designSystemModule\s*:\s*)?["']LPL-Design-System["']\s*\)/.test(
-        content
-      )
-    ) {
-      reject("正式 Design System 导入缺失");
-    }
-  } else if (!/const\s+CONFIG\s*=\s*\{\s*version:/.test(content)) {
-    reject("安装器配置缺失");
+      !/const UNIFIED_THEME/.test(content) ||
+      !/const UNIFIED_CITO/.test(content) ||
+      !/const UNIFIED_PERSONAL/.test(content)
+    )
+      reject("内嵌模块缺失");
   }
 }
 
@@ -190,7 +143,7 @@ async function installDownloads(downloads) {
   try {
     for (const resource of downloads) {
       const names =
-        resource.scriptName === "LPL Schedule 2026"
+        resource.scriptName === "英雄联盟比赛赛程表"
           ? mainScriptNames(fm, directory)
           : [resource.scriptName];
       for (const name of names) {
@@ -223,7 +176,7 @@ async function main() {
     // 先下载并校验完整安装包，此时不会改动本地文件。
     const downloads = await Promise.all(CONFIG.resources.map(downloadResource));
     const mainResource = downloads.find(
-      (resource) => resource.scriptName === "LPL Schedule 2026"
+      (resource) => resource.scriptName === "英雄联盟比赛赛程表"
     );
     const remoteVersion =
       extractVersion(mainResource?.content) || CONFIG.version;
@@ -263,7 +216,7 @@ async function main() {
         : comparison === 0
           ? "重新安装"
           : "远端版本较旧"
-      : "安装 LPL Schedule";
+      : "安装英雄联盟比赛赛程表";
     alert.message = [
       `本地：${localVersion || "未安装"}`,
       `将更新：${installedNames.join("、")}`,
@@ -293,7 +246,7 @@ async function main() {
     done.title = "安装完成";
     done.message =
       `已安装：\n${installed.join("\n")}\n\n` +
-      "以后请运行 LPL Schedule Installer 更新。";
+      "请运行「英雄联盟比赛赛程表」进入设置。旧组件若仍绑定旧名称，可在确认新组件后重新选择脚本；本次不会删除旧脚本或 Keychain。";
     done.addAction("打开 Scriptable");
     await done.present();
 

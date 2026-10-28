@@ -44,8 +44,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: >
           gh release create "$GITHUB_REF_NAME"
-          --title "LPL Schedule $GITHUB_REF_NAME"
+          --title "英雄联盟比赛赛程表 $GITHUB_REF_NAME"
           --notes-file release-notes.md
           Installer.js
+          LoL-Esports-Schedule.js
           LPL-Schedule.js
           LPL-Design-System.js

@@ -66,8 +66,10 @@ const CONFIG = {
   // official：只解析官方页面
   dataMode: "auto",
   personalCito: false,
+  manualTournamentId: "",
 
   remoteActiveUrl: `${APP.rawBase}/data/active.json`,
+  tournamentCatalogUrl: `${APP.rawBase}/data/tournaments.json`,
   remoteScheduleUrl: `${APP.rawBase}/data/schedule.json`,
   officialDataUrl:
     "https://lpl.qq.com/web201612/data/LOL_MATCH2_MATCH_HOMEPAGE_BMATCH_LIST.js",
@@ -200,6 +202,7 @@ const STORAGE_NAMESPACE = IS_DEV ? "lpl-schedule-dev" : "lpl-schedule";
 const CACHE_FILE = `${STORAGE_NAMESPACE}-cache.json`;
 const SETTINGS_FILE = `${STORAGE_NAMESPACE}-settings.json`;
 const DATA_DIAGNOSTICS_FILE = `${STORAGE_NAMESPACE}-data-diagnostics.json`;
+const TOURNAMENT_CATALOG_FILE = `${STORAGE_NAMESPACE}-tournament-catalog.json`;
 const PERSONAL_CITO_KEYCHAIN_KEY = "lpl-schedule-personal-cito-api-key";
 const SETTINGS_SCHEMA_VERSION = 2;
 const REFRESH_PROFILES = {
@@ -226,6 +229,7 @@ const DEFAULT_SETTINGS = {
   schemaVersion: SETTINGS_SCHEMA_VERSION,
   dataMode: CONFIG.dataMode,
   personalCito: false,
+  manualTournamentId: "",
   highlightedTeams: [...CONFIG.highlightedTeams],
   livePlatform: CONFIG.livePlatform,
   cacheHours: CONFIG.cacheHours,
@@ -307,7 +311,7 @@ function parseLocalDateTime(value) {
 
 function parseWorldsBeijingTime(value) {
   const match = String(value || "").match(
-    /^(2026-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/
+    /^(20\d{2}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/
   );
   if (!match) return null;
   const timestamp = Date.parse(`${match[1]}T${match[2]}+08:00`);
@@ -422,6 +426,11 @@ function normalizeUserSettings(value) {
     schemaVersion: SETTINGS_SCHEMA_VERSION,
     dataMode,
     personalCito: raw.personalCito === true,
+    manualTournamentId: /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(
+      String(raw.manualTournamentId || "")
+    )
+      ? String(raw.manualTournamentId)
+      : "",
     highlightedTeams,
     livePlatform,
     cacheHours,
@@ -460,6 +469,7 @@ function applyUserSettings(settings) {
   const normalized = normalizeUserSettings(settings);
   CONFIG.dataMode = normalized.dataMode;
   CONFIG.personalCito = normalized.personalCito;
+  CONFIG.manualTournamentId = normalized.manualTournamentId;
   CONFIG.highlightedTeams = [...normalized.highlightedTeams];
   CONFIG.livePlatform = normalized.livePlatform;
   CONFIG.cacheHours = normalized.cacheHours;
@@ -721,6 +731,7 @@ async function presentPersonalCitoSetup(settings) {
     menu.message =
       "API Key 只保存在本机 Keychain；赛程只写入 Scriptable 本地缓存。";
     menu.addAction("立即刷新赛程");
+    menu.addAction("检测当前 Key");
     menu.addAction("更换 API Key");
     menu.addDestructiveAction("关闭并删除 Key");
     menu.addCancelAction("返回");
@@ -744,13 +755,37 @@ async function presentPersonalCitoSetup(settings) {
       }
       return settings;
     }
-    if (choice === 2) {
+    if (choice === 1) {
+      const result = new Alert();
+      try {
+        const checked = await loadPersonalCitoWorldsSchedule({
+          forceRefresh: true,
+        });
+        if (checked.selectionReason !== "PERSONAL_CITO_REFRESHED")
+          throw new Error("本次未收到新响应；Key 有效性暂不能确认");
+        result.title = "Cito Key 有效";
+        result.message = `已读取 ${checked.observedMatchCount} 场，不显示 Key。`;
+      } catch (error) {
+        result.title = "Cito Key 未验证";
+        result.message = String(error?.message || error);
+      }
+      result.addAction("返回");
+      await result.present();
+      return settings;
+    }
+    if (choice === 3) {
+      const confirm = new Alert();
+      confirm.title = "确认关闭 Cito 个人模式";
+      confirm.message = "只删除本机 Keychain 凭据；不会删除赛程缓存。";
+      confirm.addDestructiveAction("删除 Key");
+      confirm.addCancelAction("取消");
+      if ((await confirm.present()) !== 0) return settings;
       settings.personalCito = false;
       if (Keychain.contains(PERSONAL_CITO_KEYCHAIN_KEY))
         Keychain.remove(PERSONAL_CITO_KEYCHAIN_KEY);
       return settings;
     }
-    if (choice !== 1) return settings;
+    if (choice !== 2) return settings;
   }
   const prompt = new Alert();
   prompt.title = "配置 Cito 个人模式";
@@ -762,6 +797,10 @@ async function presentPersonalCitoSetup(settings) {
   if ((await prompt.present()) !== 0) return settings;
   const key = String(prompt.textFieldValue(0) || "").trim();
   if (!key) return settings;
+  const previousKey = Keychain.contains(PERSONAL_CITO_KEYCHAIN_KEY)
+    ? Keychain.get(PERSONAL_CITO_KEYCHAIN_KEY)
+    : null;
+  const previousPersonalCito = settings.personalCito;
   Keychain.set(PERSONAL_CITO_KEYCHAIN_KEY, key);
   settings.personalCito = true;
   applyUserSettings(settings);
@@ -770,14 +809,21 @@ async function presentPersonalCitoSetup(settings) {
       keyOverride: key,
       forceRefresh: true,
     });
+    if (result.selectionReason !== "PERSONAL_CITO_REFRESHED")
+      throw new Error("本次未收到新响应；Key 更新未完成");
     const done = new Alert();
     done.title = "Worlds 个人模式已启用";
     done.message = `已观察 ${result.observedMatchCount} 场；当前显示 ${result.selectedDate} 的 ${result.matches.length} 场。`;
     done.addAction("完成");
     await done.present();
   } catch (error) {
+    if (previousKey && previousKey !== key) {
+      Keychain.set(PERSONAL_CITO_KEYCHAIN_KEY, previousKey);
+      settings.personalCito = previousPersonalCito;
+      applyUserSettings(settings);
+    }
     const failed = new Alert();
-    failed.title = "已保存 Key，赛程待刷新";
+    failed.title = previousKey ? "Key 更新未完成" : "已保存 Key，赛程待刷新";
     failed.message = String(error?.message || error);
     failed.addAction("返回");
     await failed.present();
@@ -852,6 +898,163 @@ async function presentSettings() {
     settings = writeUserSettings(settings);
   }
 
+  applyUserSettings(settings);
+}
+
+async function settingsMessage(title, message) {
+  const alert = new Alert();
+  alert.title = title;
+  alert.message = message;
+  alert.addAction("返回");
+  await alert.present();
+}
+
+async function presentTournamentCenter(settings) {
+  const menu = new Alert();
+  menu.title = "赛事管理";
+  menu.message = `选择方式：${settings.manualTournamentId ? "手动" : "自动"}\n当前赛事：${settings.manualTournamentId || (settings.personalCito && inPersonalWorldsSeason() ? `Worlds ${beijingDateString().slice(0, 4)}` : inspectCache().payload?.tournament?.name || "由赛事数据决定")}`;
+  menu.addAction("自动选择赛事");
+  menu.addAction("查看并手动切换赛事");
+  menu.addCancelAction("返回");
+  const choice = await menu.present();
+  if (choice === 0) settings.manualTournamentId = "";
+  if (choice !== 1) return settings;
+  try {
+    const entries = await loadTournamentCatalog();
+    const list = new Alert();
+    list.title = "已登记赛事";
+    list.message = "仅显示已登记的赛事；选择时会校验真实赛程。";
+    for (const entry of entries)
+      list.addAction(`${entry.season} · ${entry.name}`);
+    list.addCancelAction("返回");
+    const index = await list.present();
+    if (index < 0) return settings;
+    const entry = entries[index];
+    if (!entry) return settings;
+    const previous = CONFIG.manualTournamentId;
+    CONFIG.manualTournamentId = entry.id;
+    try {
+      const result = await loadManualTournament(entry.id);
+      settings.manualTournamentId = entry.id;
+      await settingsMessage(
+        "已切换赛事",
+        `${entry.name}\n已读取 ${result.matches.length} 场；没有近期比赛时显示赛事空窗。`
+      );
+    } finally {
+      CONFIG.manualTournamentId = previous;
+    }
+  } catch (error) {
+    await settingsMessage("赛事切换未完成", String(error?.message || error));
+  }
+  return settings;
+}
+
+async function presentDataCenter(settings) {
+  const cache = inspectCache();
+  const diagnostics = readDataDiagnostics();
+  const menu = new Alert();
+  menu.title = "数据管理";
+  menu.message = [
+    `来源：${diagnostics?.selectedSource || "暂无"}`,
+    `最近读取：${diagnostics?.updatedAt || "暂无"}`,
+    `公开缓存：${cache.status}`,
+    `数据策略：${settings.dataMode}`,
+    `Cito 个人：${settings.personalCito ? "已启用" : "关闭"}`,
+  ].join("\n");
+  menu.addAction("立即刷新");
+  menu.addAction("切换公开数据策略");
+  menu.addAction("查看详细诊断");
+  menu.addCancelAction("返回");
+  const choice = await menu.present();
+  if (choice === 0) {
+    applyUserSettings(settings);
+    try {
+      const manualWorlds = /^worlds-20\d{2}$/.test(settings.manualTournamentId);
+      const result =
+        settings.personalCito && (manualWorlds || inPersonalWorldsSeason())
+          ? await loadPersonalCitoWorldsSchedule({
+              forceRefresh: true,
+              seasonYear: manualWorlds
+                ? settings.manualTournamentId.slice(-4)
+                : beijingDateString().slice(0, 4),
+            })
+          : await loadSchedule();
+      await settingsMessage(
+        "赛程读取完成",
+        `${result.tournament?.name || "当前赛事"}\n${result.matches?.length || 0} 场；来源：${result.source || "未知"}`
+      );
+    } catch (error) {
+      await settingsMessage("赛程刷新失败", String(error?.message || error));
+    }
+  } else if (choice === 1) {
+    settings.dataMode = await chooseDataMode(settings.dataMode);
+  } else if (choice === 2) {
+    await presentDiagnostics(settings);
+  }
+  return settings;
+}
+
+async function presentDisplayCenter(settings) {
+  const menu = new Alert();
+  menu.title = "显示设置";
+  menu.message = `主题：${settings.themeMode}\n刷新策略：${settings.refreshProfile}`;
+  menu.addAction("主题");
+  menu.addAction("关注队伍");
+  menu.addAction("直播入口");
+  menu.addAction("刷新频率");
+  menu.addAction("缓存有效期");
+  menu.addAction("预览中号单场");
+  menu.addCancelAction("返回");
+  const choice = await menu.present();
+  if (choice === 0)
+    settings.themeMode = await chooseThemeMode(settings.themeMode);
+  if (choice === 1)
+    settings.highlightedTeams = await editHighlightedTeams(
+      settings.highlightedTeams
+    );
+  if (choice === 2)
+    settings.livePlatform = await chooseLivePlatform(settings.livePlatform);
+  if (choice === 3)
+    settings.refreshProfile = await chooseRefreshProfile(
+      settings.refreshProfile
+    );
+  if (choice === 4)
+    settings.cacheHours = await chooseCacheHours(settings.cacheHours);
+  if (choice === 5) {
+    try {
+      await presentSingleMatchPreview(settings);
+    } catch (error) {
+      await settingsMessage("预览失败", String(error?.message || error));
+    }
+  }
+  return settings;
+}
+
+async function presentUnifiedSettings() {
+  let settings = readUserSettings();
+  while (true) {
+    const menu = new Alert();
+    menu.title = "英雄联盟比赛赛程表";
+    menu.message = `LoL Esports Schedule · v${APP.version}\n${settings.manualTournamentId ? `手动：${settings.manualTournamentId}` : "赛事自动选择"}`;
+    menu.addAction("赛事管理");
+    menu.addAction("数据管理");
+    menu.addAction("Cito API 与个人模式");
+    menu.addAction("显示设置");
+    menu.addAction("关于与更新说明");
+    menu.addCancelAction("完成");
+    const choice = await menu.present();
+    if (choice < 0) break;
+    if (choice === 0) settings = await presentTournamentCenter(settings);
+    if (choice === 1) settings = await presentDataCenter(settings);
+    if (choice === 2) settings = await presentPersonalCitoSetup(settings);
+    if (choice === 3) settings = await presentDisplayCenter(settings);
+    if (choice === 4)
+      await settingsMessage(
+        "关于",
+        `英雄联盟比赛赛程表\nLoL Esports Schedule\nv${APP.version}\nLPL：公开赛事数据\nWorlds：本人 Cito API 与本地缓存\n更新说明见 GitHub 仓库 CHANGELOG。`
+      );
+    settings = writeUserSettings(settings);
+  }
   applyUserSettings(settings);
 }
 
@@ -950,6 +1153,11 @@ function inWorlds2026Window(now = new Date()) {
   return today >= WORLDS_2026_WINDOW.start && today <= WORLDS_2026_WINDOW.end;
 }
 
+function inPersonalWorldsSeason(now = new Date()) {
+  const month = Number(beijingDateString(now).slice(5, 7));
+  return month >= 9 && month <= 11;
+}
+
 function hasUnresolvedParticipants(match) {
   return (
     match?.participants?.left?.kind === "placeholder" ||
@@ -996,12 +1204,14 @@ function normalizeParticipants(raw, left, right) {
     source.provider === "cito-api" &&
     source.url === WORLDS_2026_CITO_SOURCE.url &&
     source.leagueId === WORLDS_2026_CITO_SOURCE.leagueId &&
-    source.tournamentId === WORLDS_2026_CITO_SOURCE.tournamentId &&
+    source.tournamentId ===
+      `lol-worlds_${String(raw.tournamentId || "").slice(-4)}` &&
+    /^worlds-20\d{2}$/.test(String(raw.tournamentId || "")) &&
     raw.gameId === source.leagueId;
   if (
     !exactKeys(value, ["version", "source", "left", "right"]) ||
     value.version !== 1 ||
-    raw.tournamentId !== "worlds-2026" ||
+    !/^worlds-20\d{2}$/.test(String(raw.tournamentId || "")) ||
     typeof raw.id !== "string" ||
     !(citoSource
       ? /^lol-match-[1-9]\d*$/.test(raw.id)
@@ -1127,11 +1337,14 @@ function normalizeMatch(raw) {
     raw.dateTime ||
     "";
 
-  const worldsTime =
-    raw.tournamentId === "worlds-2026"
-      ? parseWorldsBeijingTime(startTime)
-      : null;
-  if (raw.tournamentId === "worlds-2026" && !worldsTime) return null;
+  const worlds = /^worlds-20\d{2}$/.test(String(raw.tournamentId || ""));
+  const worldsTime = worlds ? parseWorldsBeijingTime(startTime) : null;
+  if (
+    worlds &&
+    (!worldsTime ||
+      worldsTime.dateString.slice(0, 4) !== String(raw.tournamentId).slice(-4))
+  )
+    return null;
   const date = worldsTime
     ? new Date(worldsTime.timestamp)
     : parseLocalDateTime(startTime);
@@ -1612,8 +1825,13 @@ function activePayloadFreshnessError(payload, matches, now = new Date()) {
   if (businessState !== "NO_UPCOMING" && !tournament) {
     return "赛事元数据无效";
   }
-  if (tournament && tournament.season !== String(SEASON.year)) {
-    return `赛季不匹配（应为 ${SEASON.year}）`;
+  if (
+    tournament &&
+    (!/^20\d{2}$/.test(tournament.season) ||
+      (tournament.startDate &&
+        tournament.startDate.slice(0, 4) !== tournament.season))
+  ) {
+    return "赛事赛季不匹配或日期无效";
   }
   if (
     tournament &&
@@ -1629,8 +1847,11 @@ function activePayloadFreshnessError(payload, matches, now = new Date()) {
   if (timestampError) return timestampError;
   const today = beijingDateString(now);
   if (nextTournament) {
-    if (nextTournament.season !== String(SEASON.year)) {
-      return `下一赛事赛季不匹配（应为 ${SEASON.year}）`;
+    if (
+      !/^20\d{2}$/.test(nextTournament.season) ||
+      nextTournament.startDate.slice(0, 4) !== nextTournament.season
+    ) {
+      return "下一赛事赛季与日期不匹配";
     }
     if (
       !/^20\d{2}-\d{2}-\d{2}$/.test(nextTournament.startDate) ||
@@ -1709,7 +1930,7 @@ function activePayloadFreshnessError(payload, matches, now = new Date()) {
 
 function normalizeActivePayload(payload, now = new Date()) {
   const sourceMatches = Array.isArray(payload?.matches) ? payload.matches : [];
-  const worlds = payload?.tournament?.id === "worlds-2026";
+  const worlds = /^worlds-20\d{2}$/.test(String(payload?.tournament?.id || ""));
   if (
     worlds &&
     sourceMatches.some(
@@ -1783,6 +2004,102 @@ async function loadRemoteActive() {
       "remote active"
     )
   );
+}
+
+function validateTournamentCatalog(value) {
+  if (!Array.isArray(value) || value.length > 100)
+    throw new Error("赛事目录格式无效");
+  const ids = new Set();
+  return value.filter((entry) => {
+    if (entry?.enabled !== true) return false;
+    const tournament = normalizeTournament(entry);
+    const path = String(entry.schedulePath || "");
+    if (
+      !tournament ||
+      !/^20\d{2}$/.test(tournament.season) ||
+      tournament.startDate.slice(0, 4) !== tournament.season ||
+      !/^20\d{2}-\d{2}-\d{2}$/.test(tournament.startDate) ||
+      !/^20\d{2}-\d{2}-\d{2}$/.test(tournament.endDate) ||
+      tournament.startDate > tournament.endDate ||
+      !/^data\/schedules\/[a-z0-9-]+\.json$/.test(path) ||
+      ids.has(tournament.id)
+    )
+      throw new Error("赛事目录身份或路径无效");
+    ids.add(tournament.id);
+    return true;
+  });
+}
+
+async function loadTournamentCatalog({ forceRefresh = false } = {}) {
+  const fm = FileManager.local();
+  const file = fm.joinPath(fm.documentsDirectory(), TOURNAMENT_CATALOG_FILE);
+  let cached = null;
+  try {
+    if (fm.fileExists(file)) {
+      const saved = JSON.parse(fm.readString(file));
+      cached = {
+        entries: validateTournamentCatalog(saved.entries),
+        savedAt: Date.parse(saved.savedAt),
+      };
+    }
+  } catch {
+    cached = null;
+  }
+  if (!forceRefresh && cached && Date.now() - cached.savedAt < 24 * 3600_000)
+    return cached.entries;
+  try {
+    const request = new Request(CONFIG.tournamentCatalogUrl);
+    request.timeoutInterval = networkTimeoutSeconds("remote");
+    const value = await withNetworkTimeout(
+      () => request.loadJSON(),
+      request.timeoutInterval,
+      "tournament catalog"
+    );
+    const entries = validateTournamentCatalog(value);
+    fm.writeString(
+      file,
+      JSON.stringify({ savedAt: new Date().toISOString(), entries })
+    );
+    return entries;
+  } catch (error) {
+    if (cached) return cached.entries;
+    throw error;
+  }
+}
+
+async function loadManualTournament(tournamentId) {
+  const year = String(tournamentId).match(/^worlds-(20\d{2})$/)?.[1];
+  if (year) {
+    if (!CONFIG.personalCito)
+      throw new Error("该 Worlds 赛事需先启用 Cito 个人模式");
+    return loadPersonalCitoWorldsSchedule({ seasonYear: year });
+  }
+  const entries = await loadTournamentCatalog();
+  const entry = entries.find((item) => item.id === tournamentId);
+  if (!entry) throw new Error("手动选择的赛事不在可用目录中");
+  const request = new Request(`${APP.rawBase}/${entry.schedulePath}`);
+  request.timeoutInterval = networkTimeoutSeconds("remote");
+  const payload = await withNetworkTimeout(
+    () => request.loadJSON(),
+    request.timeoutInterval,
+    "manual tournament"
+  );
+  if (payload?.tournamentId !== entry.id || !Array.isArray(payload.matches))
+    throw new Error("手动赛事与赛程身份不匹配");
+  const matches = payload.matches.map(normalizeMatch);
+  if (
+    matches.some((match) => !match || match.tournamentId !== entry.id) ||
+    new Set(matches.map((match) => match.id)).size !== matches.length
+  )
+    throw new Error("手动赛事比赛数据无效");
+  return {
+    matches,
+    source: "GitHub 赛事赛程",
+    tournament: normalizeTournament(entry),
+    nextTournament: null,
+    businessState: matches.length ? "MATCHES" : "NO_UPCOMING",
+    selectionReason: "MANUAL_TOURNAMENT",
+  };
 }
 
 function remoteScheduleFreshnessError(payload, matches, now = new Date()) {
@@ -2689,6 +3006,7 @@ async function loadPersonalCitoWorldsSchedule({
   keyOverride = null,
   forceRefresh = false,
   now = new Date(),
+  seasonYear = beijingDateString(now).slice(0, 4),
 } = {}) {
   let converter;
   let personal;
@@ -2709,10 +3027,11 @@ async function loadPersonalCitoWorldsSchedule({
     isWidget: isWidgetRuntime(),
     withTimeout: withNetworkTimeout,
     forceRefresh,
+    seasonYear,
   });
   const schedule = loaded.schedule;
   if (
-    schedule?.tournamentId !== "worlds-2026" ||
+    schedule?.tournamentId !== `worlds-${seasonYear}` ||
     schedule.sourceUrl !== WORLDS_2026_CITO_SOURCE.url ||
     schedule.classification !== "PARTIAL_OBSERVED" ||
     schedule.sourceAuthorization !== "NOT_VERIFIED" ||
@@ -2743,14 +3062,14 @@ async function loadPersonalCitoWorldsSchedule({
     matches: selectedMatches,
     source: loaded.requests ? "Cito 个人 API" : "Cito 个人本地缓存",
     tournament: {
-      id: "worlds-2026",
-      name: "2026 英雄联盟全球总决赛",
+      id: schedule.tournamentId,
+      name: `${seasonYear} 英雄联盟全球总决赛`,
       shortName: "WORLDS · 部分",
-      season: "2026",
+      season: seasonYear,
       region: "INTL",
       stage: "全球总决赛",
-      startDate: "2026-10-15",
-      endDate: "2026-11-15",
+      startDate: schedule.coverageStart,
+      endDate: schedule.coverageEnd,
       dataSource: "cito-personal",
     },
     nextTournament: null,
@@ -2821,8 +3140,16 @@ async function loadProductionWorldsSchedule() {
 
 async function loadSchedule() {
   if (IS_DEV && devFixtureKey()) return loadDevSchedule();
-  if (!IS_DEV && CONFIG.personalCito && inWorlds2026Window())
-    return loadPersonalCitoWorldsSchedule();
+  if (!IS_DEV && CONFIG.manualTournamentId)
+    return loadManualTournament(CONFIG.manualTournamentId);
+  if (!IS_DEV && CONFIG.personalCito && inPersonalWorldsSeason()) {
+    try {
+      return await loadPersonalCitoWorldsSchedule();
+    } catch (error) {
+      if (inWorlds2026Window()) throw error;
+      console.warn(`Cito 个人赛程未就绪，继续检查公开赛事：${error.message}`);
+    }
+  }
   if (!IS_DEV && inWorlds2026Window()) return loadProductionWorldsSchedule();
   const mode = String(CONFIG.dataMode).toLowerCase();
   const cacheState = inspectCache();
@@ -2833,6 +3160,7 @@ async function loadSchedule() {
   const protectWidgetCache = Boolean(
     mode === "auto" && isWidgetRuntime() && guaranteedCache
   );
+  const legacySeason = beijingDateString().slice(0, 4) === String(SEASON.year);
   const errors = [];
   const attempts = [];
 
@@ -2874,7 +3202,7 @@ async function loadSchedule() {
       logDataStep(`remote failed: ${message}`);
     }
 
-    if (!protectWidgetCache) {
+    if (!protectWidgetCache && legacySeason) {
       try {
         let matches = await loadRemoteSchedule();
         let source = "GitHub Legacy";
@@ -2919,7 +3247,7 @@ async function loadSchedule() {
     }
   }
 
-  if (mode === "auto" || mode === "official") {
+  if (legacySeason && (mode === "auto" || mode === "official")) {
     logDataStep("official fallback start");
     try {
       const text = await loadOfficialPageText();
@@ -2954,7 +3282,13 @@ async function loadSchedule() {
     }
   }
 
-  if (guaranteedCache && cached.tournament?.id !== "worlds-2026") {
+  if (
+    guaranteedCache &&
+    cached.tournament?.id !== "worlds-2026" &&
+    (legacySeason ||
+      !cached.tournament?.endDate ||
+      cached.tournament.endDate >= beijingDateString())
+  ) {
     const source = IS_DEV ? "DEV local cache" : "本地缓存";
     attempts.push({
       source,
@@ -3469,7 +3803,8 @@ function addEmptyRow(widget) {
 }
 
 function worldsDisplayResult(result, family, now = new Date()) {
-  if (result.tournament?.id !== "worlds-2026") return result;
+  if (!/^worlds-20\d{2}$/.test(String(result.tournament?.id || "")))
+    return result;
   const limit = family === "large" ? 4 : family === "small" ? 1 : 2;
   const matches = result.matches;
   const focus = matches.findIndex((match) =>
@@ -3483,7 +3818,7 @@ function worldsDisplayResult(result, family, now = new Date()) {
 }
 
 function widgetScheduleUrl(result) {
-  if (result.tournament?.id === "worlds-2026")
+  if (/^worlds-20\d{2}$/.test(String(result.tournament?.id || "")))
     return result.sourceUrl === WORLDS_2026_CITO_SOURCE.url
       ? WORLDS_2026_SOURCE.url
       : result.sourceUrl || WORLDS_2026_SOURCE.url;
@@ -3604,7 +3939,7 @@ function renderSmall(result) {
     `${IS_DEV ? (result.coverageLabel ? "DEV·部分 " : "DEV · ") : ""}${displayMonthDay(result.dateString)}`
   );
   date.font = Font.boldSystemFont(18);
-  if (!IS_DEV && result.tournament?.id === "worlds-2026") {
+  if (!IS_DEV && /^worlds-20\d{2}$/.test(String(result.tournament?.id || ""))) {
     const label =
       result.tournament?.dataSource === "cito-personal"
         ? "WORLDS·Cito·部分"
@@ -3724,7 +4059,9 @@ function renderTransition(result, source) {
 function renderError(error) {
   const reviewedUnavailable =
     (IS_DEV && devFixtureKey() === "worlds-reviewed") ||
-    (!IS_DEV && inWorlds2026Window());
+    (!IS_DEV &&
+      (inWorlds2026Window() ||
+        (CONFIG.personalCito && inPersonalWorldsSeason())));
   const widget = new ListWidget();
   if (reviewedUnavailable) widget.url = WORLDS_2026_SOURCE.url;
   widget.setPadding(16, 16, 14, 16);
@@ -3741,7 +4078,11 @@ function renderError(error) {
 
   top.addSpacer(12);
 
-  const title = top.addText(reviewedUnavailable ? "WORLDS 2026" : CONFIG.title);
+  const title = top.addText(
+    reviewedUnavailable
+      ? `WORLDS ${beijingDateString().slice(0, 4)}`
+      : CONFIG.title
+  );
   title.font = Font.mediumSystemFont(18);
   title.textColor = new Color(CONFIG.theme.white);
 

@@ -40,23 +40,17 @@ vm.runInNewContext(
 context
   .runInstaller()
   .then(() => {
-    assert.equal(alerts[0], "安装 Worlds Cito 个人版");
+    assert.equal(alerts[0], "安装英雄联盟比赛赛程表");
     assert.equal(alerts.at(-1), "安装完成");
-    for (const name of [
-      "LPL-Design-System",
-      "LPL Schedule 2026",
-      "LPL-Cito-Worlds",
-      "LPL-Cito-Personal",
-      "LPL Schedule Installer",
-    ]) {
-      assert.ok(files.has(`/icloud/${name}.js`), `${name} not installed`);
-    }
+    assert.ok(files.has("/icloud/英雄联盟比赛赛程表.js"));
+    assert.ok(files.has("/icloud/LPL Schedule 2026.js"));
+    assert.equal(files.size, 2);
     assert.equal(
-      files.get("/icloud/LPL Schedule 2026.js").includes('version: "3.1.4"'),
+      files.get("/icloud/LPL Schedule 2026.js").includes('version: "4.0.0"'),
       true
     );
     assert.equal(
-      files.get("/icloud/LPL-Cito-Personal.js").includes("x-api-key"),
+      files.get("/icloud/英雄联盟比赛赛程表.js").includes("x-api-key"),
       true
     );
     assert.doesNotMatch(installer, /CITO_API_KEY\s*=/);

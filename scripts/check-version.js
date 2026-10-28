@@ -24,9 +24,9 @@ function readProjectVersions(root = ROOT) {
       "LPL-Design-System.js"
     ),
     widget: extractVersion(
-      read("LPL-Schedule.js"),
-      /const APP = \{\s*name: "LPL Schedule",\s*version: "(\d+\.\d+\.\d+)"/,
-      "LPL-Schedule.js"
+      read("LoL-Esports-Schedule.js"),
+      /const APP = \{\s*name: "英雄联盟比赛赛程表",\s*version: "(\d+\.\d+\.\d+)"/,
+      "LoL-Esports-Schedule.js"
     ),
   };
 }
@@ -43,8 +43,9 @@ function assertVersionConsistency(versions, expectedVersion = null) {
   const designSystemCompatible =
     designParts.length === 3 &&
     designParts.every(Number.isInteger) &&
-    designParts[0] === appParts[0] &&
-    (designParts[1] < appParts[1] ||
+    designParts[0] <= appParts[0] &&
+    (designParts[0] < appParts[0] ||
+      designParts[1] < appParts[1] ||
       (designParts[1] === appParts[1] && designParts[2] <= appParts[2]));
   if (unique.length !== 1 || !designSystemCompatible) {
     throw new Error(

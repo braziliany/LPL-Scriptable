@@ -122,12 +122,13 @@ async function fetchPersonalPages({
   withTimeout,
   sourceUrl,
   leagueId,
+  seasonYear,
 }) {
   const pages = [];
   let offset = 0;
   const maxPages = isWidget ? 1 : 5;
   for (let index = 0; index < maxPages; index++) {
-    const url = `${sourceUrl}?from=2026-10-14&to=2026-11-16&limit=100&offset=${offset}`;
+    const url = `${sourceUrl}?from=${seasonYear}-01-01&to=${seasonYear}-12-31&limit=100&offset=${offset}`;
     const request = new Request(url);
     request.headers = { "x-api-key": key, Accept: "application/json" };
     request.timeoutInterval = isWidget ? 5 : 10;
@@ -175,14 +176,18 @@ async function loadPersonalCitoSchedule({
   isWidget = false,
   withTimeout,
   forceRefresh = false,
+  seasonYear = String(new Date(now.getTime() + 8 * 3600_000).getUTCFullYear()),
 }) {
   invariant(typeof key === "string" && key.trim(), "Cito Keychain 未配置");
+  invariant(/^20\d{2}$/.test(seasonYear), "Cito season year invalid");
   const cached = readPersonalCache(fm, now, convertCitoWorlds);
-  if (cached && cached.ageMs < FRESH_MS && !forceRefresh)
+  const seasonCache =
+    cached?.schedule?.tournamentId === `worlds-${seasonYear}` ? cached : null;
+  if (seasonCache && seasonCache.ageMs < FRESH_MS && !forceRefresh)
     return {
-      schedule: cached.schedule,
-      fetchedAt: cached.payload.fetchedAt,
-      cacheState: cached.recovered ? "RECOVERED" : "FRESH",
+      schedule: seasonCache.schedule,
+      fetchedAt: seasonCache.payload.fetchedAt,
+      cacheState: seasonCache.recovered ? "RECOVERED" : "FRESH",
       requests: 0,
     };
   const backoff = readBackoff(fm, now);
@@ -195,11 +200,12 @@ async function loadPersonalCitoSchedule({
         withTimeout,
         sourceUrl,
         leagueId,
+        seasonYear,
       });
       const fetchedAt = now.toISOString();
       const converted = convertCitoWorlds(pages, {
         observedAt: fetchedAt,
-        previousSchedule: cached?.schedule || null,
+        previousSchedule: seasonCache?.schedule || null,
       });
       invariant(!converted.audit.removedIds.length, "Cito 本次缺少已有比赛");
       writePersonalCache(
@@ -222,16 +228,16 @@ async function loadPersonalCitoSchedule({
       } catch {
         // A failed backoff write must not discard a valid local schedule.
       }
-      if (!cached || cached.ageMs > STALE_LIMIT_MS)
+      if (!seasonCache || seasonCache.ageMs > STALE_LIMIT_MS)
         throw new Error(`Worlds 个人赛程不可用：${error.message}`);
     }
-  } else if (!cached || cached.ageMs > STALE_LIMIT_MS) {
+  } else if (!seasonCache || seasonCache.ageMs > STALE_LIMIT_MS) {
     throw new Error("Worlds 个人赛程过期，等待 Cito 重试");
   }
   return {
-    schedule: cached.schedule,
-    fetchedAt: cached.payload.fetchedAt,
-    cacheState: cached.recovered ? "RECOVERED_STALE" : "STALE",
+    schedule: seasonCache.schedule,
+    fetchedAt: seasonCache.payload.fetchedAt,
+    cacheState: seasonCache.recovered ? "RECOVERED_STALE" : "STALE",
     requests: 0,
   };
 }

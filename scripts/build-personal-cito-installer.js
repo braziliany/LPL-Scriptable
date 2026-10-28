@@ -4,11 +4,7 @@ const path = require("node:path");
 const root = path.join(__dirname, "..");
 const source = fs.readFileSync(path.join(root, "Installer.js"), "utf8");
 const resources = {
-  "LPL-Design-System": "LPL-Design-System.js",
-  "LPL Schedule 2026": "LPL-Schedule.js",
-  "LPL-Cito-Worlds": "LPL-Cito-Worlds.js",
-  "LPL-Cito-Personal": "LPL-Cito-Personal.js",
-  "LPL Schedule Installer": "Installer.js",
+  英雄联盟比赛赛程表: "LoL-Esports-Schedule.js",
 };
 const bundle = Object.fromEntries(
   Object.entries(resources).map(([name, file]) => [
@@ -35,8 +31,8 @@ const installer = source
   .replace(
     anchor,
     `const ready = new Alert();
-    ready.title = "安装 Worlds Cito 个人版";
-    ready.message = "安装包已在本机，继续后会检查并更新正式组件。不会传输 API Key 或赛事缓存。";
+    ready.title = "安装英雄联盟比赛赛程表";
+    ready.message = "安装包已在本机，继续后会安装统一正式脚本，并兼容更新旧入口。不会传输 API Key 或赛事缓存。";
     ready.addAction("继续安装");
     ready.addCancelAction("取消");
     if ((await ready.present()) !== 0) { Script.complete(); return; }

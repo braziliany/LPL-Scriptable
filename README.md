@@ -1,14 +1,14 @@
-# LOL Tournament Schedule 2026 · Scriptable
+# 英雄联盟比赛赛程表 · LoL Esports Schedule
 
-一个自动选择当前 LOL 赛事的 Scriptable 赛程小组件。v3.1.4 可在本人 iPhone 上启用 Cito 个人模式，直接读取并私有缓存 Worlds 已观察赛程；公开 Worlds 数据仍不经 GitHub Raw 分发。
+一个支持多赛事和动态赛季的 Scriptable 赛程小组件。v4.0.0 的正式入口为单个 `英雄联盟比赛赛程表` 脚本；设计系统、Cito 转换和个人缓存逻辑均内嵌。LPL 公开数据沿用现有链路；Worlds 个人模式由本人 iPhone 直接请求 Cito，并保存在原有本地缓存中。公开 GitHub Raw 不分发个人 Cito 数据。
 
-### Worlds 个人模式首次设置
+### 首次安装与旧版升级
 
-1. 运行最新版 `LPL Schedule Installer` 安装正式组件和两个 Cito 模块。离线交付包也可直接运行，安装后组件名称仍是 `LPL Schedule 2026`。
-2. 在 Scriptable 中运行 `LPL Schedule 2026`，打开设置中的 `Cito 个人`，通过安全输入框输入本人 API Key。Key 仅存入 Scriptable Keychain，无法从 Windows 自动传到 iPhone。
-3. 首次读取成功后，已有绑定 `LPL Schedule 2026` 的组件即可显示 Worlds。之后组件优先读本地 3 小时缓存；到期尝试刷新，失败时旧缓存最多保留 24 小时并明确标记。可在应用内同一菜单手动刷新或关闭并删除 Key。
+1. 运行仓库根目录的 `Installer.js`，或使用交付的离线安装包。安装器只下载或内嵌一个正式脚本。若已有 `LPL Schedule 2026` 或 `LPL Schedule`，安装器会同时原位更新其源码，以保留已有组件绑定；不会删除旧脚本。
+2. 在 Scriptable 中运行 `英雄联盟比赛赛程表`，打开统一设置中心。现有 Cito Keychain 标识和 `lpl-worlds-cito-personal-v1.json` 缓存路径保持不变；已配置用户无需重新输入 Key。
+3. 如果旧桌面组件仍绑定旧名称，它可继续工作。确认新名称脚本正常显示后，手动将组件绑定改为 `英雄联盟比赛赛程表`；确认没有引用后，再手动删除三个辅助脚本和旧入口。iOS 的组件绑定迁移须在手机上确认。
 
-个人模式只显示 `PARTIAL_OBSERVED` 已观察比赛，不改变公开发布校验；无有效数据时打开官方 Worlds 页面。iOS 不保证组件按固定频率运行。
+个人模式只显示 `PARTIAL_OBSERVED` 已观察比赛，不改变公开发布校验；缓存 3 小时有效，刷新失败最多保留 24 小时且标记为旧缓存。无有效数据时安全降级并可打开官方赛程。iOS 不保证组件按固定频率运行。未来赛事需有已登记的公开赛程或本人 Cito 个人数据；年份变化不需要修改 Renderer。
 
 ## 主要功能
 
@@ -45,15 +45,19 @@
 
 ```text
 LPL-Scriptable/
-├── LPL-Schedule.js          主组件
-├── LPL-Design-System.js     可复用的配色与设计规范
-├── Installer.js             一键安装器
+├── LoL-Esports-Schedule.js  单文件正式组件（由构建脚本生成）
+├── LPL-Schedule.js          兼容源码与旧版逻辑
+├── LPL-Design-System.js     内嵌设计系统的维护源码
+├── LPL-Cito-Worlds.js       内嵌 Cito 转换器的维护源码
+├── LPL-Cito-Personal.js     内嵌个人缓存的维护源码
+├── Installer.js             单文件正式安装器
 ├── data/
 │   ├── tournaments.json     集中式赛事元数据
 │   ├── active.json          当前 SMART 选择结果
 │   ├── schedules/           按赛事拆分的标准化赛程
 │   └── schedule.json        v3.0.0 兼容 LPL 赛程
 ├── scripts/
+│   ├── build-unified-script.js  正式单文件构建器
 │   ├── update-schedule.js   LPL 官方赛程同步脚本
 │   ├── build-tournament-data.js
 │   └── generate-active.js
@@ -88,35 +92,31 @@ braziliany/LPL-Scriptable
 3. 全选复制
 4. 在 Scriptable 新建临时脚本并粘贴
 5. 运行安装器
-6. 安装器会自动创建：
-   - `LPL-Design-System`
-   - `LPL Schedule 2026`
-   - `LPL Schedule Installer`
-7. 以后只需运行 `LPL Schedule Installer` 完成全量更新
+6. 安装器会创建 `英雄联盟比赛赛程表`。若旧入口已存在，也会原位更新旧入口的源码，不安装三个辅助脚本。
+7. 以后运行新名称脚本进入统一设置中心；更新时重新运行最新版 `Installer.js`。
 
-安装器会更新已有的 `LPL Schedule 2026` 和 `LPL Schedule` 脚本；若两个名称同时存在，两者都会覆盖为同一正式源码，不会新建重复脚本。桌面组件仍绑定原脚本名。若诊断仍显示 3.0.0，先确认组件绑定的是哪一个脚本，再从 GitHub Raw 重新复制最新版 `Installer.js` 并运行。
+安装器会更新已有的 `LPL Schedule 2026` 和 `LPL Schedule` 脚本；若两个名称同时存在，两者都会覆盖为同一正式源码。已有桌面组件仍可能绑定原脚本名。切换到新名称后的实际绑定行为需要在 iPhone 确认。
 
-> 如果手机里只有旧版安装器，必须从 GitHub 重新复制一次最新 `Installer.js`。旧安装器不会自动更新自身，因此只会安装主脚本。
+> 如果手机里只有旧版安装器，需要从 GitHub 重新复制一次最新版 `Installer.js`。旧安装器不会自动获得单文件安装配置。
 
 固定更新入口会在写入前：
 
 - 比较本地与 GitHub 远端版本
 - 显示首次安装、更新、重新安装或降级警告
 - 展示目标版本的更新日志摘要
-- 下载并校验全部脚本
+- 下载并校验单文件正式脚本
 - 安装失败时恢复原有文件
 
-## 安装方法二：手动复制两个脚本
+## 安装方法二：手动复制单文件
 
-1. 打开 `LPL-Design-System.js`
+1. 打开 `LoL-Esports-Schedule.js`
 2. 点击 **Raw**
 3. 全选复制
-4. 在 Scriptable 新建脚本，命名为 `LPL-Design-System` 并粘贴
-5. 以相同方式复制 `LPL-Schedule.js`
-6. 将主脚本命名为 `LPL Schedule 2026`，保存后运行一次
-7. 在桌面添加 Scriptable 中号组件，并选择主脚本
+4. 在 Scriptable 新建脚本，命名为 `英雄联盟比赛赛程表` 并粘贴
+5. 保存后运行一次进入设置中心
+6. 在桌面添加 Scriptable 小组件，并选择该脚本
 
-> 主组件从 `2.0.0` 起依赖共享设计系统，两个脚本必须安装在同一个 Scriptable 文档目录中，且模块名称必须保持为 `LPL-Design-System`。
+> v4.0.0 的正式脚本不再依赖其他 JS 脚本。旧缓存、Keychain 和用户设置仍沿用兼容路径。
 
 ## 赛事路由与手动维护赛程
 
@@ -207,34 +207,35 @@ npm run check
 
 ## 发布版本
 
-发布前需要同步修改以下三处组件版本号：
+发布前需要同步修改以下版本号并重新生成单文件：
 
 - `package.json`
 - `Installer.js`
-- `LPL-Schedule.js`
+- `LoL-Esports-Schedule.js`（运行 `npm run build:unified`，不手改生成文件）
 
-`LPL-Design-System.js` 使用独立版本号；仅当设计系统实际变更时更新，目前保持 3.1.0。版本检查要求它与组件同主版本且不高于组件版本。
+`LPL-Design-System.js` 是内嵌主题的维护源码，使用独立版本号；仅在其实际变更时更新。版本检查要求该内嵌版本不高于产品版本。
 
 本地检查并预览 Release Notes：
 
 ```bash
 npm run check
-npm run version:check -- 3.1.3
-npm run release:notes -- v3.1.3
+npm run version:check -- 4.0.0
+npm run release:notes -- v4.0.0
 ```
 
 确认无误后创建并推送标签：
 
-标签和 GitHub Release 需要单独的发布授权；本次 v3.1.3 主线客户端修复不执行下列命令。
+标签和 GitHub Release 需要单独的发布授权；本次主线升级不执行下列示例命令。
 
 ```bash
-git tag -a v3.1.3 -m "LPL Schedule v3.1.3"
-git push origin v3.1.3
+git tag -a v4.0.0 -m "LoL Esports Schedule v4.0.0"
+git push origin v4.0.0
 ```
 
 `Publish release` 工作流会再次执行完整质量检查，验证标签与组件版本号一致，并校验设计系统兼容性，从 `CHANGELOG.md` 提取对应更新说明，并创建 GitHub Release。Release 会附带：
 
 - `Installer.js`
+- `LoL-Esports-Schedule.js`
 - `LPL-Schedule.js`
 - `LPL-Design-System.js`
 
@@ -242,7 +243,7 @@ git push origin v3.1.3
 
 ## 复用设计系统
 
-其他 Scriptable 项目可以直接调用共享模块：
+其他 Scriptable 项目若自行安装 `LPL-Design-System.js`，仍可选用共享模块；本产品本身已内嵌该模块：
 
 ```javascript
 const DesignSystem = importModule("LPL-Design-System");
@@ -270,7 +271,7 @@ title.textColor = new Color(palette.white);
 
 ## 用户设置
 
-直接在 Scriptable 中运行主脚本即可打开设置菜单。也可以点击中号或大号组件的整个顶部标题栏；小号组件可点击黄色方块或日期。当前支持：
+直接在 Scriptable 中运行 `英雄联盟比赛赛程表` 即可打开统一设置中心。也可以点击中号或大号组件的顶部标题栏；小号组件可点击黄色方块或日期。设置中心按赛事管理、数据管理、Cito API、显示设置和关于组织，当前支持：
 
 - 关注队伍
 - 数据来源
@@ -280,11 +281,11 @@ title.textColor = new Color(palette.white);
 - 组件主题：深蓝、浅色或跟随系统
 - 预览中号单场布局
 - 运行诊断并一键复制诊断信息
-- 恢复默认设置
+- 手动切换已登记赛事或恢复自动选择
 
 设置保存在 Scriptable 本地文档目录的 `lpl-schedule-settings.json`，重新安装或升级主脚本不会覆盖。
 
-“运行诊断”会显示主组件、设计系统和设置结构版本，以及当前数据模式、主题、刷新策略、运行环境和缓存状态。从组件标题栏进入设置时会显示小号、中号或大号来源；直接运行脚本时显示“应用内运行”。
+“查看详细诊断”会显示当前数据模式、主题、刷新策略、运行环境和缓存状态。从组件标题栏进入设置时会显示小号、中号或大号来源；直接运行脚本时显示“应用内运行”。
 
 组件还会持久化最近一次数据读取路径。诊断页可以看到 GitHub、官方页面和本地缓存分别成功或失败，以及最终使用的数据来源和失败原因。例如：
 
@@ -294,12 +295,12 @@ title.textColor = new Color(palette.white);
 
 遇到安装、比分延迟或缓存问题时，可点击“复制诊断信息”后直接粘贴到 Issue 或对话中。
 
-> GitHub 上的脚本更新不会自动替换手机中的文件。`2.0.0` 起请重新运行 `Installer.js`，安装器会同时更新主组件与共享设计系统，并保留用户设置和 Logo 缓存。
+> GitHub 上的脚本更新不会自动替换手机中的文件。v4.0.0 起请重新运行最新版 `Installer.js`；它安装单文件正式脚本，并保留用户设置、Keychain 和缓存。
 
 也可以通过 URL Scheme 直接打开设置：
 
 ```text
-scriptable:///run?scriptName=LPL%20Schedule%202026&action=settings
+scriptable:///run?scriptName=%E8%8B%B1%E9%9B%84%E8%81%94%E7%9B%9F%E6%AF%94%E8%B5%9B%E8%B5%9B%E7%A8%8B%E8%A1%A8&action=settings
 ```
 
 数据来源支持：
