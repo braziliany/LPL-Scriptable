@@ -24,6 +24,7 @@ const fm = {
   move: (from, to) => {
     if (failCurrentMove && to === personalPaths(fm).current)
       throw new Error("simulated write interruption");
+    if (files.has(to)) throw new Error("destination exists");
     files.set(to, files.get(from));
     files.delete(from);
   },
@@ -117,6 +118,8 @@ const load = (now, forceRefresh = false) =>
   assert.equal(requests, 2);
   await load("2026-10-27T01:01:00.000Z");
   assert.equal(requests, 2, "backoff should prevent an immediate retry");
+  await load("2026-10-27T01:01:30.000Z", true);
+  assert.equal(requests, 2, "manual refresh must respect an API rate limit");
 
   statusCode = 200;
   payload = page([event("completed")]);
@@ -141,6 +144,13 @@ const load = (now, forceRefresh = false) =>
   assert.equal(files.get(personalPaths(fm).current), original);
 
   payload = page([event("completed")]);
+  const manualRetry = await load("2026-10-27T05:01:00.000Z", true);
+  assert.equal(
+    manualRetry.cacheState,
+    "REFRESHED",
+    "manual refresh must bypass ordinary failure backoff"
+  );
+  files.set(personalPaths(fm).current, original);
   failCurrentMove = true;
   const interrupted = await load("2026-10-27T05:06:00.000Z");
   assert.equal(interrupted.cacheState, "STALE");

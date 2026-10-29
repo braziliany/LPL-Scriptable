@@ -69,7 +69,7 @@ const installedBundle = JSON.parse(
 );
 const currentBundle = buildBundle();
 
-assert.equal(installedBundle.version, "4.0.0");
+assert.equal(installedBundle.version, "4.0.1");
 assert.equal(installedBundle.scriptName, DEV_SCRIPT_NAME);
 assert.equal(installedBundle.designSystemName, DEV_DESIGN_SYSTEM_NAME);
 assert.equal(installedBundle.dataDirectory, DEV_DATA_DIRECTORY);
@@ -350,7 +350,7 @@ assert.deepEqual(
   JSON.parse(JSON.stringify(devMainContext.__LPL_SCHEDULE_DEV__)),
   {
     enabled: true,
-    version: "4.0.0",
+    version: "4.0.1",
     fixture: "",
     designSystemModule: "LPL-Design-System-DEV",
     dataDirectory: "LPL-Schedule-DEV",

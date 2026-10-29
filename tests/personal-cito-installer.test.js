@@ -46,7 +46,7 @@ context
     assert.ok(files.has("/icloud/LPL Schedule 2026.js"));
     assert.equal(files.size, 2);
     assert.equal(
-      files.get("/icloud/LPL Schedule 2026.js").includes('version: "4.0.0"'),
+      files.get("/icloud/LPL Schedule 2026.js").includes('version: "4.0.1"'),
       true
     );
     assert.equal(

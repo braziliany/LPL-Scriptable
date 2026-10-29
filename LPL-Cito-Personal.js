@@ -56,7 +56,8 @@ function readPersonalCache(fm, now, convertCitoWorlds) {
 
 function readBackoff(fm, now) {
   const filePath = personalPaths(fm).backoff;
-  if (!fm.fileExists(filePath)) return { failures: 0, retryAt: 0 };
+  if (!fm.fileExists(filePath))
+    return { failures: 0, retryAt: 0, rateLimited: false };
   try {
     const data = JSON.parse(fm.readString(filePath));
     const failures = Number(data.failures);
@@ -66,10 +67,14 @@ function readBackoff(fm, now) {
       failures < 0 ||
       !Number.isFinite(retryAt)
     )
-      return { failures: 0, retryAt: 0 };
-    return { failures, retryAt: Math.min(retryAt, now.getTime() + 3600_000) };
+      return { failures: 0, retryAt: 0, rateLimited: false };
+    return {
+      failures,
+      retryAt: Math.min(retryAt, now.getTime() + 3600_000),
+      rateLimited: data.rateLimited === true,
+    };
   } catch {
-    return { failures: 0, retryAt: 0 };
+    return { failures: 0, retryAt: 0, rateLimited: false };
   }
 }
 
@@ -81,6 +86,7 @@ function recordBackoff(fm, now, previousFailures, rateLimited) {
     JSON.stringify({
       failures,
       retryAt: new Date(now.getTime() + minutes * 60_000).toISOString(),
+      rateLimited,
     })
   );
 }
@@ -90,6 +96,7 @@ function writePersonalCache(fm, payload, now, convertCitoWorlds) {
   const pending = `${paths.current}.pending`;
   const backupPending = `${paths.backup}.pending`;
   const content = JSON.stringify(payload);
+  if (fm.fileExists(pending)) fm.remove(pending);
   fm.writeString(pending, content);
   invariant(
     fm.readString(pending) === content,
@@ -99,12 +106,40 @@ function writePersonalCache(fm, payload, now, convertCitoWorlds) {
     parsePersonalCache(fm, pending, now, convertCitoWorlds),
     "Personal cache verification failed"
   );
-  if (parsePersonalCache(fm, paths.current, now, convertCitoWorlds)) {
+  const previousValid = parsePersonalCache(
+    fm,
+    paths.current,
+    now,
+    convertCitoWorlds
+  );
+  if (previousValid) {
     if (fm.fileExists(backupPending)) fm.remove(backupPending);
     fm.copy(paths.current, backupPending);
+    invariant(
+      parsePersonalCache(fm, backupPending, now, convertCitoWorlds),
+      "Personal cache backup verification failed"
+    );
+    if (fm.fileExists(paths.backup)) fm.remove(paths.backup);
     fm.move(backupPending, paths.backup);
   }
-  fm.move(pending, paths.current);
+  if (fm.fileExists(paths.current)) fm.remove(paths.current);
+  try {
+    fm.move(pending, paths.current);
+    invariant(
+      parsePersonalCache(fm, paths.current, now, convertCitoWorlds),
+      "Personal cache activation verification failed"
+    );
+  } catch (error) {
+    if (fm.fileExists(paths.current)) fm.remove(paths.current);
+    if (previousValid && fm.fileExists(paths.backup)) {
+      try {
+        fm.copy(paths.backup, paths.current);
+      } catch {
+        // The verified backup remains readable when restoring current fails.
+      }
+    }
+    throw error;
+  }
 }
 
 function requestError(status) {
@@ -191,7 +226,10 @@ async function loadPersonalCitoSchedule({
       requests: 0,
     };
   const backoff = readBackoff(fm, now);
-  if (backoff.retryAt <= now.getTime()) {
+  if (
+    backoff.retryAt <= now.getTime() ||
+    (forceRefresh && !backoff.rateLimited)
+  ) {
     try {
       const pages = await fetchPersonalPages({
         key,

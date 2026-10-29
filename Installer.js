@@ -10,7 +10,7 @@
  */
 
 const CONFIG = {
-  version: "4.0.0",
+  version: "4.0.1",
   season: "LoL Esports Schedule",
   changelogUrl:
     "https://raw.githubusercontent.com/braziliany/LPL-Scriptable/main/CHANGELOG.md",

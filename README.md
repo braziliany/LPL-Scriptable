@@ -1,6 +1,6 @@
 # 英雄联盟比赛赛程表 · LoL Esports Schedule
 
-一个支持多赛事和动态赛季的 Scriptable 赛程小组件。v4.0.0 的正式入口为单个 `英雄联盟比赛赛程表` 脚本；设计系统、Cito 转换和个人缓存逻辑均内嵌。LPL 公开数据沿用现有链路；Worlds 个人模式由本人 iPhone 直接请求 Cito，并保存在原有本地缓存中。公开 GitHub Raw 不分发个人 Cito 数据。
+一个支持多赛事和动态赛季的 Scriptable 赛程小组件。v4.0.1 的正式入口为单个 `英雄联盟比赛赛程表` 脚本；设计系统、Cito 转换和个人缓存逻辑均内嵌。LPL 公开数据沿用现有链路；Worlds 个人模式由本人 iPhone 直接请求 Cito，并保存在原有本地缓存中。公开 GitHub Raw 不分发个人 Cito 数据。
 
 ### 首次安装与旧版升级
 
@@ -219,8 +219,8 @@ npm run check
 
 ```bash
 npm run check
-npm run version:check -- 4.0.0
-npm run release:notes -- v4.0.0
+npm run version:check -- 4.0.1
+npm run release:notes -- v4.0.1
 ```
 
 确认无误后创建并推送标签：
@@ -228,8 +228,8 @@ npm run release:notes -- v4.0.0
 标签和 GitHub Release 需要单独的发布授权；本次主线升级不执行下列示例命令。
 
 ```bash
-git tag -a v4.0.0 -m "LoL Esports Schedule v4.0.0"
-git push origin v4.0.0
+git tag -a v4.0.1 -m "LoL Esports Schedule v4.0.1"
+git push origin v4.0.1
 ```
 
 `Publish release` 工作流会再次执行完整质量检查，验证标签与组件版本号一致，并校验设计系统兼容性，从 `CHANGELOG.md` 提取对应更新说明，并创建 GitHub Release。Release 会附带：

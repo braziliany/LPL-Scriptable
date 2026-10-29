@@ -5,7 +5,7 @@ const { buildUnifiedSource } = require("../scripts/build-unified-script");
 const source = buildUnifiedSource();
 assert.doesNotMatch(source, /\bimportModule\s*\(/);
 assert.match(source, /name: "英雄联盟比赛赛程表"/);
-assert.match(source, /version: "4\.0\.0"/);
+assert.match(source, /version: "4\.0\.1"/);
 const now = new Date("2027-10-26T12:00:00.000Z");
 const files = new Map();
 const key = "fixture-key-not-a-credential";
@@ -56,8 +56,12 @@ const fm = {
   fileExists: (path) => files.has(path),
   readString: (path) => files.get(path),
   writeString: (path, value) => files.set(path, value),
-  copy: (from, to) => files.set(to, files.get(from)),
+  copy: (from, to) => {
+    if (files.has(to)) throw new Error("destination exists");
+    files.set(to, files.get(from));
+  },
   move: (from, to) => {
+    if (files.has(to)) throw new Error("destination exists");
     files.set(to, files.get(from));
     files.delete(from);
   },
@@ -108,7 +112,7 @@ const context = {
 vm.runInNewContext(
   source.replace(
     /await main\(\);\s*$/,
-    "globalThis.__test = { APP, loadSchedule, applyUserSettings, normalizeUserSettings, selectScheduleResult, personalCitoKey, presentUnifiedSettings, presentPersonalCitoSetup };"
+    "globalThis.__test = { APP, loadSchedule, loadPersonalCitoWorldsSchedule, applyUserSettings, normalizeUserSettings, selectScheduleResult, personalCitoKey, presentUnifiedSettings, presentPersonalCitoSetup };"
   ),
   context
 );
@@ -135,6 +139,15 @@ async function verify() {
   assert.ok(
     files.has("/local/lpl-worlds-cito-personal-v1.json"),
     "old personal cache path must be preserved"
+  );
+  const refreshed = await context.__test.loadPersonalCitoWorldsSchedule({
+    forceRefresh: true,
+  });
+  assert.equal(refreshed.observedMatchCount, 1);
+  assert.equal(
+    calls,
+    2,
+    "existing cache must be replaceable on Scriptable FileManager"
   );
   await context.__test.presentUnifiedSettings();
   assert.deepEqual(menus, ["英雄联盟比赛赛程表"]);
