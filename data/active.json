@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-22T06:35:54.681Z",
+  "generatedAt": "2026-11-15T16:39:18.864Z",
   "sourceUpdatedAt": "2026-10-15T07:00:00.000Z",
   "tournament": {
     "id": "worlds-2026",
@@ -16,8 +16,8 @@
     "dataSource": "manual"
   },
   "nextTournament": null,
-  "businessState": "NO_UPCOMING",
+  "businessState": "TOURNAMENT_FINISHED",
   "selectedDate": null,
-  "selectionReason": "SMART_NO_UPCOMING_MATCHES",
+  "selectionReason": "SMART_TOURNAMENT_FINISHED",
   "matches": []
 }
